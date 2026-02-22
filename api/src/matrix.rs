@@ -1,5 +1,5 @@
+use sea_orm::DatabaseConnection;
 use serde_json::{Value, json};
-use sqlx::SqlitePool;
 use uuid::Uuid;
 
 use crate::db;
@@ -182,7 +182,7 @@ impl MatrixClient {
         Ok(())
     }
 
-    async fn wait_for_response(&mut self, pool: &SqlitePool) -> Result<String, ApiError> {
+    async fn wait_for_response(&mut self, db: &DatabaseConnection) -> Result<String, ApiError> {
         for _ in 0..3 {
             let mut url = format!(
                 "{}/_matrix/client/v3/sync?timeout=10000",
@@ -213,7 +213,7 @@ impl MatrixClient {
             self.since = data["next_batch"].as_str().map(|s| s.to_string());
 
             if let Some(ref since) = self.since {
-                if let Err(e) = db::update_since(pool, since).await {
+                if let Err(e) = db::update_since(db, since).await {
                     tracing::warn!("Failed to persist since token: {e}");
                 }
             }
@@ -243,10 +243,10 @@ impl MatrixClient {
         Err(ApiError::Timeout)
     }
 
-    pub async fn execute_command(&mut self, command: &str, pool: &SqlitePool) -> Result<String, ApiError> {
+    pub async fn execute_command(&mut self, command: &str, db: &DatabaseConnection) -> Result<String, ApiError> {
         let message = format!("!admin {command}");
         self.send_message(&message).await?;
-        self.wait_for_response(pool).await
+        self.wait_for_response(db).await
     }
 }
 

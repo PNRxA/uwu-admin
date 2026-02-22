@@ -1,25 +1,19 @@
-use sqlx::SqlitePool;
-use sqlx::sqlite::SqlitePoolOptions;
+use sea_orm::{
+    ActiveModelTrait, ConnectionTrait, Database, DatabaseConnection, EntityTrait, IntoActiveModel,
+    Set, Statement,
+    sea_query::OnConflict,
+};
 
+use crate::entity::{self, ActiveModel, Column, Entity};
 use crate::error::ApiError;
 
-#[derive(sqlx::FromRow)]
-pub struct SessionRow {
-    pub homeserver: String,
-    pub access_token: String,
-    pub room_id: String,
-    pub user_id: String,
-    pub since: Option<String>,
-}
-
-pub async fn init_pool(database_url: &str) -> Result<SqlitePool, ApiError> {
-    let pool = SqlitePoolOptions::new()
-        .max_connections(5)
-        .connect(database_url)
+pub async fn init_db(database_url: &str) -> Result<DatabaseConnection, ApiError> {
+    let db = Database::connect(database_url)
         .await
         .map_err(|e| ApiError::DbError(e.to_string()))?;
 
-    sqlx::query(
+    db.execute(Statement::from_string(
+        db.get_database_backend(),
         "CREATE TABLE IF NOT EXISTS sessions (
             id           INTEGER PRIMARY KEY CHECK (id = 1),
             homeserver   TEXT NOT NULL,
@@ -28,68 +22,81 @@ pub async fn init_pool(database_url: &str) -> Result<SqlitePool, ApiError> {
             user_id      TEXT NOT NULL,
             since        TEXT
         )",
-    )
-    .execute(&pool)
+    ))
     .await
     .map_err(|e| ApiError::DbError(e.to_string()))?;
 
-    Ok(pool)
+    Ok(db)
 }
 
-pub async fn load_session(pool: &SqlitePool) -> Result<Option<SessionRow>, ApiError> {
-    let row = sqlx::query_as::<_, SessionRow>("SELECT homeserver, access_token, room_id, user_id, since FROM sessions WHERE id = 1")
-        .fetch_optional(pool)
+pub async fn load_session(
+    db: &DatabaseConnection,
+) -> Result<Option<entity::Model>, ApiError> {
+    Entity::find_by_id(1)
+        .one(db)
         .await
-        .map_err(|e| ApiError::DbError(e.to_string()))?;
-
-    Ok(row)
+        .map_err(|e| ApiError::DbError(e.to_string()))
 }
 
 pub async fn save_session(
-    pool: &SqlitePool,
+    db: &DatabaseConnection,
     homeserver: &str,
     access_token: &str,
     room_id: &str,
     user_id: &str,
     since: Option<&str>,
 ) -> Result<(), ApiError> {
-    sqlx::query(
-        "INSERT INTO sessions (id, homeserver, access_token, room_id, user_id, since)
-         VALUES (1, ?, ?, ?, ?, ?)
-         ON CONFLICT(id) DO UPDATE SET
-            homeserver = excluded.homeserver,
-            access_token = excluded.access_token,
-            room_id = excluded.room_id,
-            user_id = excluded.user_id,
-            since = excluded.since",
-    )
-    .bind(homeserver)
-    .bind(access_token)
-    .bind(room_id)
-    .bind(user_id)
-    .bind(since)
-    .execute(pool)
-    .await
-    .map_err(|e| ApiError::DbError(e.to_string()))?;
+    let model = ActiveModel {
+        id: Set(1),
+        homeserver: Set(homeserver.to_owned()),
+        access_token: Set(access_token.to_owned()),
+        room_id: Set(room_id.to_owned()),
+        user_id: Set(user_id.to_owned()),
+        since: Set(since.map(|s| s.to_owned())),
+    };
 
-    Ok(())
-}
-
-pub async fn delete_session(pool: &SqlitePool) -> Result<(), ApiError> {
-    sqlx::query("DELETE FROM sessions WHERE id = 1")
-        .execute(pool)
+    Entity::insert(model)
+        .on_conflict(
+            OnConflict::column(Column::Id)
+                .update_columns([
+                    Column::Homeserver,
+                    Column::AccessToken,
+                    Column::RoomId,
+                    Column::UserId,
+                    Column::Since,
+                ])
+                .to_owned(),
+        )
+        .exec(db)
         .await
         .map_err(|e| ApiError::DbError(e.to_string()))?;
 
     Ok(())
 }
 
-pub async fn update_since(pool: &SqlitePool, since: &str) -> Result<(), ApiError> {
-    sqlx::query("UPDATE sessions SET since = ? WHERE id = 1")
-        .bind(since)
-        .execute(pool)
+pub async fn delete_session(db: &DatabaseConnection) -> Result<(), ApiError> {
+    Entity::delete_by_id(1)
+        .exec(db)
         .await
         .map_err(|e| ApiError::DbError(e.to_string()))?;
+
+    Ok(())
+}
+
+pub async fn update_since(db: &DatabaseConnection, since: &str) -> Result<(), ApiError> {
+    let session = Entity::find_by_id(1)
+        .one(db)
+        .await
+        .map_err(|e| ApiError::DbError(e.to_string()))?;
+
+    if let Some(session) = session {
+        let mut active: ActiveModel = session.into_active_model();
+        active.since = Set(Some(since.to_owned()));
+        active
+            .update(db)
+            .await
+            .map_err(|e| ApiError::DbError(e.to_string()))?;
+    }
 
     Ok(())
 }

@@ -1,6 +1,6 @@
 use std::sync::Arc;
 use tokio::sync::Mutex;
-use sqlx::SqlitePool;
+use sea_orm::DatabaseConnection;
 
 use crate::matrix::MatrixClient;
 
@@ -8,11 +8,11 @@ pub type SharedState = Arc<AppState>;
 
 pub struct AppState {
     pub client: Mutex<Option<MatrixClient>>,
-    pub db: SqlitePool,
+    pub db: DatabaseConnection,
 }
 
 impl AppState {
-    pub fn new(db: SqlitePool) -> SharedState {
+    pub fn new(db: DatabaseConnection) -> SharedState {
         Arc::new(AppState {
             client: Mutex::new(None),
             db,

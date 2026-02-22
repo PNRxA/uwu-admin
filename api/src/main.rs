@@ -1,4 +1,5 @@
 mod db;
+mod entity;
 mod error;
 mod handlers;
 mod matrix;
@@ -18,11 +19,11 @@ async fn main() {
     let database_url =
         std::env::var("DATABASE_URL").unwrap_or_else(|_| "sqlite:uwu-admin.db?mode=rwc".into());
 
-    let pool = db::init_pool(&database_url)
+    let db = db::init_db(&database_url)
         .await
         .expect("Failed to initialize database");
 
-    let state = AppState::new(pool);
+    let state = AppState::new(db);
 
     // Attempt to restore a saved session
     match db::load_session(&state.db).await {
