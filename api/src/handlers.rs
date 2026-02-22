@@ -3,6 +3,7 @@ use axum::extract::{Path, State};
 use serde::Deserialize;
 use serde_json::{Value, json};
 
+use crate::db;
 use crate::error::ApiError;
 use crate::matrix::MatrixClient;
 use crate::state::SharedState;
@@ -36,6 +37,16 @@ pub async fn connect(
     let user_id = client.user_id.clone();
     let homeserver = client.homeserver.clone();
 
+    db::save_session(
+        &state.db,
+        &client.homeserver,
+        client.access_token(),
+        &client.room_id,
+        &client.user_id,
+        client.since(),
+    )
+    .await?;
+
     *state.client.lock().await = Some(client);
 
     Ok(Json(json!({
@@ -45,9 +56,10 @@ pub async fn connect(
     })))
 }
 
-pub async fn disconnect(State(state): State<SharedState>) -> Json<Value> {
+pub async fn disconnect(State(state): State<SharedState>) -> Result<Json<Value>, ApiError> {
     *state.client.lock().await = None;
-    Json(json!({ "connected": false }))
+    db::delete_session(&state.db).await?;
+    Ok(Json(json!({ "connected": false })))
 }
 
 pub async fn status(State(state): State<SharedState>) -> Json<Value> {
@@ -71,7 +83,7 @@ pub async fn command(
     let mut lock = state.client.lock().await;
     let client = lock.as_mut().ok_or(ApiError::NotConnected)?;
 
-    let response = client.execute_command(&req.command).await?;
+    let response = client.execute_command(&req.command, &state.db).await?;
     Ok(Json(json!({ "response": response })))
 }
 
@@ -79,7 +91,7 @@ pub async fn list_users(State(state): State<SharedState>) -> Result<Json<Value>,
     let mut lock = state.client.lock().await;
     let client = lock.as_mut().ok_or(ApiError::NotConnected)?;
 
-    let response = client.execute_command("users list").await?;
+    let response = client.execute_command("users list", &state.db).await?;
     Ok(Json(json!({ "response": response })))
 }
 
@@ -95,7 +107,7 @@ pub async fn create_user(
         None => format!("users create {}", req.username),
     };
 
-    let response = client.execute_command(&cmd).await?;
+    let response = client.execute_command(&cmd, &state.db).await?;
     Ok(Json(json!({ "response": response })))
 }
 
@@ -103,7 +115,7 @@ pub async fn list_rooms(State(state): State<SharedState>) -> Result<Json<Value>,
     let mut lock = state.client.lock().await;
     let client = lock.as_mut().ok_or(ApiError::NotConnected)?;
 
-    let response = client.execute_command("rooms list").await?;
+    let response = client.execute_command("rooms list", &state.db).await?;
     Ok(Json(json!({ "response": response })))
 }
 
@@ -114,7 +126,7 @@ pub async fn room_info(
     let mut lock = state.client.lock().await;
     let client = lock.as_mut().ok_or(ApiError::NotConnected)?;
 
-    let response = client.execute_command(&format!("rooms info {room_id}")).await?;
+    let response = client.execute_command(&format!("rooms info {room_id}"), &state.db).await?;
     Ok(Json(json!({ "response": response })))
 }
 
@@ -122,7 +134,7 @@ pub async fn server_status(State(state): State<SharedState>) -> Result<Json<Valu
     let mut lock = state.client.lock().await;
     let client = lock.as_mut().ok_or(ApiError::NotConnected)?;
 
-    let response = client.execute_command("server stats").await?;
+    let response = client.execute_command("server stats", &state.db).await?;
     Ok(Json(json!({ "response": response })))
 }
 
@@ -130,6 +142,6 @@ pub async fn server_uptime(State(state): State<SharedState>) -> Result<Json<Valu
     let mut lock = state.client.lock().await;
     let client = lock.as_mut().ok_or(ApiError::NotConnected)?;
 
-    let response = client.execute_command("server uptime").await?;
+    let response = client.execute_command("server uptime", &state.db).await?;
     Ok(Json(json!({ "response": response })))
 }

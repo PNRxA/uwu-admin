@@ -1,3 +1,4 @@
+mod db;
 mod error;
 mod handlers;
 mod matrix;
@@ -7,13 +8,53 @@ use axum::Router;
 use axum::routing::{get, post};
 use tower_http::cors::CorsLayer;
 
+use crate::matrix::MatrixClient;
 use crate::state::AppState;
 
 #[tokio::main]
 async fn main() {
     tracing_subscriber::fmt::init();
 
-    let state = AppState::new();
+    let database_url =
+        std::env::var("DATABASE_URL").unwrap_or_else(|_| "sqlite:uwu-admin.db?mode=rwc".into());
+
+    let pool = db::init_pool(&database_url)
+        .await
+        .expect("Failed to initialize database");
+
+    let state = AppState::new(pool);
+
+    // Attempt to restore a saved session
+    match db::load_session(&state.db).await {
+        Ok(Some(session)) => {
+            match MatrixClient::restore(
+                session.homeserver,
+                session.access_token,
+                session.room_id,
+                session.user_id.clone(),
+                session.since,
+            )
+            .await
+            {
+                Ok(client) => {
+                    tracing::info!("Session restored for {}", session.user_id);
+                    *state.client.lock().await = Some(client);
+                }
+                Err(e) => {
+                    tracing::warn!("Saved session invalid, deleting: {e}");
+                    if let Err(e) = db::delete_session(&state.db).await {
+                        tracing::warn!("Failed to delete stale session: {e}");
+                    }
+                }
+            }
+        }
+        Ok(None) => {
+            tracing::info!("No saved session found");
+        }
+        Err(e) => {
+            tracing::warn!("Failed to load session from database: {e}");
+        }
+    }
 
     let app = Router::new()
         .route("/api/connect", post(handlers::connect))

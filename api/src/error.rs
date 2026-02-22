@@ -6,6 +6,7 @@ pub enum ApiError {
     NotConnected,
     MatrixError(String),
     Timeout,
+    DbError(String),
 }
 
 impl std::fmt::Display for ApiError {
@@ -14,6 +15,7 @@ impl std::fmt::Display for ApiError {
             ApiError::NotConnected => write!(f, "Not connected to homeserver"),
             ApiError::MatrixError(msg) => write!(f, "Matrix error: {msg}"),
             ApiError::Timeout => write!(f, "Timed out waiting for response"),
+            ApiError::DbError(msg) => write!(f, "Database error: {msg}"),
         }
     }
 }
@@ -24,6 +26,7 @@ impl IntoResponse for ApiError {
             ApiError::NotConnected => (StatusCode::SERVICE_UNAVAILABLE, self.to_string()),
             ApiError::MatrixError(_) => (StatusCode::BAD_GATEWAY, self.to_string()),
             ApiError::Timeout => (StatusCode::GATEWAY_TIMEOUT, self.to_string()),
+            ApiError::DbError(_) => (StatusCode::INTERNAL_SERVER_ERROR, self.to_string()),
         };
 
         let body = serde_json::json!({ "error": message });

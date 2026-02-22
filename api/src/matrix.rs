@@ -1,6 +1,8 @@
 use serde_json::{Value, json};
+use sqlx::SqlitePool;
 use uuid::Uuid;
 
+use crate::db;
 use crate::error::ApiError;
 
 pub struct MatrixClient {
@@ -13,6 +15,14 @@ pub struct MatrixClient {
 }
 
 impl MatrixClient {
+    pub fn access_token(&self) -> &str {
+        &self.access_token
+    }
+
+    pub fn since(&self) -> Option<&str> {
+        self.since.as_deref()
+    }
+
     pub async fn login(
         homeserver: &str,
         username: &str,
@@ -70,6 +80,48 @@ impl MatrixClient {
 
         client.initial_sync().await?;
         Ok(client)
+    }
+
+    pub async fn restore(
+        homeserver: String,
+        access_token: String,
+        room_id: String,
+        user_id: String,
+        since: Option<String>,
+    ) -> Result<Self, ApiError> {
+        let client = MatrixClient {
+            http: reqwest::Client::new(),
+            homeserver,
+            access_token,
+            room_id,
+            user_id,
+            since,
+        };
+
+        client.validate_token().await?;
+        Ok(client)
+    }
+
+    async fn validate_token(&self) -> Result<(), ApiError> {
+        let url = format!(
+            "{}/_matrix/client/v3/sync?timeout=0&filter={{\"room\":{{\"timeline\":{{\"limit\":0}}}}}}",
+            self.homeserver
+        );
+
+        let resp = self
+            .http
+            .get(&url)
+            .bearer_auth(&self.access_token)
+            .send()
+            .await
+            .map_err(|e| ApiError::MatrixError(e.to_string()))?;
+
+        if !resp.status().is_success() {
+            let text = resp.text().await.unwrap_or_default();
+            return Err(ApiError::MatrixError(format!("Token validation failed: {text}")));
+        }
+
+        Ok(())
     }
 
     async fn initial_sync(&mut self) -> Result<(), ApiError> {
@@ -130,7 +182,7 @@ impl MatrixClient {
         Ok(())
     }
 
-    async fn wait_for_response(&mut self) -> Result<String, ApiError> {
+    async fn wait_for_response(&mut self, pool: &SqlitePool) -> Result<String, ApiError> {
         for _ in 0..3 {
             let mut url = format!(
                 "{}/_matrix/client/v3/sync?timeout=10000",
@@ -160,6 +212,12 @@ impl MatrixClient {
 
             self.since = data["next_batch"].as_str().map(|s| s.to_string());
 
+            if let Some(ref since) = self.since {
+                if let Err(e) = db::update_since(pool, since).await {
+                    tracing::warn!("Failed to persist since token: {e}");
+                }
+            }
+
             // Look for messages in the admin room not from our user
             if let Some(events) = data["rooms"]["join"][&self.room_id]["timeline"]["events"]
                 .as_array()
@@ -185,10 +243,10 @@ impl MatrixClient {
         Err(ApiError::Timeout)
     }
 
-    pub async fn execute_command(&mut self, command: &str) -> Result<String, ApiError> {
+    pub async fn execute_command(&mut self, command: &str, pool: &SqlitePool) -> Result<String, ApiError> {
         let message = format!("!admin {command}");
         self.send_message(&message).await?;
-        self.wait_for_response().await
+        self.wait_for_response(pool).await
     }
 }
 
