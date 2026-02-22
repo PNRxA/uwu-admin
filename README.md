@@ -6,7 +6,7 @@ Continuwuity only supports admin commands via messages in a special admin room. 
 
 ## Security Warning
 
-**Do NOT expose the uwu-admin web interface to the public internet.** The dashboard provides full admin control over your homeserver and has no authentication layer of its own — anyone who can reach the UI can connect a bot and manage your server.
+**Do NOT expose the uwu-admin web interface to the public internet.** The dashboard provides full admin control over your homeserver and has no authentication layer of its own - anyone who can reach the UI can connect a bot and manage your server.
 
 Run it on `localhost` only, or behind a VPN/firewall restricted to trusted networks.
 
@@ -55,10 +55,10 @@ npm run build        # Production build (output in dist/)
 
 ## Pages
 
-- **Overview** — Connection info, server uptime, and stats
-- **Users** — List users, create new users
-- **Rooms** — List rooms, view room details
-- **Federation** — Federation status
-- **Server** — Uptime and statistics
-- **Media** — Media management
-- **Console** — Raw admin command interface
+- **Overview** - Connection info, server uptime, and stats
+- **Users** - List users, create new users
+- **Rooms** - List rooms, view room details
+- **Federation** - Federation status
+- **Server** - Uptime and statistics
+- **Media** - Media management
+- **Console** - Raw admin command interface
