@@ -35,6 +35,7 @@ const { data: roomsResponse, isPending, isFetching, refetch } = useQuery({
 const rooms = computed<Room[]>(() => {
   if (!roomsResponse.value) return []
   return roomsResponse.value
+    .replace(/<[^>]+>/g, '')
     .split('\n')
     .map((line) => {
       const match = line.match(/^(!\S+)\s+Members:\s*(\d+)\s+Name:\s*(.+)$/)
