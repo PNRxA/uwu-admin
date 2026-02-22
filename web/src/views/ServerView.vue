@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import { useQuery } from '@tanstack/vue-query'
 import { api } from '@/lib/api'
+import { stripHtml } from '@/lib/response-parser'
 import { queryKeys } from '@/lib/query-keys'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -94,7 +95,7 @@ const services = computed<ServiceEntry[]>(() => {
     .split(/\r?\n/)
     .filter((l) => l.trim())
     .map((line) => {
-      const clean = line.replace(/<[^>]+>/g, '').trim()
+      const clean = stripHtml(line).trim()
       const m = clean.match(/^(.+?):\s*(.+?)(?:\s+\((.+?)\))?$/)
       if (!m?.[1] || !m[2]) return null
       return { name: m[1].trim(), value: m[2].trim(), size: m[3]?.trim() ?? '' }
@@ -110,7 +111,7 @@ const database = computed<DatabaseEntry[]>(() => {
     .split(/\r?\n/)
     .filter((l) => l.trim())
     .map((line) => {
-      const clean = line.replace(/<[^>]+>/g, '').trim()
+      const clean = stripHtml(line).trim()
       const m = clean.match(/^(.+?):\s*(.+)$/)
       if (!m?.[1] || !m[2]) return null
       return { name: m[1].trim(), size: m[2].trim() }

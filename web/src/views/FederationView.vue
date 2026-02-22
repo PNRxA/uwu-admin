@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import { useQuery } from '@tanstack/vue-query'
 import { api } from '@/lib/api'
+import { stripHtml } from '@/lib/response-parser'
 import { queryKeys } from '@/lib/query-keys'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -31,14 +32,14 @@ const { data: federationStatus, isPending, isFetching, refetch } = useQuery({
 
 const summary = computed(() => {
   if (!federationStatus.value) return null
-  const clean = federationStatus.value.replace(/<[^>]+>/g, '')
+  const clean = stripHtml(federationStatus.value)
   const m = clean.match(/Handling\s+(\d+)\s+incoming\s+pdus/)
   return m?.[1] ? `${m[1]} incoming` : null
 })
 
 const pdus = computed<PduEntry[]>(() => {
   if (!federationStatus.value) return []
-  const clean = federationStatus.value.replace(/<[^>]+>/g, '')
+  const clean = stripHtml(federationStatus.value)
   return clean
     .split(/\r?\n/)
     .map((line) => {

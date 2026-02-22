@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import { useQuery } from '@tanstack/vue-query'
 import { useConnectionStore } from '@/stores/connection'
 import { api } from '@/lib/api'
+import { stripHtml } from '@/lib/response-parser'
 import { queryKeys } from '@/lib/query-keys'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -72,7 +73,7 @@ const uptimeFormatted = computed(() => formatUptime(uptime.value ?? ''))
 
 const totalDbMemory = computed(() => {
   if (!stats.value) return ''
-  const clean = stats.value.replace(/<[^>]+>/g, '')
+  const clean = stripHtml(stats.value)
   const dbMatch = clean.match(/Database:\s*\n?([\s\S]*)$/)
   if (!dbMatch?.[1]) return ''
   let total = 0
@@ -86,7 +87,7 @@ const totalDbMemory = computed(() => {
 
 const serviceCount = computed(() => {
   if (!stats.value) return 0
-  const clean = stats.value.replace(/<[^>]+>/g, '')
+  const clean = stripHtml(stats.value)
   const servicesMatch = clean.match(/Services:\s*\n?([\s\S]*?)(?:\n\s*\n|Database:)/)
   if (!servicesMatch?.[1]) return 0
   return servicesMatch[1].split(/\r?\n/).filter((l) => l.trim()).length

@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import { useQuery, useQueryClient } from '@tanstack/vue-query'
 import { api } from '@/lib/api'
+import { stripHtml } from '@/lib/response-parser'
 import { queryKeys } from '@/lib/query-keys'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -34,8 +35,7 @@ const { data: roomsResponse, isPending, isFetching, refetch } = useQuery({
 
 const rooms = computed<Room[]>(() => {
   if (!roomsResponse.value) return []
-  return roomsResponse.value
-    .replace(/<[^>]+>/g, '')
+  return stripHtml(roomsResponse.value)
     .split('\n')
     .map((line) => {
       const match = line.match(/^(!\S+)\s+Members:\s*(\d+)\s+Name:\s*(.+)$/)

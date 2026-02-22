@@ -33,6 +33,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import ResponseDisplay from '@/components/ResponseDisplay.vue'
 
 const props = defineProps<{ roomId: string }>()
 const emit = defineEmits<{ 'action-complete': [] }>()
@@ -278,7 +279,7 @@ const inputActions = {
         <DialogTitle>{{ resultDialogTitle }}</DialogTitle>
         <DialogDescription>Results for {{ roomId }}</DialogDescription>
       </DialogHeader>
-      <pre class="whitespace-pre-wrap text-sm max-h-[60vh] overflow-auto rounded-md bg-muted p-4">{{ resultResponse }}</pre>
+      <ResponseDisplay :response="resultResponse" />
     </DialogContent>
   </Dialog>
 </template>
