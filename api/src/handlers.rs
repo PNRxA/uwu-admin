@@ -91,7 +91,7 @@ pub async fn list_users(State(state): State<SharedState>) -> Result<Json<Value>,
     let mut lock = state.client.lock().await;
     let client = lock.as_mut().ok_or(ApiError::NotConnected)?;
 
-    let response = client.execute_command("users list", &state.db).await?;
+    let response = client.execute_command("users list-users", &state.db).await?;
     Ok(Json(json!({ "response": response })))
 }
 
@@ -103,8 +103,8 @@ pub async fn create_user(
     let client = lock.as_mut().ok_or(ApiError::NotConnected)?;
 
     let cmd = match req.password {
-        Some(ref pw) => format!("users create {} {}", req.username, pw),
-        None => format!("users create {}", req.username),
+        Some(ref pw) => format!("users create-user {} {}", req.username, pw),
+        None => format!("users create-user {}", req.username),
     };
 
     let response = client.execute_command(&cmd, &state.db).await?;
@@ -115,7 +115,7 @@ pub async fn list_rooms(State(state): State<SharedState>) -> Result<Json<Value>,
     let mut lock = state.client.lock().await;
     let client = lock.as_mut().ok_or(ApiError::NotConnected)?;
 
-    let response = client.execute_command("rooms list", &state.db).await?;
+    let response = client.execute_command("rooms list-rooms", &state.db).await?;
     Ok(Json(json!({ "response": response })))
 }
 
@@ -134,7 +134,7 @@ pub async fn server_status(State(state): State<SharedState>) -> Result<Json<Valu
     let mut lock = state.client.lock().await;
     let client = lock.as_mut().ok_or(ApiError::NotConnected)?;
 
-    let response = client.execute_command("server stats", &state.db).await?;
+    let response = client.execute_command("server memory-usage", &state.db).await?;
     Ok(Json(json!({ "response": response })))
 }
 

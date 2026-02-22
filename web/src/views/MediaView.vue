@@ -9,7 +9,7 @@ const loading = ref(true)
 
 onMounted(async () => {
   try {
-    const res = await api.command('media status')
+    const res = await api.command('media --help')
     mediaStatus.value = res.response
   } catch {
     mediaStatus.value = 'Failed to fetch media status'

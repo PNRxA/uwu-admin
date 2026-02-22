@@ -9,7 +9,7 @@ const loading = ref(true)
 
 onMounted(async () => {
   try {
-    const res = await api.command('federation status')
+    const res = await api.command('federation incoming-federation')
     federationStatus.value = res.response
   } catch {
     federationStatus.value = 'Failed to fetch federation status'
