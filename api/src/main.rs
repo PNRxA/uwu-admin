@@ -1,3 +1,4 @@
+mod commands;
 mod db;
 mod entity;
 mod error;

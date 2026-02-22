@@ -3,6 +3,7 @@ use axum::extract::{Path, State};
 use serde::Deserialize;
 use serde_json::{Value, json};
 
+use crate::commands::validate_command;
 use crate::db;
 use crate::error::ApiError;
 use crate::matrix::MatrixClient;
@@ -80,6 +81,8 @@ pub async fn command(
     State(state): State<SharedState>,
     Json(req): Json<CommandRequest>,
 ) -> Result<Json<Value>, ApiError> {
+    validate_command(&req.command).map_err(ApiError::InvalidCommand)?;
+
     let mut lock = state.client.lock().await;
     let client = lock.as_mut().ok_or(ApiError::NotConnected)?;
 

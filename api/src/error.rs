@@ -7,6 +7,7 @@ pub enum ApiError {
     MatrixError(String),
     Timeout,
     DbError(String),
+    InvalidCommand(String),
 }
 
 impl std::fmt::Display for ApiError {
@@ -16,6 +17,7 @@ impl std::fmt::Display for ApiError {
             ApiError::MatrixError(msg) => write!(f, "Matrix error: {msg}"),
             ApiError::Timeout => write!(f, "Timed out waiting for response"),
             ApiError::DbError(msg) => write!(f, "Database error: {msg}"),
+            ApiError::InvalidCommand(msg) => write!(f, "Invalid command: {msg}"),
         }
     }
 }
@@ -27,9 +29,13 @@ impl IntoResponse for ApiError {
             ApiError::MatrixError(_) => (StatusCode::BAD_GATEWAY, self.to_string()),
             ApiError::Timeout => (StatusCode::GATEWAY_TIMEOUT, self.to_string()),
             ApiError::DbError(_) => (StatusCode::INTERNAL_SERVER_ERROR, self.to_string()),
+            ApiError::InvalidCommand(_) => (StatusCode::BAD_REQUEST, self.to_string()),
         };
 
-        tracing::error!("{message}");
+        match &self {
+            ApiError::InvalidCommand(_) => tracing::warn!("{message}"),
+            _ => tracing::error!("{message}"),
+        }
         let body = serde_json::json!({ "error": message });
         (status, axum::Json(body)).into_response()
     }
