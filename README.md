@@ -20,6 +20,28 @@ Browser (Vue)  →  uwu-admin-api (Rust/axum :3001)  →  Matrix Homeserver
                                                     reads server responses)
 ```
 
+## Session Persistence
+
+The API server stores the active bot session in a local SQLite database (`uwu-admin.db` by default) so it survives restarts. The database contains a single `sessions` table with one row:
+
+| Column | Description |
+|--------|-------------|
+| `homeserver` | Matrix homeserver URL |
+| `access_token` | Bot account access token |
+| `room_id` | Resolved admin room ID |
+| `user_id` | Bot user ID |
+| `since` | Last sync batch token (for resuming where the bot left off) |
+
+On startup the API checks for a saved session, validates the token against the homeserver, and restores the connection automatically. If the token is invalid the stale session is deleted.
+
+Set `DATABASE_URL` to override the default path:
+
+```sh
+DATABASE_URL="sqlite:/path/to/sessions.db?mode=rwc" cargo run --release
+```
+
+The room field can be either a room ID (`!abc:example.com`) or a room alias (`#admins:example.com`) — aliases are resolved automatically on connect.
+
 ## Setup
 
 ### Prerequisites
@@ -50,7 +72,7 @@ npm run build        # Production build (output in dist/)
 1. Start the API server (`cargo run` in `api/`)
 2. Start the web dev server (`npm run dev` in `web/`) or serve the built `web/dist/` directory
 3. Open the dashboard in your browser
-4. Enter your homeserver URL, bot credentials, and admin room ID
+4. Enter your homeserver URL, bot credentials, and admin room ID or alias
 5. Connect and manage your server through the dashboard
 
 ## Pages
