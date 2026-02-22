@@ -18,6 +18,7 @@ const emit = defineEmits<{
 const inputRef = ref<InstanceType<typeof Input> | null>(null)
 const selectedIndex = ref(0)
 const isFocused = ref(false)
+let blurTimeout: ReturnType<typeof setTimeout> | null = null
 // Track which input value was active when Escape was pressed;
 // dropdown auto-reopens as soon as the input changes.
 const dismissedAt = ref<string | null>(null)
@@ -108,14 +109,19 @@ function focus() {
 defineExpose({ focus })
 
 function onFocus() {
+  if (blurTimeout) {
+    clearTimeout(blurTimeout)
+    blurTimeout = null
+  }
   isFocused.value = true
   dismissedAt.value = null
 }
 
 function onBlur() {
   // Delay to allow mousedown on suggestions to fire first
-  setTimeout(() => {
+  blurTimeout = setTimeout(() => {
     isFocused.value = false
+    blurTimeout = null
   }, 150)
 }
 </script>
