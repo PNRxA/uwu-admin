@@ -78,6 +78,7 @@ export function getSuggestions(input: string): AutocompleteResult {
       description: n.description,
       hasChildren: !!n.children,
     }))
+    .sort((a, b) => a.name.localeCompare(b.name))
 
   return { suggestions, argHints: [] }
 }
@@ -115,4 +116,53 @@ function findNodeDepth(name: string, completed: string[]): number {
 export function applySuggestion(input: string, suggestion: Suggestion): string {
   const { completed } = parseTokens(input)
   return [...completed, suggestion.name].join(' ') + ' '
+}
+
+export interface ValidationResult {
+  valid: boolean
+  error?: string
+}
+
+/**
+ * Validate a command string against the command tree.
+ * Returns { valid: true } if the command resolves to a leaf node
+ * with all required arguments provided.
+ */
+export function validateCommand(input: string): ValidationResult {
+  const tokens = input.trim().split(/\s+/).filter(Boolean)
+  if (tokens.length === 0) return { valid: false, error: 'Empty command' }
+
+  let currentLevel: CommandNode[] = COMMAND_TREE
+  let leafNode: CommandNode | null = null
+  let tokensConsumed = 0
+
+  for (const token of tokens) {
+    if (leafNode) break
+
+    const match = currentLevel.find((n) => n.name === token.toLowerCase())
+    if (!match) {
+      return { valid: false, error: `Unknown command: ${token}` }
+    }
+    tokensConsumed++
+
+    if (match.children) {
+      currentLevel = match.children
+    } else {
+      leafNode = match
+    }
+  }
+
+  if (!leafNode) {
+    return { valid: false, error: 'Incomplete command' }
+  }
+
+  const argTokens = tokens.length - tokensConsumed
+  const requiredArgs = leafNode.args?.filter((a) => a.required).length ?? 0
+
+  if (argTokens < requiredArgs) {
+    const missing = leafNode.args!.filter((a) => a.required).slice(argTokens)
+    return { valid: false, error: `Missing required: ${missing.map((a) => a.name).join(', ')}` }
+  }
+
+  return { valid: true }
 }

@@ -25,24 +25,31 @@ export const useCommandStore = defineStore('command', () => {
       success: false,
     }
     history.value.push(entry)
+    const idx = history.value.length - 1
 
     try {
       const res = await api.command(command)
-      entry.response = res.response
-      entry.success = true
+      history.value[idx].response = res.response
+      history.value[idx].success = true
     } catch (e) {
-      entry.response = e instanceof Error ? e.message : 'Command failed'
-      entry.success = false
+      history.value[idx].response = e instanceof Error ? e.message : 'Command failed'
+      history.value[idx].success = false
     } finally {
       loading.value = false
     }
 
-    return entry
+    return history.value[idx]
   }
 
   function clear() {
     history.value = []
   }
 
-  return { history, loading, execute, clear }
+  const panelOpen = ref(false)
+
+  function togglePanel() {
+    panelOpen.value = !panelOpen.value
+  }
+
+  return { history, loading, execute, clear, panelOpen, togglePanel }
 })

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, watch, nextTick } from 'vue'
 import { Input } from '@/components/ui/input'
-import { ScrollArea } from '@/components/ui/scroll-area'
+
 import { getSuggestions, applySuggestion, type Suggestion } from '@/composables/useCommandAutocomplete'
 
 const props = defineProps<{
@@ -100,6 +100,13 @@ function onInput(value: string | number) {
   emit('update:modelValue', String(value))
 }
 
+function focus() {
+  const el = inputRef.value?.$el as HTMLInputElement | undefined
+  el?.focus()
+}
+
+defineExpose({ focus })
+
 function onFocus() {
   isFocused.value = true
   dismissedAt.value = null
@@ -121,24 +128,20 @@ function onBlur() {
       class="absolute bottom-full left-0 right-0 mb-1 z-50 rounded-md border bg-popover text-popover-foreground shadow-md"
     >
       <!-- Suggestions list -->
-      <div v-if="suggestions.length > 0" class="max-h-64 overflow-hidden">
-        <ScrollArea class="max-h-64">
-          <div class="p-1">
-          <button
-            v-for="(suggestion, i) in suggestions"
-            :key="suggestion.name"
-            :data-autocomplete-selected="i === selectedIndex"
-            class="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none cursor-pointer"
-            :class="i === selectedIndex ? 'bg-accent text-accent-foreground' : 'hover:bg-accent/50'"
-            @mousedown.prevent="acceptSuggestion(suggestion)"
-            @mouseenter="selectedIndex = i"
-          >
-            <code class="font-medium">{{ suggestion.name }}</code>
-            <span class="text-muted-foreground text-xs truncate">{{ suggestion.description }}</span>
-            <span v-if="suggestion.hasChildren" class="ml-auto text-muted-foreground text-xs">&rsaquo;</span>
-          </button>
-          </div>
-        </ScrollArea>
+      <div v-if="suggestions.length > 0" class="max-h-96 overflow-y-auto overscroll-contain p-1">
+        <button
+          v-for="(suggestion, i) in suggestions"
+          :key="suggestion.name"
+          :data-autocomplete-selected="i === selectedIndex"
+          class="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none cursor-pointer"
+          :class="i === selectedIndex ? 'bg-accent text-accent-foreground' : 'hover:bg-accent/50'"
+          @mousedown.prevent="acceptSuggestion(suggestion)"
+          @mouseenter="selectedIndex = i"
+        >
+          <code class="font-medium">{{ suggestion.name }}</code>
+          <span class="text-muted-foreground text-xs truncate">{{ suggestion.description }}</span>
+          <span v-if="suggestion.hasChildren" class="ml-auto text-muted-foreground text-xs">&rsaquo;</span>
+        </button>
       </div>
 
       <!-- Arg hints -->

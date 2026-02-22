@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useRouter } from 'vue-router'
 import { useConnectionStore } from '@/stores/connection'
+
 import {
   Sidebar,
   SidebarContent,
@@ -62,6 +63,7 @@ async function handleDisconnect() {
                 </RouterLink>
               </SidebarMenuButton>
             </SidebarMenuItem>
+
           </SidebarMenu>
         </SidebarGroupContent>
       </SidebarGroup>

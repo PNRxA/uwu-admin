@@ -1,27 +1,40 @@
 <script setup lang="ts">
-import { ref, nextTick } from 'vue'
+import { ref, computed, nextTick, watch } from 'vue'
 import { useCommandStore } from '@/stores/command'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { validateCommand } from '@/composables/useCommandAutocomplete'
 import CommandAutocomplete from '@/components/CommandAutocomplete.vue'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Separator } from '@/components/ui/separator'
-import { Send, Trash2 } from 'lucide-vue-next'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Send, Trash2, CircleAlert } from 'lucide-vue-next'
 
 const commandStore = useCommandStore()
 const commandInput = ref('')
-const scrollRef = ref<InstanceType<typeof ScrollArea> | null>(null)
+const submittedError = ref<string | null>(null)
+const autocompleteRef = ref<InstanceType<typeof CommandAutocomplete> | null>(null)
+
+watch(commandInput, () => {
+  submittedError.value = null
+})
 
 async function sendCommand() {
   const cmd = commandInput.value.trim()
   if (!cmd) return
+  const result = validateCommand(cmd)
+  if (!result.valid) {
+    submittedError.value = result.error ?? 'Invalid command'
+    return
+  }
+  submittedError.value = null
   commandInput.value = ''
   await commandStore.execute(cmd)
   await nextTick()
-  // scroll to bottom
   const el = document.getElementById('console-bottom')
   el?.scrollIntoView({ behavior: 'smooth' })
+  autocompleteRef.value?.focus()
 }
 
 function formatTime(date: Date) {
@@ -46,7 +59,7 @@ function formatTime(date: Date) {
         </CardTitle>
       </CardHeader>
       <CardContent class="flex-1 min-h-0 flex flex-col">
-        <ScrollArea class="flex-1 pr-4">
+        <ScrollArea class="flex-1 min-h-0 pr-4">
           <div class="flex flex-col gap-4">
             <div
               v-for="entry in commandStore.history"
@@ -70,20 +83,31 @@ function formatTime(date: Date) {
           </div>
         </ScrollArea>
 
-        <form class="flex gap-2 pt-4 border-t mt-4" @submit.prevent="sendCommand">
-          <div class="flex items-center gap-2 flex-1">
-            <span class="text-sm text-muted-foreground whitespace-nowrap">!admin</span>
-            <CommandAutocomplete
-              v-model="commandInput"
-              placeholder="server uptime"
-              :disabled="commandStore.loading"
-              @submit="sendCommand"
-            />
-          </div>
-          <Button type="submit" :disabled="commandStore.loading || !commandInput.trim()">
-            <Send class="size-4" />
-          </Button>
-        </form>
+        <div class="mt-4">
+          <Alert v-if="submittedError" variant="destructive" class="mb-3">
+            <CircleAlert class="size-4" />
+            <AlertDescription>{{ submittedError }}</AlertDescription>
+          </Alert>
+          <form
+            class="flex gap-2 pt-4 border-t transition-colors rounded-md"
+            :class="submittedError ? 'bg-destructive/5' : ''"
+            @submit.prevent="sendCommand"
+          >
+            <div class="flex items-center gap-2 flex-1">
+              <span class="text-sm text-muted-foreground whitespace-nowrap">!admin</span>
+              <CommandAutocomplete
+                ref="autocompleteRef"
+                v-model="commandInput"
+                placeholder="server uptime"
+                :disabled="commandStore.loading"
+                @submit="sendCommand"
+              />
+            </div>
+            <Button type="submit" :disabled="commandStore.loading || !commandInput.trim()">
+              <Send class="size-4" />
+            </Button>
+          </form>
+        </div>
       </CardContent>
     </Card>
   </div>
