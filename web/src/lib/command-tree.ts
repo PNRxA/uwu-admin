@@ -1,0 +1,1074 @@
+export interface CommandArg {
+  name: string
+  description: string
+  required: boolean
+  type: string
+}
+
+export interface CommandNode {
+  name: string
+  description: string
+  children?: CommandNode[]
+  args?: CommandArg[]
+}
+
+export const COMMAND_TREE: CommandNode[] = [
+  {
+    name: 'appservices',
+    description: 'Appservice management',
+    children: [
+      {
+        name: 'register',
+        description: 'Register an appservice using its registration YAML',
+      },
+      {
+        name: 'unregister',
+        description: 'Unregister an appservice using its ID',
+        args: [{ name: 'appservice_id', description: 'Appservice identifier', required: true, type: 'string' }],
+      },
+      {
+        name: 'show-appservice-config',
+        description: 'Show an appservice config using its ID',
+        args: [{ name: 'appservice_id', description: 'Appservice identifier', required: true, type: 'string' }],
+      },
+      {
+        name: 'list-registered',
+        description: 'List all currently registered appservices',
+      },
+    ],
+  },
+  {
+    name: 'users',
+    description: 'User account management',
+    children: [
+      {
+        name: 'create-user',
+        description: 'Create a new user',
+        args: [
+          { name: 'username', description: 'Username', required: true, type: 'string' },
+          { name: 'password', description: 'Password', required: false, type: 'string' },
+        ],
+      },
+      {
+        name: 'reset-password',
+        description: 'Reset user password',
+        args: [
+          { name: 'username', description: 'Username', required: true, type: 'string' },
+          { name: 'password', description: 'New password', required: false, type: 'string' },
+        ],
+      },
+      {
+        name: 'deactivate',
+        description: 'Deactivate a user account',
+        args: [{ name: 'user_id', description: 'Full user ID', required: true, type: 'user_id' }],
+      },
+      {
+        name: 'deactivate-all',
+        description: 'Deactivate multiple users (code block)',
+      },
+      {
+        name: 'logout',
+        description: 'Force logout a user',
+        args: [{ name: 'user_id', description: 'Full user ID', required: true, type: 'user_id' }],
+      },
+      {
+        name: 'suspend',
+        description: 'Suspend a user (read-only access)',
+        args: [{ name: 'user_id', description: 'Full user ID', required: true, type: 'user_id' }],
+      },
+      {
+        name: 'unsuspend',
+        description: 'Unsuspend a user',
+        args: [{ name: 'user_id', description: 'Full user ID', required: true, type: 'user_id' }],
+      },
+      {
+        name: 'lock',
+        description: 'Lock a user account (no access)',
+        args: [{ name: 'user_id', description: 'Full user ID', required: true, type: 'user_id' }],
+      },
+      {
+        name: 'unlock',
+        description: 'Unlock a user account',
+        args: [{ name: 'user_id', description: 'Full user ID', required: true, type: 'user_id' }],
+      },
+      {
+        name: 'enable-login',
+        description: 'Enable login for a user',
+        args: [{ name: 'user_id', description: 'Full user ID', required: true, type: 'user_id' }],
+      },
+      {
+        name: 'disable-login',
+        description: 'Disable login for a user (keep sessions)',
+        args: [{ name: 'user_id', description: 'Full user ID', required: true, type: 'user_id' }],
+      },
+      {
+        name: 'list-users',
+        description: 'List all local users',
+      },
+      {
+        name: 'list-joined-rooms',
+        description: 'List rooms a user has joined',
+        args: [{ name: 'user_id', description: 'Full user ID', required: true, type: 'user_id' }],
+      },
+      {
+        name: 'force-join-room',
+        description: 'Force join a user to a room',
+        args: [
+          { name: 'user_id', description: 'Full user ID', required: true, type: 'user_id' },
+          { name: 'room_id', description: 'Room ID or alias', required: true, type: 'room_id' },
+        ],
+      },
+      {
+        name: 'force-leave-room',
+        description: 'Force a user to leave a room',
+        args: [
+          { name: 'user_id', description: 'Full user ID', required: true, type: 'user_id' },
+          { name: 'room_id', description: 'Room ID or alias', required: true, type: 'room_id' },
+        ],
+      },
+      {
+        name: 'force-leave-remote-room',
+        description: 'Force leave a remote room',
+        args: [
+          { name: 'user_id', description: 'Full user ID', required: true, type: 'user_id' },
+          { name: 'room_id', description: 'Room ID or alias', required: true, type: 'room_id' },
+          { name: 'via', description: 'Server to route via', required: false, type: 'server' },
+        ],
+      },
+      {
+        name: 'force-demote',
+        description: 'Drop power levels for a user in a room',
+        args: [
+          { name: 'user_id', description: 'Full user ID', required: true, type: 'user_id' },
+          { name: 'room_id', description: 'Room ID or alias', required: true, type: 'room_id' },
+        ],
+      },
+      {
+        name: 'make-user-admin',
+        description: 'Grant admin privileges to a user',
+        args: [{ name: 'user_id', description: 'Full user ID', required: true, type: 'user_id' }],
+      },
+      {
+        name: 'put-room-tag',
+        description: 'Set a room tag for a user',
+        args: [
+          { name: 'user_id', description: 'Full user ID', required: true, type: 'user_id' },
+          { name: 'room_id', description: 'Room ID', required: true, type: 'room_id' },
+          { name: 'tag', description: 'Tag name', required: true, type: 'string' },
+        ],
+      },
+      {
+        name: 'delete-room-tag',
+        description: 'Delete a room tag for a user',
+        args: [
+          { name: 'user_id', description: 'Full user ID', required: true, type: 'user_id' },
+          { name: 'room_id', description: 'Room ID', required: true, type: 'room_id' },
+          { name: 'tag', description: 'Tag name', required: true, type: 'string' },
+        ],
+      },
+      {
+        name: 'get-room-tags',
+        description: 'Get room tags for a user',
+        args: [
+          { name: 'user_id', description: 'Full user ID', required: true, type: 'user_id' },
+          { name: 'room_id', description: 'Room ID', required: true, type: 'room_id' },
+        ],
+      },
+      {
+        name: 'redact-event',
+        description: 'Redact an event from a local user',
+        args: [{ name: 'event_id', description: 'Event ID', required: true, type: 'event_id' }],
+      },
+      {
+        name: 'force-join-list-of-local-users',
+        description: 'Bulk join local users to a room (code block)',
+        args: [{ name: 'room_id', description: 'Room ID or alias', required: true, type: 'room_id' }],
+      },
+      {
+        name: 'force-join-all-local-users',
+        description: 'Join all local users to a room',
+        args: [{ name: 'room_id', description: 'Room ID or alias', required: true, type: 'room_id' }],
+      },
+    ],
+  },
+  {
+    name: 'token',
+    description: 'Registration token management',
+    children: [
+      {
+        name: 'issue',
+        description: 'Issue a new registration token',
+      },
+      {
+        name: 'revoke',
+        description: 'Revoke a registration token',
+        args: [{ name: 'token', description: 'Token string', required: true, type: 'string' }],
+      },
+      {
+        name: 'list-tokens',
+        description: 'List all registration tokens',
+      },
+    ],
+  },
+  {
+    name: 'rooms',
+    description: 'Room management',
+    children: [
+      {
+        name: 'list-rooms',
+        description: 'List all rooms',
+        args: [{ name: 'page', description: 'Page number', required: false, type: 'number' }],
+      },
+      {
+        name: 'exists',
+        description: 'Check if a room exists',
+        args: [{ name: 'room_id', description: 'Room ID', required: true, type: 'room_id' }],
+      },
+      {
+        name: 'info',
+        description: 'Room information commands',
+        children: [
+          {
+            name: 'list-joined-members',
+            description: 'List room members',
+            args: [{ name: 'room_id', description: 'Room ID', required: true, type: 'room_id' }],
+          },
+          {
+            name: 'view-room-topic',
+            description: 'View the room topic',
+            args: [{ name: 'room_id', description: 'Room ID', required: true, type: 'room_id' }],
+          },
+        ],
+      },
+      {
+        name: 'moderation',
+        description: 'Room moderation commands',
+        children: [
+          {
+            name: 'ban-room',
+            description: 'Ban a room',
+            args: [{ name: 'room', description: 'Room ID or alias', required: true, type: 'room_id' }],
+          },
+          {
+            name: 'ban-list-of-rooms',
+            description: 'Ban multiple rooms (code block)',
+          },
+          {
+            name: 'unban-room',
+            description: 'Unban a room',
+            args: [{ name: 'room', description: 'Room ID or alias', required: true, type: 'room_id' }],
+          },
+          {
+            name: 'list-banned-rooms',
+            description: 'List all banned rooms',
+          },
+        ],
+      },
+      {
+        name: 'alias',
+        description: 'Room alias commands',
+        children: [
+          {
+            name: 'set',
+            description: 'Set a room alias',
+            args: [
+              { name: 'room_id', description: 'Room ID', required: true, type: 'room_id' },
+              { name: 'alias_localpart', description: 'Alias localpart', required: true, type: 'string' },
+            ],
+          },
+          {
+            name: 'remove',
+            description: 'Remove a room alias',
+            args: [{ name: 'alias_localpart', description: 'Alias localpart', required: true, type: 'string' }],
+          },
+          {
+            name: 'which',
+            description: 'Show which room uses an alias',
+            args: [{ name: 'alias_localpart', description: 'Alias localpart', required: true, type: 'string' }],
+          },
+          {
+            name: 'list',
+            description: 'List room aliases',
+            args: [{ name: 'room_id', description: 'Room ID', required: false, type: 'room_id' }],
+          },
+        ],
+      },
+      {
+        name: 'directory',
+        description: 'Room directory commands',
+        children: [
+          {
+            name: 'publish',
+            description: 'Publish a room to the directory',
+            args: [{ name: 'room_id', description: 'Room ID', required: true, type: 'room_id' }],
+          },
+          {
+            name: 'unpublish',
+            description: 'Unpublish a room from the directory',
+            args: [{ name: 'room_id', description: 'Room ID', required: true, type: 'room_id' }],
+          },
+          {
+            name: 'list',
+            description: 'List published rooms',
+            args: [{ name: 'page', description: 'Page number', required: false, type: 'number' }],
+          },
+        ],
+      },
+    ],
+  },
+  {
+    name: 'federation',
+    description: 'Federation control',
+    children: [
+      {
+        name: 'incoming-federation',
+        description: 'List incoming PDU handling',
+      },
+      {
+        name: 'disable-room',
+        description: 'Disable federation for a room',
+        args: [{ name: 'room_id', description: 'Room ID', required: true, type: 'room_id' }],
+      },
+      {
+        name: 'enable-room',
+        description: 'Enable federation for a room',
+        args: [{ name: 'room_id', description: 'Room ID', required: true, type: 'room_id' }],
+      },
+      {
+        name: 'fetch-support-well-known',
+        description: 'Fetch support info from a server',
+        args: [{ name: 'server_name', description: 'Server name', required: true, type: 'server' }],
+      },
+      {
+        name: 'remote-user-in-rooms',
+        description: 'List rooms shared with a remote user',
+        args: [{ name: 'user_id', description: 'Full user ID', required: true, type: 'user_id' }],
+      },
+    ],
+  },
+  {
+    name: 'server',
+    description: 'Server administration',
+    children: [
+      { name: 'uptime', description: 'Show server uptime' },
+      { name: 'show-config', description: 'Show server configuration' },
+      {
+        name: 'reload-config',
+        description: 'Reload server configuration',
+        args: [{ name: 'path', description: 'Config file path', required: false, type: 'path' }],
+      },
+      { name: 'memory-usage', description: 'Show memory usage statistics' },
+      { name: 'clear-caches', description: 'Clear all server caches' },
+      { name: 'backup-database', description: 'Backup the database' },
+      { name: 'list-backups', description: 'List database backups' },
+      {
+        name: 'admin-notice',
+        description: 'Send a notice to the admin room',
+        args: [{ name: 'message', description: 'Message text', required: true, type: 'string' }],
+      },
+      { name: 'reload-mods', description: 'Hot-reload server modules' },
+      { name: 'restart', description: 'Restart the server' },
+      { name: 'shutdown', description: 'Shutdown the server' },
+    ],
+  },
+  {
+    name: 'media',
+    description: 'Media file management',
+    children: [
+      {
+        name: 'delete',
+        description: 'Delete media by MXC URI or event ID',
+        args: [{ name: 'mxc', description: 'MXC URI or --event-id', required: false, type: 'string' }],
+      },
+      {
+        name: 'delete-list',
+        description: 'Delete multiple MXC URIs (code block)',
+      },
+      {
+        name: 'delete-past-remote-media',
+        description: 'Delete old remote media',
+        args: [{ name: 'duration', description: 'Duration threshold', required: true, type: 'string' }],
+      },
+      {
+        name: 'delete-all-from-user',
+        description: "Delete all of a user's media",
+        args: [{ name: 'username', description: 'Username', required: true, type: 'string' }],
+      },
+      {
+        name: 'delete-all-from-server',
+        description: "Delete all media from a server",
+        args: [{ name: 'server_name', description: 'Server name', required: true, type: 'server' }],
+      },
+      {
+        name: 'get-file-info',
+        description: 'Get media file metadata',
+        args: [{ name: 'mxc', description: 'MXC URI', required: true, type: 'string' }],
+      },
+      {
+        name: 'get-remote-file',
+        description: 'Fetch a remote media file',
+        args: [{ name: 'mxc', description: 'MXC URI', required: true, type: 'string' }],
+      },
+      {
+        name: 'get-remote-thumbnail',
+        description: 'Fetch a remote thumbnail',
+        args: [{ name: 'mxc', description: 'MXC URI', required: true, type: 'string' }],
+      },
+    ],
+  },
+  {
+    name: 'check',
+    description: 'Database integrity checks',
+    children: [
+      {
+        name: 'check-all-users',
+        description: 'Check all users in the database',
+      },
+    ],
+  },
+  {
+    name: 'debug',
+    description: 'Debugging and troubleshooting',
+    children: [
+      {
+        name: 'echo',
+        description: 'Echo a message',
+        args: [{ name: 'message', description: 'Message text', required: true, type: 'string' }],
+      },
+      {
+        name: 'get-auth-chain',
+        description: 'Get auth chain for an event',
+        args: [{ name: 'event_id', description: 'Event ID', required: true, type: 'event_id' }],
+      },
+      {
+        name: 'parse-pdu',
+        description: 'Parse a PDU from JSON (code block)',
+      },
+      {
+        name: 'get-pdu',
+        description: 'Get a PDU from the database',
+        args: [{ name: 'event_id', description: 'Event ID', required: true, type: 'event_id' }],
+      },
+      {
+        name: 'get-short-pdu',
+        description: 'Get a PDU by short IDs',
+        args: [
+          { name: 'shortroomid', description: 'Short room ID', required: true, type: 'number' },
+          { name: 'shorteventid', description: 'Short event ID', required: true, type: 'number' },
+        ],
+      },
+      {
+        name: 'get-remote-pdu',
+        description: 'Fetch a PDU from a remote server',
+        args: [
+          { name: 'event_id', description: 'Event ID', required: true, type: 'event_id' },
+          { name: 'server', description: 'Server name', required: true, type: 'server' },
+        ],
+      },
+      {
+        name: 'get-remote-pdu-list',
+        description: 'Fetch multiple PDUs from a server (code block)',
+        args: [{ name: 'server', description: 'Server name', required: true, type: 'server' }],
+      },
+      {
+        name: 'get-room-state',
+        description: 'Get full room state',
+        args: [{ name: 'room_id', description: 'Room ID or alias', required: true, type: 'room_id' }],
+      },
+      {
+        name: 'get-signing-keys',
+        description: 'Get signing keys for a server',
+        args: [{ name: 'server_name', description: 'Server name', required: false, type: 'server' }],
+      },
+      {
+        name: 'get-verify-keys',
+        description: 'Get verify keys for a server',
+        args: [{ name: 'server_name', description: 'Server name', required: false, type: 'server' }],
+      },
+      {
+        name: 'ping',
+        description: 'Ping a federation endpoint',
+        args: [{ name: 'server', description: 'Server name', required: true, type: 'server' }],
+      },
+      {
+        name: 'force-device-list-updates',
+        description: 'Mark all devices as needing update',
+      },
+      {
+        name: 'change-log-level',
+        description: 'Change server log level',
+        args: [{ name: 'filter', description: 'Log filter string', required: false, type: 'string' }],
+      },
+      {
+        name: 'verify-json',
+        description: 'Verify JSON signatures (code block)',
+      },
+      {
+        name: 'verify-pdu',
+        description: 'Re-verify a PDU',
+        args: [{ name: 'event_id', description: 'Event ID', required: true, type: 'event_id' }],
+      },
+      {
+        name: 'first-pdu-in-room',
+        description: 'Get the first PDU in a room',
+        args: [{ name: 'room_id', description: 'Room ID', required: true, type: 'room_id' }],
+      },
+      {
+        name: 'latest-pdu-in-room',
+        description: 'Get the latest PDU in a room',
+        args: [{ name: 'room_id', description: 'Room ID', required: true, type: 'room_id' }],
+      },
+      {
+        name: 'force-set-room-state-from-server',
+        description: 'Force room state from a remote server',
+        args: [
+          { name: 'room_id', description: 'Room ID', required: true, type: 'room_id' },
+          { name: 'server_name', description: 'Server name', required: true, type: 'server' },
+          { name: 'event_id', description: 'Event ID', required: false, type: 'event_id' },
+        ],
+      },
+      {
+        name: 'resolve-true-destination',
+        description: 'Resolve true destination for a server',
+        args: [{ name: 'server_name', description: 'Server name', required: true, type: 'server' }],
+      },
+      {
+        name: 'memory-stats',
+        description: 'Show extended memory statistics',
+        args: [{ name: 'opts', description: 'Options', required: false, type: 'string' }],
+      },
+      {
+        name: 'runtime-metrics',
+        description: 'Show tokio runtime metrics',
+      },
+      {
+        name: 'runtime-interval',
+        description: 'Show tokio runtime interval',
+      },
+      {
+        name: 'time',
+        description: 'Show current server time',
+      },
+      {
+        name: 'database-stats',
+        description: 'Show database statistics',
+        args: [
+          { name: 'property', description: 'Property name', required: false, type: 'string' },
+        ],
+      },
+      {
+        name: 'trim-memory',
+        description: 'Trim memory allocator',
+      },
+      {
+        name: 'database-files',
+        description: 'List database files',
+        args: [{ name: 'map', description: 'Map name', required: false, type: 'string' }],
+      },
+    ],
+  },
+  {
+    name: 'query',
+    description: 'Low-level database queries',
+    children: [
+      {
+        name: 'account-data',
+        description: 'Account data queries',
+        children: [
+          {
+            name: 'changes-since',
+            description: 'Account data changes since timestamp',
+            args: [
+              { name: 'user_id', description: 'Full user ID', required: true, type: 'user_id' },
+              { name: 'since', description: 'UNIX timestamp', required: true, type: 'number' },
+              { name: 'room_id', description: 'Room ID', required: false, type: 'room_id' },
+            ],
+          },
+          {
+            name: 'account-data-get',
+            description: 'Get account data by kind',
+            args: [
+              { name: 'user_id', description: 'Full user ID', required: true, type: 'user_id' },
+              { name: 'kind', description: 'Event type', required: true, type: 'string' },
+              { name: 'room_id', description: 'Room ID', required: false, type: 'room_id' },
+            ],
+          },
+        ],
+      },
+      {
+        name: 'appservice',
+        description: 'Appservice queries',
+        children: [
+          {
+            name: 'get-registration',
+            description: 'Get appservice registration info',
+            args: [{ name: 'appservice_id', description: 'Appservice ID', required: true, type: 'string' }],
+          },
+          {
+            name: 'all',
+            description: 'Get all appservice registrations',
+          },
+        ],
+      },
+      {
+        name: 'presence',
+        description: 'Presence queries',
+        children: [
+          {
+            name: 'get-presence',
+            description: 'Get latest presence for a user',
+            args: [{ name: 'user_id', description: 'Full user ID', required: true, type: 'user_id' }],
+          },
+          {
+            name: 'presence-since',
+            description: 'Presence updates since timestamp',
+            args: [{ name: 'since', description: 'UNIX timestamp', required: true, type: 'number' }],
+          },
+        ],
+      },
+      {
+        name: 'room-alias',
+        description: 'Room alias queries',
+        children: [
+          {
+            name: 'resolve-local-alias',
+            description: 'Resolve a local room alias',
+            args: [{ name: 'alias', description: 'Full room alias', required: true, type: 'string' }],
+          },
+          {
+            name: 'local-aliases-for-room',
+            description: 'List local aliases for a room',
+            args: [{ name: 'room_id', description: 'Room ID', required: true, type: 'room_id' }],
+          },
+          {
+            name: 'all-local-aliases',
+            description: 'List all local aliases',
+          },
+        ],
+      },
+      {
+        name: 'room-state-cache',
+        description: 'Room state cache queries',
+        children: [
+          {
+            name: 'server-in-room',
+            description: 'Check if a server is in a room',
+            args: [
+              { name: 'server', description: 'Server name', required: true, type: 'server' },
+              { name: 'room_id', description: 'Room ID', required: true, type: 'room_id' },
+            ],
+          },
+          {
+            name: 'room-servers',
+            description: 'List servers in a room',
+            args: [{ name: 'room_id', description: 'Room ID', required: true, type: 'room_id' }],
+          },
+          {
+            name: 'server-rooms',
+            description: 'List rooms a server is in',
+            args: [{ name: 'server', description: 'Server name', required: true, type: 'server' }],
+          },
+          {
+            name: 'room-members',
+            description: 'List room members',
+            args: [{ name: 'room_id', description: 'Room ID', required: true, type: 'room_id' }],
+          },
+          {
+            name: 'local-users-in-room',
+            description: 'List local users in a room',
+            args: [{ name: 'room_id', description: 'Room ID', required: true, type: 'room_id' }],
+          },
+          {
+            name: 'active-local-users-in-room',
+            description: 'List active local users in a room',
+            args: [{ name: 'room_id', description: 'Room ID', required: true, type: 'room_id' }],
+          },
+          {
+            name: 'room-joined-count',
+            description: 'Get joined member count',
+            args: [{ name: 'room_id', description: 'Room ID', required: true, type: 'room_id' }],
+          },
+          {
+            name: 'room-invited-count',
+            description: 'Get invited member count',
+            args: [{ name: 'room_id', description: 'Room ID', required: true, type: 'room_id' }],
+          },
+          {
+            name: 'room-user-once-joined',
+            description: 'List users who once joined a room',
+            args: [{ name: 'room_id', description: 'Room ID', required: true, type: 'room_id' }],
+          },
+          {
+            name: 'room-members-invited',
+            description: 'List invited members',
+            args: [{ name: 'room_id', description: 'Room ID', required: true, type: 'room_id' }],
+          },
+          {
+            name: 'get-invite-count',
+            description: 'Get invite count for user in room',
+            args: [
+              { name: 'room_id', description: 'Room ID', required: true, type: 'room_id' },
+              { name: 'user_id', description: 'Full user ID', required: true, type: 'user_id' },
+            ],
+          },
+          {
+            name: 'get-left-count',
+            description: 'Get left count for user in room',
+            args: [
+              { name: 'room_id', description: 'Room ID', required: true, type: 'room_id' },
+              { name: 'user_id', description: 'Full user ID', required: true, type: 'user_id' },
+            ],
+          },
+          {
+            name: 'rooms-joined',
+            description: 'List rooms a user has joined',
+            args: [{ name: 'user_id', description: 'Full user ID', required: true, type: 'user_id' }],
+          },
+          {
+            name: 'rooms-left',
+            description: 'List rooms a user has left',
+            args: [{ name: 'user_id', description: 'Full user ID', required: true, type: 'user_id' }],
+          },
+          {
+            name: 'rooms-invited',
+            description: 'List rooms a user is invited to',
+            args: [{ name: 'user_id', description: 'Full user ID', required: true, type: 'user_id' }],
+          },
+          {
+            name: 'invite-state',
+            description: 'Get invite state for user in room',
+            args: [
+              { name: 'user_id', description: 'Full user ID', required: true, type: 'user_id' },
+              { name: 'room_id', description: 'Room ID', required: true, type: 'room_id' },
+            ],
+          },
+        ],
+      },
+      {
+        name: 'room-timeline',
+        description: 'Room timeline queries',
+        children: [
+          {
+            name: 'pdus',
+            description: 'Get PDUs from a room timeline',
+            args: [
+              { name: 'room_id', description: 'Room ID or alias', required: true, type: 'room_id' },
+              { name: 'from', description: 'Pagination token', required: false, type: 'string' },
+            ],
+          },
+          {
+            name: 'last',
+            description: 'Get last event in room timeline',
+            args: [{ name: 'room_id', description: 'Room ID or alias', required: true, type: 'room_id' }],
+          },
+        ],
+      },
+      {
+        name: 'globals',
+        description: 'Global database queries',
+        children: [
+          { name: 'database-version', description: 'Get database version' },
+          { name: 'current-count', description: 'Get current count' },
+          { name: 'last-check-for-announcements-id', description: 'Get last announcements check ID' },
+          {
+            name: 'signing-keys-for',
+            description: 'Get signing keys for a server',
+            args: [{ name: 'server', description: 'Server name', required: true, type: 'server' }],
+          },
+        ],
+      },
+      {
+        name: 'sending',
+        description: 'Sending service queries',
+        children: [
+          { name: 'active-requests', description: 'List all active sending requests' },
+          {
+            name: 'active-requests-for',
+            description: 'Active requests for a destination',
+          },
+          {
+            name: 'queued-requests',
+            description: 'List queued sending requests',
+          },
+          {
+            name: 'get-latest-edu-count',
+            description: 'Get latest EDU count for a server',
+            args: [{ name: 'server_name', description: 'Server name', required: true, type: 'server' }],
+          },
+        ],
+      },
+      {
+        name: 'users',
+        description: 'User database queries',
+        children: [
+          { name: 'count-users', description: 'Count all users' },
+          { name: 'iter-users', description: 'Iterate all users' },
+          { name: 'iter-users2', description: 'Iterate all users (variant 2)' },
+          {
+            name: 'password-hash',
+            description: 'Get password hash for a user',
+            args: [{ name: 'user_id', description: 'Full user ID', required: true, type: 'user_id' }],
+          },
+          {
+            name: 'list-devices',
+            description: 'List devices for a user',
+            args: [{ name: 'user_id', description: 'Full user ID', required: true, type: 'user_id' }],
+          },
+          {
+            name: 'list-devices-metadata',
+            description: 'List device metadata for a user',
+            args: [{ name: 'user_id', description: 'Full user ID', required: true, type: 'user_id' }],
+          },
+          {
+            name: 'get-device-metadata',
+            description: 'Get device metadata',
+            args: [
+              { name: 'user_id', description: 'Full user ID', required: true, type: 'user_id' },
+              { name: 'device_id', description: 'Device ID', required: true, type: 'string' },
+            ],
+          },
+          {
+            name: 'get-devices-version',
+            description: 'Get devices version for a user',
+            args: [{ name: 'user_id', description: 'Full user ID', required: true, type: 'user_id' }],
+          },
+          {
+            name: 'count-one-time-keys',
+            description: 'Count one-time keys for a device',
+            args: [
+              { name: 'user_id', description: 'Full user ID', required: true, type: 'user_id' },
+              { name: 'device_id', description: 'Device ID', required: true, type: 'string' },
+            ],
+          },
+          {
+            name: 'get-device-keys',
+            description: 'Get device keys',
+            args: [
+              { name: 'user_id', description: 'Full user ID', required: true, type: 'user_id' },
+              { name: 'device_id', description: 'Device ID', required: true, type: 'string' },
+            ],
+          },
+          {
+            name: 'get-user-signing-key',
+            description: 'Get user signing key',
+            args: [{ name: 'user_id', description: 'Full user ID', required: true, type: 'user_id' }],
+          },
+          {
+            name: 'get-master-key',
+            description: 'Get master cross-signing key',
+            args: [{ name: 'user_id', description: 'Full user ID', required: true, type: 'user_id' }],
+          },
+          {
+            name: 'get-to-device-events',
+            description: 'Get to-device events',
+            args: [
+              { name: 'user_id', description: 'Full user ID', required: true, type: 'user_id' },
+              { name: 'device_id', description: 'Device ID', required: true, type: 'string' },
+            ],
+          },
+          {
+            name: 'get-latest-backup',
+            description: 'Get latest backup for a user',
+            args: [{ name: 'user_id', description: 'Full user ID', required: true, type: 'user_id' }],
+          },
+          {
+            name: 'get-latest-backup-version',
+            description: 'Get latest backup version',
+            args: [{ name: 'user_id', description: 'Full user ID', required: true, type: 'user_id' }],
+          },
+          {
+            name: 'get-backup-algorithm',
+            description: 'Get backup algorithm',
+            args: [
+              { name: 'user_id', description: 'Full user ID', required: true, type: 'user_id' },
+              { name: 'version', description: 'Backup version', required: true, type: 'string' },
+            ],
+          },
+          {
+            name: 'get-all-backups',
+            description: 'Get all backups for a version',
+            args: [
+              { name: 'user_id', description: 'Full user ID', required: true, type: 'user_id' },
+              { name: 'version', description: 'Backup version', required: true, type: 'string' },
+            ],
+          },
+          {
+            name: 'get-room-backups',
+            description: 'Get room backups',
+            args: [
+              { name: 'user_id', description: 'Full user ID', required: true, type: 'user_id' },
+              { name: 'version', description: 'Backup version', required: true, type: 'string' },
+              { name: 'room_id', description: 'Room ID', required: true, type: 'room_id' },
+            ],
+          },
+          {
+            name: 'get-backup-session',
+            description: 'Get backup session',
+            args: [
+              { name: 'user_id', description: 'Full user ID', required: true, type: 'user_id' },
+              { name: 'version', description: 'Backup version', required: true, type: 'string' },
+              { name: 'room_id', description: 'Room ID', required: true, type: 'room_id' },
+              { name: 'session_id', description: 'Session ID', required: true, type: 'string' },
+            ],
+          },
+          {
+            name: 'get-shared-rooms',
+            description: 'Get shared rooms between two users',
+            args: [
+              { name: 'user_a', description: 'First user ID', required: true, type: 'user_id' },
+              { name: 'user_b', description: 'Second user ID', required: true, type: 'user_id' },
+            ],
+          },
+        ],
+      },
+      {
+        name: 'resolver',
+        description: 'Resolver queries',
+        children: [
+          {
+            name: 'destinations-cache',
+            description: 'Query the destinations cache',
+            args: [{ name: 'server_name', description: 'Server name', required: false, type: 'server' }],
+          },
+          {
+            name: 'overrides-cache',
+            description: 'Query the overrides cache',
+            args: [{ name: 'name', description: 'Name to look up', required: false, type: 'string' }],
+          },
+          {
+            name: 'flush-cache',
+            description: 'Flush resolver caches',
+            args: [{ name: 'name', description: 'Server name to flush', required: false, type: 'server' }],
+          },
+        ],
+      },
+      {
+        name: 'pusher',
+        description: 'Pusher queries',
+        children: [
+          {
+            name: 'get-pushers',
+            description: 'Get pushers for a user',
+            args: [{ name: 'user_id', description: 'Full user ID', required: true, type: 'user_id' }],
+          },
+        ],
+      },
+      {
+        name: 'short',
+        description: 'Short ID queries',
+        children: [
+          {
+            name: 'short-event-id',
+            description: 'Get short ID for an event',
+            args: [{ name: 'event_id', description: 'Event ID', required: true, type: 'event_id' }],
+          },
+          {
+            name: 'short-room-id',
+            description: 'Get short ID for a room',
+            args: [{ name: 'room_id', description: 'Room ID or alias', required: true, type: 'room_id' }],
+          },
+        ],
+      },
+      {
+        name: 'raw',
+        description: 'Raw database access',
+        children: [
+          { name: 'raw-maps', description: 'List database maps' },
+          {
+            name: 'raw-get',
+            description: 'Raw database query',
+            args: [
+              { name: 'map', description: 'Map name', required: true, type: 'string' },
+              { name: 'key', description: 'Key', required: true, type: 'string' },
+            ],
+          },
+          {
+            name: 'raw-del',
+            description: 'Raw database delete',
+            args: [
+              { name: 'map', description: 'Map name', required: true, type: 'string' },
+              { name: 'key', description: 'Key', required: true, type: 'string' },
+            ],
+          },
+          {
+            name: 'raw-keys',
+            description: 'Iterate database keys',
+            args: [
+              { name: 'map', description: 'Map name', required: true, type: 'string' },
+              { name: 'prefix', description: 'Key prefix', required: false, type: 'string' },
+            ],
+          },
+          {
+            name: 'raw-keys-sizes',
+            description: 'Key size breakdown',
+            args: [
+              { name: 'map', description: 'Map name', required: false, type: 'string' },
+              { name: 'prefix', description: 'Key prefix', required: false, type: 'string' },
+            ],
+          },
+          {
+            name: 'raw-keys-total',
+            description: 'Total key bytes',
+            args: [
+              { name: 'map', description: 'Map name', required: false, type: 'string' },
+              { name: 'prefix', description: 'Key prefix', required: false, type: 'string' },
+            ],
+          },
+          {
+            name: 'raw-vals-sizes',
+            description: 'Value size breakdown',
+            args: [
+              { name: 'map', description: 'Map name', required: false, type: 'string' },
+              { name: 'prefix', description: 'Key prefix', required: false, type: 'string' },
+            ],
+          },
+          {
+            name: 'raw-vals-total',
+            description: 'Total value bytes',
+            args: [
+              { name: 'map', description: 'Map name', required: false, type: 'string' },
+              { name: 'prefix', description: 'Key prefix', required: false, type: 'string' },
+            ],
+          },
+          {
+            name: 'raw-iter',
+            description: 'Iterate database items',
+            args: [
+              { name: 'map', description: 'Map name', required: true, type: 'string' },
+              { name: 'prefix', description: 'Key prefix', required: false, type: 'string' },
+            ],
+          },
+          {
+            name: 'raw-keys-from',
+            description: 'Iterate keys from a lower bound',
+            args: [
+              { name: 'map', description: 'Map name', required: true, type: 'string' },
+              { name: 'start', description: 'Lower bound', required: true, type: 'string' },
+            ],
+          },
+          {
+            name: 'raw-iter-from',
+            description: 'Iterate items from a lower bound',
+            args: [
+              { name: 'map', description: 'Map name', required: true, type: 'string' },
+              { name: 'start', description: 'Lower bound', required: true, type: 'string' },
+            ],
+          },
+          {
+            name: 'raw-count',
+            description: 'Count database records',
+            args: [
+              { name: 'map', description: 'Map name', required: false, type: 'string' },
+              { name: 'prefix', description: 'Key prefix', required: false, type: 'string' },
+            ],
+          },
+          {
+            name: 'compact',
+            description: 'Compact database',
+            args: [{ name: 'map', description: 'Column/map name', required: false, type: 'string' }],
+          },
+        ],
+      },
+    ],
+  },
+]

@@ -2,7 +2,7 @@
 import { ref, nextTick } from 'vue'
 import { useCommandStore } from '@/stores/command'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
+import CommandAutocomplete from '@/components/CommandAutocomplete.vue'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -73,11 +73,11 @@ function formatTime(date: Date) {
         <form class="flex gap-2 pt-4 border-t mt-4" @submit.prevent="sendCommand">
           <div class="flex items-center gap-2 flex-1">
             <span class="text-sm text-muted-foreground whitespace-nowrap">!admin</span>
-            <Input
+            <CommandAutocomplete
               v-model="commandInput"
               placeholder="server uptime"
               :disabled="commandStore.loading"
-              class="flex-1"
+              @submit="sendCommand"
             />
           </div>
           <Button type="submit" :disabled="commandStore.loading || !commandInput.trim()">
