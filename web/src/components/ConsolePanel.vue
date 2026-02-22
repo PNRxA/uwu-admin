@@ -9,7 +9,10 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Separator } from '@/components/ui/separator'
-import { Send, Trash2, Terminal, ChevronUp, CircleAlert } from 'lucide-vue-next'
+import { Send, Trash2, Terminal, ChevronUp, CircleAlert, Maximize2 } from 'lucide-vue-next'
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
 
 const commandStore = useCommandStore()
 const commandInput = ref('')
@@ -68,7 +71,10 @@ watch(() => commandStore.panelOpen, (open) => {
         <Badge v-if="commandStore.history.length > 0" variant="secondary" class="text-xs">
           {{ commandStore.history.length }}
         </Badge>
-        <Button variant="ghost" size="sm" class="ml-auto h-7 px-2" @click.stop="commandStore.clear">
+        <Button variant="ghost" size="sm" class="ml-auto h-7 px-2" @click.stop="router.push({ name: 'console' })">
+          <Maximize2 class="size-3.5" />
+        </Button>
+        <Button variant="ghost" size="sm" class="h-7 px-2" @click.stop="commandStore.clear">
           <Trash2 class="size-3.5" />
         </Button>
         <ChevronUp
