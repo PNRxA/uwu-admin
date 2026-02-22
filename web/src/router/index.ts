@@ -39,11 +39,6 @@ const router = createRouter({
           component: () => import('@/views/ServerView.vue'),
         },
         {
-          path: 'media',
-          name: 'media',
-          component: () => import('@/views/MediaView.vue'),
-        },
-        {
           path: 'console',
           name: 'console',
           component: () => import('@/views/ConsoleView.vue'),

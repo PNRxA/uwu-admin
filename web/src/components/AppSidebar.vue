@@ -21,7 +21,6 @@ import {
   DoorOpen,
   Globe,
   Server,
-  Image,
   Terminal,
   LogOut,
 } from 'lucide-vue-next'
@@ -35,7 +34,6 @@ const navItems = [
   { title: 'Rooms', icon: DoorOpen, to: '/rooms' },
   { title: 'Federation', icon: Globe, to: '/federation' },
   { title: 'Server', icon: Server, to: '/server' },
-  { title: 'Media', icon: Image, to: '/media' },
   { title: 'Console', icon: Terminal, to: '/console' },
 ]
 
