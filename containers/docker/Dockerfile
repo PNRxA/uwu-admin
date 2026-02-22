@@ -28,8 +28,8 @@ COPY --from=backend /build/api/target/release/uwu-admin-api /usr/local/bin/uwu-a
 COPY --from=frontend /build/web/dist/ /usr/share/nginx/html/
 
 # Copy nginx config and entrypoint
-COPY docker/nginx.conf /etc/nginx/nginx.conf
-COPY docker/entrypoint.sh /entrypoint.sh
+COPY containers/docker/nginx.conf /etc/nginx/nginx.conf
+COPY containers/docker/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
 EXPOSE 80

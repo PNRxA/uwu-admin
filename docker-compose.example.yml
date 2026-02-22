@@ -2,7 +2,7 @@ services:
   uwu-admin:
     build:
       context: .
-      dockerfile: docker/Dockerfile
+      dockerfile: containers/docker/Dockerfile
     ports:
       - "8080:80"
     volumes:

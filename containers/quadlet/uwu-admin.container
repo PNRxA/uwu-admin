@@ -1,0 +1,12 @@
+[Unit]
+Description=uwu-admin Matrix server admin panel
+After=network-online.target
+Wants=network-online.target
+
+[Container]
+Image=localhost/uwu-admin:latest
+PublishPort=8080:80
+Volume=uwu-data.volume:/data
+
+[Install]
+WantedBy=default.target

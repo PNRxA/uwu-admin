@@ -5,4 +5,4 @@ web/dist/
 *.db
 *.db-shm
 *.db-wal
-docker/
+containers/quadlet/

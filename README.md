@@ -75,6 +75,10 @@ npm run build        # Production build (output in dist/)
 4. Enter your homeserver URL, bot credentials, and admin room ID or alias
 5. Connect and manage your server through the dashboard
 
+## Container Deployment
+
+See [containers/](containers/) for Docker and Podman Quadlet deployment options.
+
 ## Pages
 
 - **Overview** - Connection info, server uptime, and stats
