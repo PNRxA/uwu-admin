@@ -72,7 +72,8 @@ const uptimeFormatted = computed(() => formatUptime(uptime.value ?? ''))
 
 const totalDbMemory = computed(() => {
   if (!stats.value) return ''
-  const dbMatch = stats.value.match(/Database:\s*\n?([\s\S]*)$/)
+  const clean = stats.value.replace(/<[^>]+>/g, '')
+  const dbMatch = clean.match(/Database:\s*\n?([\s\S]*)$/)
   if (!dbMatch?.[1]) return ''
   let total = 0
   for (const line of dbMatch[1].split(/\r?\n/)) {
@@ -85,7 +86,8 @@ const totalDbMemory = computed(() => {
 
 const serviceCount = computed(() => {
   if (!stats.value) return 0
-  const servicesMatch = stats.value.match(/Services:\s*\n?([\s\S]*?)(?:\n\s*\n|Database:)/)
+  const clean = stats.value.replace(/<[^>]+>/g, '')
+  const servicesMatch = clean.match(/Services:\s*\n?([\s\S]*?)(?:\n\s*\n|Database:)/)
   if (!servicesMatch?.[1]) return 0
   return servicesMatch[1].split(/\r?\n/).filter((l) => l.trim()).length
 })
