@@ -1,7 +1,10 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { computed } from 'vue'
+import { useQuery, useQueryClient } from '@tanstack/vue-query'
 import { api } from '@/lib/api'
+import { queryKeys } from '@/lib/query-keys'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
   Table,
@@ -12,8 +15,10 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { toast } from 'vue-sonner'
+import { RefreshCw } from 'lucide-vue-next'
 import RoomActionsMenu from '@/components/RoomActionsMenu.vue'
+
+const queryClient = useQueryClient()
 
 interface Room {
   id: string
@@ -21,8 +26,11 @@ interface Room {
   name: string
 }
 
-const roomsResponse = ref('')
-const loading = ref(true)
+const { data: roomsResponse, isPending, isFetching, refetch } = useQuery({
+  queryKey: queryKeys.rooms,
+  queryFn: async () => (await api.listRooms()).response,
+  staleTime: 30_000,
+})
 
 const rooms = computed<Room[]>(() => {
   if (!roomsResponse.value) return []
@@ -36,32 +44,27 @@ const rooms = computed<Room[]>(() => {
     .filter((r): r is Room => r !== null)
 })
 
-async function fetchRooms() {
-  loading.value = true
-  try {
-    const res = await api.listRooms()
-    roomsResponse.value = res.response
-  } catch {
-    roomsResponse.value = ''
-    toast.error('Failed to fetch rooms')
-  } finally {
-    loading.value = false
-  }
+function onActionComplete() {
+  queryClient.invalidateQueries({ queryKey: queryKeys.rooms })
 }
-
-onMounted(fetchRooms)
 </script>
 
 <template>
   <div class="flex flex-col gap-6">
-    <h1 class="text-2xl font-bold">Rooms</h1>
+    <div class="flex items-center gap-2">
+      <h1 class="text-2xl font-bold">Rooms</h1>
+      <Button variant="ghost" size="icon-sm" :disabled="isFetching" @click="refetch()">
+        <RefreshCw class="size-4" :class="{ 'animate-spin': isFetching }" />
+        <span class="sr-only">Refresh</span>
+      </Button>
+    </div>
 
     <Card>
       <CardHeader>
         <CardTitle>Room List</CardTitle>
       </CardHeader>
       <CardContent>
-        <Skeleton v-if="loading" class="h-32 w-full" />
+        <Skeleton v-if="isPending" class="h-32 w-full" />
         <Table v-else>
           <TableHeader>
             <TableRow>
@@ -80,7 +83,7 @@ onMounted(fetchRooms)
               <TableCell class="text-right tabular-nums">{{ room.members.toLocaleString() }}</TableCell>
               <TableCell>{{ room.name }}</TableCell>
               <TableCell class="text-right">
-                <RoomActionsMenu :room-id="room.id" @action-complete="fetchRooms" />
+                <RoomActionsMenu :room-id="room.id" @action-complete="onActionComplete" />
               </TableCell>
             </TableRow>
           </TableBody>

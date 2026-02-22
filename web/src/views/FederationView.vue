@@ -1,7 +1,10 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { computed } from 'vue'
+import { useQuery } from '@tanstack/vue-query'
 import { api } from '@/lib/api'
+import { queryKeys } from '@/lib/query-keys'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
   Table,
@@ -12,9 +15,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-
-const federationStatus = ref('')
-const loading = ref(true)
+import { RefreshCw } from 'lucide-vue-next'
 
 interface PduEntry {
   roomId: string
@@ -22,13 +23,21 @@ interface PduEntry {
   elapsed: string
 }
 
+const { data: federationStatus, isPending, isFetching, refetch } = useQuery({
+  queryKey: queryKeys.federation,
+  queryFn: async () => (await api.command('federation incoming-federation')).response,
+  staleTime: 10_000,
+})
+
 const summary = computed(() => {
+  if (!federationStatus.value) return null
   const clean = federationStatus.value.replace(/<[^>]+>/g, '')
   const m = clean.match(/Handling\s+(\d+)\s+incoming\s+pdus/)
   return m?.[1] ? `${m[1]} incoming` : null
 })
 
 const pdus = computed<PduEntry[]>(() => {
+  if (!federationStatus.value) return []
   const clean = federationStatus.value.replace(/<[^>]+>/g, '')
   return clean
     .split(/\r?\n/)
@@ -39,24 +48,19 @@ const pdus = computed<PduEntry[]>(() => {
     })
     .filter((e): e is PduEntry => e !== null)
 })
-
-onMounted(async () => {
-  try {
-    const res = await api.command('federation incoming-federation')
-    federationStatus.value = res.response
-  } catch {
-    federationStatus.value = 'Failed to fetch federation status'
-  } finally {
-    loading.value = false
-  }
-})
 </script>
 
 <template>
   <div class="flex flex-col gap-6">
-    <h1 class="text-2xl font-bold">Federation</h1>
+    <div class="flex items-center gap-2">
+      <h1 class="text-2xl font-bold">Federation</h1>
+      <Button variant="ghost" size="icon-sm" :disabled="isFetching" @click="refetch()">
+        <RefreshCw class="size-4" :class="{ 'animate-spin': isFetching }" />
+        <span class="sr-only">Refresh</span>
+      </Button>
+    </div>
 
-    <Card v-if="!loading && summary">
+    <Card v-if="!isPending && summary">
       <CardHeader>
         <CardTitle>Incoming PDUs</CardTitle>
         <CardDescription>{{ summary }} PDUs being handled</CardDescription>
@@ -84,7 +88,7 @@ onMounted(async () => {
       </CardContent>
     </Card>
 
-    <Card v-if="loading">
+    <Card v-if="isPending">
       <CardHeader>
         <CardTitle>Incoming PDUs</CardTitle>
       </CardHeader>
@@ -93,7 +97,7 @@ onMounted(async () => {
       </CardContent>
     </Card>
 
-    <Card v-if="!loading && !summary">
+    <Card v-if="!isPending && !summary">
       <CardHeader>
         <CardTitle>Incoming PDUs</CardTitle>
         <CardDescription>No incoming federation activity</CardDescription>

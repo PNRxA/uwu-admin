@@ -1,15 +1,45 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { computed } from 'vue'
+import { useQuery } from '@tanstack/vue-query'
 import { useConnectionStore } from '@/stores/connection'
 import { api } from '@/lib/api'
+import { queryKeys } from '@/lib/query-keys'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
+import { RefreshCw } from 'lucide-vue-next'
 
 const connection = useConnectionStore()
 
-const uptime = ref('')
-const stats = ref('')
-const loading = ref(true)
+const {
+  data: uptime,
+  isPending: uptimePending,
+  isFetching: uptimeFetching,
+  refetch: refetchUptime,
+} = useQuery({
+  queryKey: queryKeys.serverUptime,
+  queryFn: async () => (await api.serverUptime()).response,
+  staleTime: 15_000,
+})
+
+const {
+  data: stats,
+  isPending: statsPending,
+  isFetching: statsFetching,
+  refetch: refetchStats,
+} = useQuery({
+  queryKey: queryKeys.serverStatus,
+  queryFn: async () => (await api.serverStatus()).response,
+  staleTime: 15_000,
+})
+
+const loading = computed(() => uptimePending.value || statsPending.value)
+const isFetching = computed(() => uptimeFetching.value || statsFetching.value)
+
+function refetch() {
+  refetchUptime()
+  refetchStats()
+}
 
 function formatUptime(raw: string) {
   const match = raw.match(/([\d.]+)\s*(seconds?|minutes?|hours?|days?)/)
@@ -38,9 +68,10 @@ function formatUptime(raw: string) {
   return { parts }
 }
 
-const uptimeFormatted = computed(() => formatUptime(uptime.value))
+const uptimeFormatted = computed(() => formatUptime(uptime.value ?? ''))
 
 const totalDbMemory = computed(() => {
+  if (!stats.value) return ''
   const dbMatch = stats.value.match(/Database:\s*\n?([\s\S]*)$/)
   if (!dbMatch?.[1]) return ''
   let total = 0
@@ -53,30 +84,22 @@ const totalDbMemory = computed(() => {
 })
 
 const serviceCount = computed(() => {
+  if (!stats.value) return 0
   const servicesMatch = stats.value.match(/Services:\s*\n?([\s\S]*?)(?:\n\s*\n|Database:)/)
   if (!servicesMatch?.[1]) return 0
   return servicesMatch[1].split(/\r?\n/).filter((l) => l.trim()).length
-})
-
-onMounted(async () => {
-  try {
-    const [uptimeRes, statsRes] = await Promise.all([
-      api.serverUptime(),
-      api.serverStatus(),
-    ])
-    uptime.value = uptimeRes.response
-    stats.value = statsRes.response
-  } catch {
-    // silently fail, show empty state
-  } finally {
-    loading.value = false
-  }
 })
 </script>
 
 <template>
   <div class="flex flex-col gap-6">
-    <h1 class="text-2xl font-bold">Overview</h1>
+    <div class="flex items-center gap-2">
+      <h1 class="text-2xl font-bold">Overview</h1>
+      <Button variant="ghost" size="icon-sm" :disabled="isFetching" @click="refetch()">
+        <RefreshCw class="size-4" :class="{ 'animate-spin': isFetching }" />
+        <span class="sr-only">Refresh</span>
+      </Button>
+    </div>
 
     <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
       <Card class="md:col-span-2">

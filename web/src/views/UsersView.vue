@@ -1,6 +1,8 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed } from 'vue'
+import { useQuery, useQueryClient } from '@tanstack/vue-query'
 import { api } from '@/lib/api'
+import { queryKeys } from '@/lib/query-keys'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -25,11 +27,17 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog'
 import { toast } from 'vue-sonner'
-import { Plus } from 'lucide-vue-next'
+import { Plus, RefreshCw } from 'lucide-vue-next'
 import UserActionsMenu from '@/components/UserActionsMenu.vue'
 
-const usersResponse = ref('')
-const loading = ref(true)
+const queryClient = useQueryClient()
+
+const { data: usersResponse, isPending, isFetching, refetch } = useQuery({
+  queryKey: queryKeys.users,
+  queryFn: async () => (await api.listUsers()).response,
+  staleTime: 30_000,
+})
+
 const createDialogOpen = ref(false)
 const newUsername = ref('')
 const newPassword = ref('')
@@ -40,19 +48,6 @@ const users = computed(() => {
   const matches = usersResponse.value.match(/@[a-zA-Z0-9._=\-/]+:[a-zA-Z0-9.\-]+/g)
   return matches ? [...new Set(matches)] : []
 })
-
-async function fetchUsers() {
-  loading.value = true
-  try {
-    const res = await api.listUsers()
-    usersResponse.value = res.response
-  } catch {
-    usersResponse.value = ''
-    toast.error('Failed to fetch users')
-  } finally {
-    loading.value = false
-  }
-}
 
 async function createUser() {
   creating.value = true
@@ -65,7 +60,7 @@ async function createUser() {
     createDialogOpen.value = false
     newUsername.value = ''
     newPassword.value = ''
-    await fetchUsers()
+    await queryClient.invalidateQueries({ queryKey: queryKeys.users })
   } catch (e) {
     toast.error(e instanceof Error ? e.message : 'Failed to create user')
   } finally {
@@ -73,13 +68,21 @@ async function createUser() {
   }
 }
 
-onMounted(fetchUsers)
+function onActionComplete() {
+  queryClient.invalidateQueries({ queryKey: queryKeys.users })
+}
 </script>
 
 <template>
   <div class="flex flex-col gap-6">
     <div class="flex items-center justify-between">
-      <h1 class="text-2xl font-bold">Users</h1>
+      <div class="flex items-center gap-2">
+        <h1 class="text-2xl font-bold">Users</h1>
+        <Button variant="ghost" size="icon-sm" :disabled="isFetching" @click="refetch()">
+          <RefreshCw class="size-4" :class="{ 'animate-spin': isFetching }" />
+          <span class="sr-only">Refresh</span>
+        </Button>
+      </div>
       <Dialog v-model:open="createDialogOpen">
         <DialogTrigger as-child>
           <Button>
@@ -116,7 +119,7 @@ onMounted(fetchUsers)
         <CardTitle>User List</CardTitle>
       </CardHeader>
       <CardContent>
-        <Skeleton v-if="loading" class="h-32 w-full" />
+        <Skeleton v-if="isPending" class="h-32 w-full" />
         <Table v-else>
           <TableHeader>
             <TableRow>
@@ -131,7 +134,7 @@ onMounted(fetchUsers)
             <TableRow v-for="user in users" :key="user">
               <TableCell class="font-mono text-sm">{{ user }}</TableCell>
               <TableCell class="text-right">
-                <UserActionsMenu :user-id="user" @action-complete="fetchUsers" />
+                <UserActionsMenu :user-id="user" @action-complete="onActionComplete" />
               </TableCell>
             </TableRow>
           </TableBody>

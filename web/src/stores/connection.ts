@@ -1,8 +1,10 @@
 import { ref } from 'vue'
 import { defineStore } from 'pinia'
+import { useQueryClient } from '@tanstack/vue-query'
 import { api } from '@/lib/api'
 
 export const useConnectionStore = defineStore('connection', () => {
+  const queryClient = useQueryClient()
   const connected = ref(false)
   const homeserver = ref('')
   const userId = ref('')
@@ -35,6 +37,7 @@ export const useConnectionStore = defineStore('connection', () => {
     connected.value = false
     homeserver.value = ''
     userId.value = ''
+    queryClient.clear()
   }
 
   async function checkStatus() {
