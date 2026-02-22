@@ -69,11 +69,17 @@ impl MatrixClient {
             .ok_or_else(|| ApiError::MatrixError("No user_id in response".into()))?
             .to_string();
 
+        let resolved_room_id = if room_id.starts_with('#') {
+            resolve_alias(&http, hs, &access_token, room_id).await?
+        } else {
+            room_id.to_string()
+        };
+
         let mut client = MatrixClient {
             http,
             homeserver: hs.to_string(),
             access_token,
-            room_id: room_id.to_string(),
+            room_id: resolved_room_id,
             user_id,
             since: None,
         };
@@ -250,8 +256,43 @@ impl MatrixClient {
     }
 }
 
+async fn resolve_alias(
+    http: &reqwest::Client,
+    homeserver: &str,
+    access_token: &str,
+    alias: &str,
+) -> Result<String, ApiError> {
+    let url = format!(
+        "{homeserver}/_matrix/client/v3/directory/room/{}",
+        urlencoded(alias)
+    );
+
+    let resp = http
+        .get(&url)
+        .bearer_auth(access_token)
+        .send()
+        .await
+        .map_err(|e| ApiError::MatrixError(e.to_string()))?;
+
+    if !resp.status().is_success() {
+        let text = resp.text().await.unwrap_or_default();
+        return Err(ApiError::MatrixError(format!(
+            "Failed to resolve alias {alias}: {text}"
+        )));
+    }
+
+    let data: Value = resp
+        .json()
+        .await
+        .map_err(|e| ApiError::MatrixError(e.to_string()))?;
+
+    data["room_id"]
+        .as_str()
+        .map(|s| s.to_string())
+        .ok_or_else(|| ApiError::MatrixError("No room_id in alias response".into()))
+}
+
 fn urlencoded(s: &str) -> String {
-    s.replace('!', "%21")
-        .replace('#', "%23")
+    s.replace('#', "%23")
         .replace(':', "%3A")
 }
