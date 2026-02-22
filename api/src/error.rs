@@ -29,6 +29,7 @@ impl IntoResponse for ApiError {
             ApiError::DbError(_) => (StatusCode::INTERNAL_SERVER_ERROR, self.to_string()),
         };
 
+        tracing::error!("{message}");
         let body = serde_json::json!({ "error": message });
         (status, axum::Json(body)).into_response()
     }
