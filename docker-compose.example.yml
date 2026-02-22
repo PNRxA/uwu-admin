@@ -1,0 +1,13 @@
+services:
+  uwu-admin:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    ports:
+      - "8080:80"
+    volumes:
+      - uwu-data:/data
+    restart: unless-stopped
+
+volumes:
+  uwu-data:

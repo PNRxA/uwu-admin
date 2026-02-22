@@ -1,22 +1,40 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { api } from '@/lib/api'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
+  Table,
+  TableBody,
+  TableCell,
+  TableEmpty,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
+import { toast } from 'vue-sonner'
+import RoomActionsMenu from '@/components/RoomActionsMenu.vue'
+
+interface Room {
+  id: string
+  members: number
+  name: string
+}
 
 const roomsResponse = ref('')
 const loading = ref(true)
-const roomDetailOpen = ref(false)
-const roomDetail = ref('')
-const roomDetailLoading = ref(false)
-const selectedRoom = ref('')
+
+const rooms = computed<Room[]>(() => {
+  if (!roomsResponse.value) return []
+  return roomsResponse.value
+    .split('\n')
+    .map((line) => {
+      const match = line.match(/^(!\S+)\s+Members:\s*(\d+)\s+Name:\s*(.+)$/)
+      if (!match?.[1] || !match[2] || !match[3]) return null
+      return { id: match[1], members: parseInt(match[2], 10), name: match[3].trim() }
+    })
+    .filter((r): r is Room => r !== null)
+})
 
 async function fetchRooms() {
   loading.value = true
@@ -24,23 +42,10 @@ async function fetchRooms() {
     const res = await api.listRooms()
     roomsResponse.value = res.response
   } catch {
-    roomsResponse.value = 'Failed to fetch rooms'
+    roomsResponse.value = ''
+    toast.error('Failed to fetch rooms')
   } finally {
     loading.value = false
-  }
-}
-
-async function showRoomInfo(roomId: string) {
-  selectedRoom.value = roomId
-  roomDetailOpen.value = true
-  roomDetailLoading.value = true
-  try {
-    const res = await api.roomInfo(roomId)
-    roomDetail.value = res.response
-  } catch {
-    roomDetail.value = 'Failed to fetch room info'
-  } finally {
-    roomDetailLoading.value = false
   }
 }
 
@@ -57,18 +62,30 @@ onMounted(fetchRooms)
       </CardHeader>
       <CardContent>
         <Skeleton v-if="loading" class="h-32 w-full" />
-        <pre v-else class="whitespace-pre-wrap text-sm max-h-[60vh] overflow-auto">{{ roomsResponse }}</pre>
+        <Table v-else>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Room ID</TableHead>
+              <TableHead class="w-24 text-right">Members</TableHead>
+              <TableHead>Name</TableHead>
+              <TableHead class="w-12 text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            <TableEmpty v-if="rooms.length === 0" :colspan="4">
+              No rooms found.
+            </TableEmpty>
+            <TableRow v-for="room in rooms" :key="room.id">
+              <TableCell class="font-mono text-sm max-w-64 truncate">{{ room.id }}</TableCell>
+              <TableCell class="text-right tabular-nums">{{ room.members.toLocaleString() }}</TableCell>
+              <TableCell>{{ room.name }}</TableCell>
+              <TableCell class="text-right">
+                <RoomActionsMenu :room-id="room.id" @action-complete="fetchRooms" />
+              </TableCell>
+            </TableRow>
+          </TableBody>
+        </Table>
       </CardContent>
     </Card>
-
-    <Dialog v-model:open="roomDetailOpen">
-      <DialogContent class="max-w-2xl">
-        <DialogHeader>
-          <DialogTitle>Room Info: {{ selectedRoom }}</DialogTitle>
-        </DialogHeader>
-        <Skeleton v-if="roomDetailLoading" class="h-32 w-full" />
-        <pre v-else class="whitespace-pre-wrap text-sm max-h-[60vh] overflow-auto">{{ roomDetail }}</pre>
-      </DialogContent>
-    </Dialog>
   </div>
 </template>

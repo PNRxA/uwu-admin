@@ -1,11 +1,20 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { api } from '@/lib/api'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Skeleton } from '@/components/ui/skeleton'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableEmpty,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 import {
   Dialog,
   DialogContent,
@@ -15,19 +24,9 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@/components/ui/alert-dialog'
 import { toast } from 'vue-sonner'
 import { Plus } from 'lucide-vue-next'
+import UserActionsMenu from '@/components/UserActionsMenu.vue'
 
 const usersResponse = ref('')
 const loading = ref(true)
@@ -36,13 +35,20 @@ const newUsername = ref('')
 const newPassword = ref('')
 const creating = ref(false)
 
+const users = computed(() => {
+  if (!usersResponse.value) return []
+  const matches = usersResponse.value.match(/@[a-zA-Z0-9._=\-/]+:[a-zA-Z0-9.\-]+/g)
+  return matches ? [...new Set(matches)] : []
+})
+
 async function fetchUsers() {
   loading.value = true
   try {
     const res = await api.listUsers()
     usersResponse.value = res.response
   } catch {
-    usersResponse.value = 'Failed to fetch users'
+    usersResponse.value = ''
+    toast.error('Failed to fetch users')
   } finally {
     loading.value = false
   }
@@ -64,16 +70,6 @@ async function createUser() {
     toast.error(e instanceof Error ? e.message : 'Failed to create user')
   } finally {
     creating.value = false
-  }
-}
-
-async function deactivateUser(userId: string) {
-  try {
-    await api.command(`users deactivate ${userId}`)
-    toast.success('User deactivated')
-    await fetchUsers()
-  } catch (e) {
-    toast.error(e instanceof Error ? e.message : 'Failed to deactivate user')
   }
 }
 
@@ -121,7 +117,25 @@ onMounted(fetchUsers)
       </CardHeader>
       <CardContent>
         <Skeleton v-if="loading" class="h-32 w-full" />
-        <pre v-else class="whitespace-pre-wrap text-sm max-h-[60vh] overflow-auto">{{ usersResponse }}</pre>
+        <Table v-else>
+          <TableHeader>
+            <TableRow>
+              <TableHead>User ID</TableHead>
+              <TableHead class="w-12 text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            <TableEmpty v-if="users.length === 0" :colspan="2">
+              No users found.
+            </TableEmpty>
+            <TableRow v-for="user in users" :key="user">
+              <TableCell class="font-mono text-sm">{{ user }}</TableCell>
+              <TableCell class="text-right">
+                <UserActionsMenu :user-id="user" @action-complete="fetchUsers" />
+              </TableCell>
+            </TableRow>
+          </TableBody>
+        </Table>
       </CardContent>
     </Card>
   </div>

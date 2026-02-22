@@ -1,0 +1,8 @@
+target/
+node_modules/
+web/dist/
+.git/
+*.db
+*.db-shm
+*.db-wal
+docker/
