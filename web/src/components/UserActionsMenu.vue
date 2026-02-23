@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useActionDialogs } from '@/composables/useActionDialogs'
-import { Ellipsis } from 'lucide-vue-next'
+import { Settings2 } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -131,11 +131,11 @@ const readOnlyActions = {
   <DropdownMenu>
     <DropdownMenuTrigger as-child>
       <Button variant="ghost" size="icon-sm">
-        <Ellipsis class="size-4" />
+        <Settings2 class="size-4" />
         <span class="sr-only">Actions</span>
       </Button>
     </DropdownMenuTrigger>
-    <DropdownMenuContent align="end" class="w-52">
+    <DropdownMenuContent align="start" class="w-52">
       <DropdownMenuLabel>User Actions</DropdownMenuLabel>
       <DropdownMenuSeparator />
 

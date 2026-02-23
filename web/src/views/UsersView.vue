@@ -139,8 +139,8 @@ function onActionComplete() {
         <Table v-else>
           <TableHeader>
             <TableRow>
+              <TableHead class="w-12">Actions</TableHead>
               <TableHead>User ID</TableHead>
-              <TableHead class="w-12 text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -148,10 +148,10 @@ function onActionComplete() {
               No users found.
             </TableEmpty>
             <TableRow v-for="user in users" :key="user">
-              <TableCell class="font-mono text-sm">{{ user }}</TableCell>
-              <TableCell class="text-right">
+              <TableCell>
                 <UserActionsMenu :user-id="user" @action-complete="onActionComplete" />
               </TableCell>
+              <TableCell class="font-mono text-sm">{{ user }}</TableCell>
             </TableRow>
           </TableBody>
         </Table>

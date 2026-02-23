@@ -93,10 +93,10 @@ function onActionComplete() {
         <Table v-else>
           <TableHeader>
             <TableRow>
+              <TableHead class="w-12">Actions</TableHead>
               <TableHead>Room ID</TableHead>
               <TableHead class="w-24 text-right">Members</TableHead>
               <TableHead>Name</TableHead>
-              <TableHead class="w-12 text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -104,12 +104,12 @@ function onActionComplete() {
               No rooms found.
             </TableEmpty>
             <TableRow v-for="room in rooms" :key="room.id">
+              <TableCell>
+                <RoomActionsMenu :room-id="room.id" @action-complete="onActionComplete" />
+              </TableCell>
               <TableCell class="font-mono text-sm max-w-64 truncate">{{ room.id }}</TableCell>
               <TableCell class="text-right tabular-nums">{{ room.members.toLocaleString() }}</TableCell>
               <TableCell>{{ room.name }}</TableCell>
-              <TableCell class="text-right">
-                <RoomActionsMenu :room-id="room.id" @action-complete="onActionComplete" />
-              </TableCell>
             </TableRow>
           </TableBody>
         </Table>
