@@ -97,6 +97,28 @@ To regenerate it after continuwuity's admin commands change:
 
 This runs `cargo xtask generate-command-tree` in the sibling `../continuwuity` directory and writes the output to `shared/command-tree.json`. Build prerequisites for the xtask are the same as for continuwuity itself (Rust, C/C++ compiler, libclang, liburing, make).
 
+## Testing
+
+```sh
+cd api
+cargo test                    # Unit tests (no server needed)
+cargo test -- --skip integration  # Same, explicitly skipping integration tests
+cargo test                    # Full suite including integration tests (needs server)
+```
+
+Unit tests cover auth, crypto, input validation, command parsing, and response handling.
+
+Integration tests require a running Continuwuity instance. Set the following environment variables (or add them to `api/.env`):
+
+| Variable | Description |
+|----------|-------------|
+| `TEST_HOMESERVER` | Homeserver URL (e.g. `https://matrix.example.com`) |
+| `TEST_USERNAME` | Bot username |
+| `TEST_PASSWORD` | Bot password |
+| `TEST_ROOM_ID` | Admin room ID or alias |
+
+The integration suite includes an exhaustive command tree test that walks every leaf command in `shared/command-tree.json`, sends it to the server with appropriate test arguments (matching each arg's type — user IDs, room IDs, event IDs, numbers, etc.), and verifies the command parses successfully. This catches any drift between the generated command tree and the actual server command definitions.
+
 ## Pages
 
 - **Overview** - Connection info, server uptime, and stats
