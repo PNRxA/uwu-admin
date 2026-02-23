@@ -238,7 +238,7 @@ const readOnlyActions = {
 
   <!-- Result Dialog for read-only actions -->
   <Dialog v-model:open="resultDialogOpen">
-    <DialogContent class="max-w-2xl">
+    <DialogContent class="sm:max-w-4xl">
       <DialogHeader>
         <DialogTitle>{{ resultDialogTitle }}</DialogTitle>
         <DialogDescription>Results for {{ userId }}</DialogDescription>

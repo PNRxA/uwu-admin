@@ -19,7 +19,7 @@ const resolvedParsed = computed<ParsedResponse>(() =>
 </script>
 
 <template>
-  <div class="max-h-[60vh] overflow-auto">
+  <div class="max-h-[70vh] overflow-auto">
     <template v-if="resolvedParsed.type === 'table'">
       <p v-if="resolvedParsed.header" class="mb-2 text-sm font-medium text-muted-foreground">{{ resolvedParsed.header }}</p>
       <Table>
