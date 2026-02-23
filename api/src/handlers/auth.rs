@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 use sha2::{Sha256, Digest};
 
-use crate::db;
+use crate::services::db;
 use crate::error::ApiError;
 use crate::state::SharedState;
 

@@ -3,7 +3,7 @@ use std::sync::Arc;
 use tokio::sync::Mutex;
 use sea_orm::DatabaseConnection;
 
-use crate::matrix::MatrixClient;
+use crate::services::matrix::MatrixClient;
 
 pub type SharedState = Arc<AppState>;
 

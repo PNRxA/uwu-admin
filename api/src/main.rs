@@ -1,15 +1,8 @@
-mod auth;
-mod commands;
-mod crypto;
-mod db;
 mod entity;
 mod error;
 mod handlers;
-mod matrix;
-mod middleware;
-mod response;
+mod services;
 mod state;
-mod validation;
 
 use std::time::Duration;
 
@@ -21,7 +14,7 @@ use axum::routing::{get, post, delete};
 use tower::ServiceBuilder;
 use tower_http::cors::{AllowOrigin, CorsLayer};
 
-use crate::matrix::MatrixClient;
+use crate::services::matrix::MatrixClient;
 use crate::state::{AppState, SharedState};
 
 #[tokio::main]
@@ -34,12 +27,12 @@ async fn main() {
     let database_url =
         std::env::var("DATABASE_URL").unwrap_or_else(|_| "sqlite:uwu-admin.db?mode=rwc".into());
 
-    let db = db::init_db(&database_url)
+    let db = services::db::init_db(&database_url)
         .await
         .expect("Failed to initialize database");
 
-    let jwt_secret = db::load_secret_from_env("JWT_SECRET");
-    let encryption_key = db::load_secret_from_env("ENCRYPTION_KEY");
+    let jwt_secret = services::db::load_secret_from_env("JWT_SECRET");
+    let encryption_key = services::db::load_secret_from_env("ENCRYPTION_KEY");
 
     // Seed admin user from environment if set and no admin exists yet
     if let (Ok(username), Ok(password)) = (
@@ -47,17 +40,17 @@ async fn main() {
         std::env::var("ADMIN_PASSWORD"),
     ) {
         if !username.is_empty() && !password.is_empty() {
-            match db::count_admin_users(&db).await {
+            match services::db::count_admin_users(&db).await {
                 Ok(0) => {
-                    if let Err(e) = validation::validate_username(&username) {
+                    if let Err(e) = services::validation::validate_username(&username) {
                         panic!("ADMIN_USERNAME is invalid: {e}");
                     }
-                    if let Err(e) = validation::validate_password(&password) {
+                    if let Err(e) = services::validation::validate_password(&password) {
                         panic!("ADMIN_PASSWORD is invalid: {e}");
                     }
-                    let hash = auth::hash_password(&password)
+                    let hash = handlers::auth::hash_password(&password)
                         .expect("Failed to hash ADMIN_PASSWORD");
-                    db::create_admin_user(&db, &username, &hash)
+                    services::db::create_admin_user(&db, &username, &hash)
                         .await
                         .expect("Failed to create admin user from environment");
                     tracing::info!("Admin user '{}' created from environment variables", username);
@@ -73,20 +66,20 @@ async fn main() {
     }
 
     // Migrate access tokens: plaintext → encrypted, legacy hex → prefixed
-    match db::load_all_servers_raw(&db).await {
+    match services::db::load_all_servers_raw(&db).await {
         Ok(servers) => {
             for server in &servers {
-                if crypto::is_encrypted(&server.access_token) {
+                if services::crypto::is_encrypted(&server.access_token) {
                     // Already has enc: prefix, nothing to do
                     continue;
                 }
 
-                if crypto::is_legacy_encrypted(&server.access_token) {
+                if services::crypto::is_legacy_encrypted(&server.access_token) {
                     // Legacy format (all-hex, no prefix): decrypt then re-encrypt with prefix
-                    match crypto::decrypt(&encryption_key, &server.access_token) {
-                        Ok(plaintext) => match crypto::encrypt(&encryption_key, &plaintext) {
+                    match services::crypto::decrypt(&encryption_key, &server.access_token) {
+                        Ok(plaintext) => match services::crypto::encrypt(&encryption_key, &plaintext) {
                             Ok(encrypted) => {
-                                if let Err(e) = db::update_server_token(&db, server.id, &encrypted).await {
+                                if let Err(e) = services::db::update_server_token(&db, server.id, &encrypted).await {
                                     tracing::warn!("Failed to re-encrypt token for server {}: {e}", server.id);
                                 } else {
                                     tracing::info!("Migrated legacy encrypted token to prefixed for server {}", server.id);
@@ -98,9 +91,9 @@ async fn main() {
                     }
                 } else {
                     // Plaintext token: encrypt with prefix
-                    match crypto::encrypt(&encryption_key, &server.access_token) {
+                    match services::crypto::encrypt(&encryption_key, &server.access_token) {
                         Ok(encrypted) => {
-                            if let Err(e) = db::update_server_token(&db, server.id, &encrypted).await {
+                            if let Err(e) = services::db::update_server_token(&db, server.id, &encrypted).await {
                                 tracing::warn!("Failed to migrate token for server {}: {e}", server.id);
                             } else {
                                 tracing::info!("Migrated plaintext token to encrypted for server {}", server.id);
@@ -117,7 +110,7 @@ async fn main() {
     }
 
     // Clean up expired refresh tokens
-    match db::delete_expired_refresh_tokens(&db).await {
+    match services::db::delete_expired_refresh_tokens(&db).await {
         Ok(count) if count > 0 => {
             tracing::info!("Cleaned up {count} expired refresh tokens");
         }
@@ -130,7 +123,7 @@ async fn main() {
     let state = AppState::new(db, jwt_secret, encryption_key);
 
     // Restore all saved servers
-    match db::load_all_servers(&state.db, &state.encryption_key).await {
+    match services::db::load_all_servers(&state.db, &state.encryption_key).await {
         Ok(servers) => {
             for server in servers {
                 match MatrixClient::restore(
@@ -151,7 +144,7 @@ async fn main() {
                             "Server {} session invalid, removing: {e}",
                             server.id
                         );
-                        if let Err(e) = db::delete_server(&state.db, server.id).await {
+                        if let Err(e) = services::db::delete_server(&state.db, server.id).await {
                             tracing::warn!("Failed to delete stale server {}: {e}", server.id);
                         }
                     }
@@ -181,10 +174,10 @@ async fn main() {
 
 pub fn build_router(state: SharedState) -> Router {
     let auth_routes = Router::new()
-        .route("/api/auth/status", get(auth::auth_status))
-        .route("/api/auth/setup", post(auth::setup))
-        .route("/api/auth/login", post(auth::login))
-        .route("/api/auth/refresh", post(auth::refresh))
+        .route("/api/auth/status", get(handlers::auth::auth_status))
+        .route("/api/auth/setup", post(handlers::auth::setup))
+        .route("/api/auth/login", post(handlers::auth::login))
+        .route("/api/auth/refresh", post(handlers::auth::refresh))
         .layer(
             ServiceBuilder::new()
                 .layer(HandleErrorLayer::new(|_: Box<dyn std::error::Error + Send + Sync>| async {
@@ -195,22 +188,22 @@ pub fn build_router(state: SharedState) -> Router {
         );
 
     let protected_routes = Router::new()
-        .route("/api/auth/logout", post(auth::logout))
-        .route("/api/servers", post(handlers::add_server).get(handlers::list_servers))
-        .route("/api/servers/{server_id}", delete(handlers::remove_server))
-        .route("/api/servers/{server_id}/command", post(handlers::command))
+        .route("/api/auth/logout", post(handlers::auth::logout))
+        .route("/api/servers", post(handlers::servers::add_server).get(handlers::servers::list_servers))
+        .route("/api/servers/{server_id}", delete(handlers::servers::remove_server))
+        .route("/api/servers/{server_id}/command", post(handlers::servers::command))
         .route(
             "/api/servers/{server_id}/users",
-            get(handlers::list_users).post(handlers::create_user),
+            get(handlers::servers::list_users).post(handlers::servers::create_user),
         )
-        .route("/api/servers/{server_id}/rooms", get(handlers::list_rooms))
+        .route("/api/servers/{server_id}/rooms", get(handlers::servers::list_rooms))
         .route(
             "/api/servers/{server_id}/server/status",
-            get(handlers::server_status),
+            get(handlers::servers::server_status),
         )
         .route(
             "/api/servers/{server_id}/server/uptime",
-            get(handlers::server_uptime),
+            get(handlers::servers::server_uptime),
         )
         .layer(
             ServiceBuilder::new()
@@ -225,7 +218,7 @@ pub fn build_router(state: SharedState) -> Router {
         .merge(auth_routes)
         .merge(protected_routes)
         .layer(DefaultBodyLimit::max(65_536))
-        .layer(axum::middleware::from_fn(middleware::validate_origin))
+        .layer(axum::middleware::from_fn(handlers::middleware::validate_origin))
         .layer({
             let cors = CorsLayer::new()
                 .allow_methods([Method::GET, Method::POST, Method::DELETE])

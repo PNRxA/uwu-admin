@@ -5,7 +5,7 @@ use http_body_util::BodyExt;
 use serde_json::{Value, json};
 use tower::ServiceExt;
 
-use crate::db;
+use crate::services::db;
 use crate::state::{AppState, SharedState};
 
 // --- Helpers ---
@@ -260,14 +260,14 @@ async fn expired_refresh_token_rejected() {
     let app = test_app_with_state(state.clone());
 
     // Create admin user directly
-    let hash = crate::auth::hash_password("password123").unwrap();
+    let hash = crate::handlers::auth::hash_password("password123").unwrap();
     let user = db::create_admin_user(&state.db, "admin", &hash)
         .await
         .unwrap();
 
     // Insert an expired refresh token directly
     let raw_token = "expired_token_value";
-    let token_hash = crate::auth::hash_refresh_token(raw_token);
+    let token_hash = crate::handlers::auth::hash_refresh_token(raw_token);
     let expired_at = "2020-01-01 00:00:00";
     db::create_refresh_token(&state.db, user.id, &token_hash, expired_at)
         .await
@@ -310,7 +310,7 @@ async fn expired_jwt_returns_401() {
     let app = test_app_with_state(state.clone());
 
     // Craft an expired JWT
-    let claims = crate::auth::Claims {
+    let claims = crate::handlers::auth::Claims {
         sub: "admin".to_string(),
         exp: 0, // epoch = expired
     };

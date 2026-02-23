@@ -19,7 +19,7 @@ struct CommandArg {
 }
 
 static COMMAND_TREE: LazyLock<Vec<CommandNode>> = LazyLock::new(|| {
-    serde_json::from_str(include_str!("../../shared/command-tree.json"))
+    serde_json::from_str(include_str!("../../../shared/command-tree.json"))
         .expect("invalid command-tree.json")
 });
 

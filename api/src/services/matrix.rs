@@ -2,7 +2,7 @@ use sea_orm::DatabaseConnection;
 use serde_json::{Value, json};
 use uuid::Uuid;
 
-use crate::db;
+use super::db;
 use crate::error::ApiError;
 
 pub struct MatrixClient {

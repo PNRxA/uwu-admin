@@ -3,14 +3,14 @@ use axum::extract::{Path, State};
 use serde::Deserialize;
 use serde_json::{Value, json};
 
-use crate::auth::AuthUser;
-use crate::commands::validate_command;
-use crate::db;
+use super::auth::AuthUser;
+use crate::services::commands::validate_command;
+use crate::services::db;
 use crate::error::ApiError;
-use crate::matrix::MatrixClient;
-use crate::response;
+use crate::services::matrix::MatrixClient;
+use crate::services::response;
 use crate::state::SharedState;
-use crate::validation;
+use crate::services::validation;
 
 #[derive(Deserialize)]
 pub struct AddServerRequest {

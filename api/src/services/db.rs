@@ -266,8 +266,8 @@ pub async fn load_all_servers(
         .map_err(|e| ApiError::DbError(e.to_string()))?;
 
     for s in &mut servers {
-        if crate::crypto::is_encrypted(&s.access_token) {
-            s.access_token = crate::crypto::decrypt(encryption_key, &s.access_token)
+        if super::crypto::is_encrypted(&s.access_token) {
+            s.access_token = super::crypto::decrypt(encryption_key, &s.access_token)
                 .map_err(|e| ApiError::DbError(format!("Failed to decrypt access token: {e}")))?;
         }
     }
@@ -293,8 +293,8 @@ pub async fn load_server(
         .map_err(|e| ApiError::DbError(e.to_string()))?;
 
     if let Some(ref mut s) = server {
-        if crate::crypto::is_encrypted(&s.access_token) {
-            s.access_token = crate::crypto::decrypt(encryption_key, &s.access_token)
+        if super::crypto::is_encrypted(&s.access_token) {
+            s.access_token = super::crypto::decrypt(encryption_key, &s.access_token)
                 .map_err(|e| ApiError::DbError(format!("Failed to decrypt access token: {e}")))?;
         }
     }
@@ -311,7 +311,7 @@ pub async fn save_server(
     since: Option<&str>,
     encryption_key: &[u8],
 ) -> Result<i32, ApiError> {
-    let encrypted_token = crate::crypto::encrypt(encryption_key, access_token)
+    let encrypted_token = super::crypto::encrypt(encryption_key, access_token)
         .map_err(|e| ApiError::DbError(format!("Failed to encrypt access token: {e}")))?;
 
     let model = server::ActiveModel {
