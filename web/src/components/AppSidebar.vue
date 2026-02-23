@@ -37,8 +37,8 @@ const navItems = [
   { title: 'Console', icon: Terminal, to: '/console' },
 ]
 
-function handleLogout() {
-  auth.logout()
+async function handleLogout() {
+  await auth.logout()
   router.push({ name: 'login' })
 }
 </script>

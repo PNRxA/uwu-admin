@@ -37,9 +37,11 @@ interface CreateUserParams {
 
 interface AuthResponse {
   token: string
+  refresh_token: string
 }
 
 let authToken: string | null = localStorage.getItem('uwu-admin-token')
+let refreshToken: string | null = localStorage.getItem('uwu-admin-refresh-token')
 
 export function setAuthToken(token: string | null) {
   authToken = token
@@ -50,9 +52,58 @@ export function setAuthToken(token: string | null) {
   }
 }
 
+export function setRefreshToken(token: string | null) {
+  refreshToken = token
+  if (token) {
+    localStorage.setItem('uwu-admin-refresh-token', token)
+  } else {
+    localStorage.removeItem('uwu-admin-refresh-token')
+  }
+}
+
 export function loadAuthToken(): string | null {
   authToken = localStorage.getItem('uwu-admin-token')
   return authToken
+}
+
+export function clearAllTokens() {
+  setAuthToken(null)
+  setRefreshToken(null)
+}
+
+let refreshPromise: Promise<boolean> | null = null
+
+async function attemptRefresh(): Promise<boolean> {
+  if (refreshPromise) return refreshPromise
+
+  refreshPromise = (async () => {
+    if (!refreshToken) return false
+
+    try {
+      const res = await fetch('/api/auth/refresh', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refresh_token: refreshToken }),
+      })
+
+      if (!res.ok) {
+        clearAllTokens()
+        return false
+      }
+
+      const data: AuthResponse = await res.json()
+      setAuthToken(data.token)
+      setRefreshToken(data.refresh_token)
+      return true
+    } catch {
+      clearAllTokens()
+      return false
+    } finally {
+      refreshPromise = null
+    }
+  })()
+
+  return refreshPromise
 }
 
 async function request<T>(url: string, options?: RequestInit): Promise<T> {
@@ -83,7 +134,49 @@ async function request<T>(url: string, options?: RequestInit): Promise<T> {
   }
 
   if (res.status === 401) {
-    setAuthToken(null)
+    const refreshed = await attemptRefresh()
+    if (refreshed) {
+      // Retry with new token
+      const retryHeaders: Record<string, string> = {
+        'Content-Type': 'application/json',
+      }
+      if (authToken) {
+        retryHeaders['Authorization'] = `Bearer ${authToken}`
+      }
+
+      const retryController = new AbortController()
+      const retryTimeout = setTimeout(() => retryController.abort(), 30_000)
+
+      let retryRes: Response
+      try {
+        retryRes = await fetch(url, {
+          ...options,
+          headers: retryHeaders,
+          signal: retryController.signal,
+        })
+      } catch (e) {
+        if (e instanceof DOMException && e.name === 'AbortError') {
+          throw new Error('Request timed out')
+        }
+        throw e
+      } finally {
+        clearTimeout(retryTimeout)
+      }
+
+      if (retryRes.status === 401) {
+        clearAllTokens()
+        window.location.href = '/login'
+        throw new Error('Unauthorized')
+      }
+
+      if (!retryRes.ok) {
+        const body = await retryRes.json().catch(() => ({ error: retryRes.statusText }))
+        throw new Error(body.error || retryRes.statusText)
+      }
+      return retryRes.json()
+    }
+
+    clearAllTokens()
     window.location.href = '/login'
     throw new Error('Unauthorized')
   }
@@ -112,6 +205,12 @@ export const api = {
     return request<AuthResponse>('/api/auth/login', {
       method: 'POST',
       body: JSON.stringify({ username, password }),
+    })
+  },
+
+  logout() {
+    return request<{ ok: boolean }>('/api/auth/logout', {
+      method: 'POST',
     })
   },
 

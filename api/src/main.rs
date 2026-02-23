@@ -94,6 +94,17 @@ async fn main() {
         }
     }
 
+    // Clean up expired refresh tokens
+    match db::delete_expired_refresh_tokens(&db).await {
+        Ok(count) if count > 0 => {
+            tracing::info!("Cleaned up {count} expired refresh tokens");
+        }
+        Err(e) => {
+            tracing::warn!("Failed to clean expired refresh tokens: {e}");
+        }
+        _ => {}
+    }
+
     let state = AppState::new(db, jwt_secret, encryption_key);
 
     // Restore all saved servers
@@ -134,6 +145,7 @@ async fn main() {
         .route("/api/auth/status", get(auth::auth_status))
         .route("/api/auth/setup", post(auth::setup))
         .route("/api/auth/login", post(auth::login))
+        .route("/api/auth/refresh", post(auth::refresh))
         .layer(
             ServiceBuilder::new()
                 .layer(HandleErrorLayer::new(|_: Box<dyn std::error::Error + Send + Sync>| async {
@@ -145,6 +157,7 @@ async fn main() {
 
     let app = Router::new()
         .merge(auth_routes)
+        .route("/api/auth/logout", post(auth::logout))
         // Server management
         .route("/api/servers", post(handlers::add_server).get(handlers::list_servers))
         .route("/api/servers/{server_id}", delete(handlers::remove_server))

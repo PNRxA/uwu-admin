@@ -19,5 +19,6 @@ argon2 = "0.5"
 rand = "0.8"
 chrono = "0.4"
 chacha20poly1305 = "0.10.1"
+sha2 = "0.10.9"
 dotenvy = "0.15.7"
 tower = { version = "0.5.3", features = ["limit", "buffer"] }

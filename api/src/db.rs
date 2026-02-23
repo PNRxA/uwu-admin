@@ -3,7 +3,7 @@ use sea_orm::{
     Set, Statement,
 };
 
-use crate::entity::{admin_user, server};
+use crate::entity::{admin_user, refresh_token, server};
 use crate::error::ApiError;
 
 pub async fn init_db(database_url: &str) -> Result<DatabaseConnection, ApiError> {
@@ -33,6 +33,19 @@ pub async fn init_db(database_url: &str) -> Result<DatabaseConnection, ApiError>
             room_id      TEXT NOT NULL,
             user_id      TEXT NOT NULL,
             since        TEXT
+        )",
+    ))
+    .await
+    .map_err(|e| ApiError::DbError(e.to_string()))?;
+
+    db.execute(Statement::from_string(
+        db.get_database_backend(),
+        "CREATE TABLE IF NOT EXISTS refresh_tokens (
+            id          INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id     INTEGER NOT NULL REFERENCES admin_users(id) ON DELETE CASCADE,
+            token_hash  TEXT NOT NULL UNIQUE,
+            expires_at  TEXT NOT NULL,
+            created_at  TEXT NOT NULL DEFAULT (datetime('now'))
         )",
     ))
     .await
@@ -151,6 +164,94 @@ pub async fn find_admin_user_by_username(
         .one(db)
         .await
         .map_err(|e| ApiError::DbError(e.to_string()))
+}
+
+pub async fn find_admin_user_by_id(
+    db: &DatabaseConnection,
+    id: i32,
+) -> Result<Option<admin_user::Model>, ApiError> {
+    admin_user::Entity::find_by_id(id)
+        .one(db)
+        .await
+        .map_err(|e| ApiError::DbError(e.to_string()))
+}
+
+// --- Refresh token CRUD ---
+
+pub async fn create_refresh_token(
+    db: &DatabaseConnection,
+    user_id: i32,
+    token_hash: &str,
+    expires_at: &str,
+) -> Result<refresh_token::Model, ApiError> {
+    let model = refresh_token::ActiveModel {
+        id: Default::default(),
+        user_id: Set(user_id),
+        token_hash: Set(token_hash.to_owned()),
+        expires_at: Set(expires_at.to_owned()),
+        created_at: Set(chrono::Utc::now().format("%Y-%m-%d %H:%M:%S").to_string()),
+    };
+
+    let result = refresh_token::Entity::insert(model)
+        .exec(db)
+        .await
+        .map_err(|e| ApiError::DbError(e.to_string()))?;
+
+    refresh_token::Entity::find_by_id(result.last_insert_id)
+        .one(db)
+        .await
+        .map_err(|e| ApiError::DbError(e.to_string()))?
+        .ok_or_else(|| ApiError::DbError("Failed to retrieve created refresh token".into()))
+}
+
+pub async fn find_refresh_token_by_hash(
+    db: &DatabaseConnection,
+    token_hash: &str,
+) -> Result<Option<refresh_token::Model>, ApiError> {
+    use sea_orm::ColumnTrait;
+    use sea_orm::QueryFilter;
+    refresh_token::Entity::find()
+        .filter(refresh_token::Column::TokenHash.eq(token_hash))
+        .one(db)
+        .await
+        .map_err(|e| ApiError::DbError(e.to_string()))
+}
+
+pub async fn delete_refresh_token(db: &DatabaseConnection, id: i32) -> Result<(), ApiError> {
+    refresh_token::Entity::delete_by_id(id)
+        .exec(db)
+        .await
+        .map_err(|e| ApiError::DbError(e.to_string()))?;
+
+    Ok(())
+}
+
+pub async fn delete_refresh_tokens_for_user(
+    db: &DatabaseConnection,
+    user_id: i32,
+) -> Result<(), ApiError> {
+    use sea_orm::ColumnTrait;
+    use sea_orm::QueryFilter;
+    refresh_token::Entity::delete_many()
+        .filter(refresh_token::Column::UserId.eq(user_id))
+        .exec(db)
+        .await
+        .map_err(|e| ApiError::DbError(e.to_string()))?;
+
+    Ok(())
+}
+
+pub async fn delete_expired_refresh_tokens(db: &DatabaseConnection) -> Result<u64, ApiError> {
+    let now = chrono::Utc::now().format("%Y-%m-%d %H:%M:%S").to_string();
+    use sea_orm::ColumnTrait;
+    use sea_orm::QueryFilter;
+    let result = refresh_token::Entity::delete_many()
+        .filter(refresh_token::Column::ExpiresAt.lt(now))
+        .exec(db)
+        .await
+        .map_err(|e| ApiError::DbError(e.to_string()))?;
+
+    Ok(result.rows_affected)
 }
 
 // --- Server CRUD ---

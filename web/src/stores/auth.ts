@@ -1,6 +1,6 @@
 import { ref } from 'vue'
 import { defineStore } from 'pinia'
-import { api, setAuthToken, loadAuthToken } from '@/lib/api'
+import { api, setAuthToken, setRefreshToken, loadAuthToken, clearAllTokens } from '@/lib/api'
 
 export const useAuthStore = defineStore('auth', () => {
   const token = ref<string | null>(loadAuthToken())
@@ -30,6 +30,7 @@ export const useAuthStore = defineStore('auth', () => {
       const res = await api.login(username, password)
       token.value = res.token
       setAuthToken(res.token)
+      setRefreshToken(res.refresh_token)
       authenticated.value = true
     } catch (e) {
       error.value = e instanceof Error ? e.message : 'Login failed'
@@ -46,6 +47,7 @@ export const useAuthStore = defineStore('auth', () => {
       const res = await api.register(username, password)
       token.value = res.token
       setAuthToken(res.token)
+      setRefreshToken(res.refresh_token)
       authenticated.value = true
       setupRequired.value = false
     } catch (e) {
@@ -56,9 +58,14 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  function logout() {
+  async function logout() {
+    try {
+      await api.logout()
+    } catch {
+      // Best-effort server-side revocation
+    }
     token.value = null
-    setAuthToken(null)
+    clearAllTokens()
     authenticated.value = false
   }
 

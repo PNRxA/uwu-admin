@@ -4,6 +4,7 @@ use axum::http::request::Parts;
 use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
+use sha2::{Sha256, Digest};
 
 use crate::db;
 use crate::error::ApiError;
@@ -40,7 +41,7 @@ pub fn verify_password(password: &str, hash: &str) -> Result<bool, ApiError> {
 
 fn create_token(username: &str, secret: &[u8]) -> Result<String, ApiError> {
     let exp = chrono::Utc::now()
-        .checked_add_signed(chrono::Duration::days(30))
+        .checked_add_signed(chrono::Duration::minutes(15))
         .expect("valid timestamp")
         .timestamp() as usize;
 
@@ -55,6 +56,39 @@ fn create_token(username: &str, secret: &[u8]) -> Result<String, ApiError> {
         &EncodingKey::from_secret(secret),
     )
     .map_err(|e| ApiError::BadRequest(format!("Failed to create token: {e}")))
+}
+
+fn generate_refresh_token() -> String {
+    use rand::Rng;
+    let mut rng = rand::thread_rng();
+    let bytes: Vec<u8> = (0..32).map(|_| rng.r#gen::<u8>()).collect();
+    bytes.iter().map(|b| format!("{b:02x}")).collect()
+}
+
+fn hash_refresh_token(token: &str) -> String {
+    let mut hasher = Sha256::new();
+    hasher.update(token.as_bytes());
+    format!("{:x}", hasher.finalize())
+}
+
+async fn issue_token_pair(
+    db: &sea_orm::DatabaseConnection,
+    jwt_secret: &[u8],
+    user_id: i32,
+    username: &str,
+) -> Result<(String, String), ApiError> {
+    let access_token = create_token(username, jwt_secret)?;
+    let raw_refresh = generate_refresh_token();
+    let token_hash = hash_refresh_token(&raw_refresh);
+    let expires_at = chrono::Utc::now()
+        .checked_add_signed(chrono::Duration::days(7))
+        .expect("valid timestamp")
+        .format("%Y-%m-%d %H:%M:%S")
+        .to_string();
+
+    db::create_refresh_token(db, user_id, &token_hash, &expires_at).await?;
+
+    Ok((access_token, raw_refresh))
 }
 
 // Extractor for authenticated requests
@@ -106,6 +140,11 @@ pub struct LoginRequest {
     password: String,
 }
 
+#[derive(Deserialize)]
+pub struct RefreshRequest {
+    refresh_token: String,
+}
+
 pub async fn auth_status(
     State(state): State<SharedState>,
 ) -> Result<Json<Value>, ApiError> {
@@ -133,12 +172,12 @@ pub async fn setup(
     }
 
     let password_hash = hash_password(&req.password)?;
-    db::create_admin_user(&state.db, &req.username, &password_hash).await?;
+    let user = db::create_admin_user(&state.db, &req.username, &password_hash).await?;
 
     tracing::info!("Admin account setup completed for user '{}'", req.username);
 
-    let token = create_token(&req.username, &state.jwt_secret)?;
-    Ok(Json(json!({ "token": token })))
+    let (token, refresh_token) = issue_token_pair(&state.db, &state.jwt_secret, user.id, &user.username).await?;
+    Ok(Json(json!({ "token": token, "refresh_token": refresh_token })))
 }
 
 pub async fn login(
@@ -160,6 +199,50 @@ pub async fn login(
 
     tracing::info!("Admin login successful for user '{}'", req.username);
 
-    let token = create_token(&req.username, &state.jwt_secret)?;
-    Ok(Json(json!({ "token": token })))
+    let (token, refresh_token) = issue_token_pair(&state.db, &state.jwt_secret, user.id, &user.username).await?;
+    Ok(Json(json!({ "token": token, "refresh_token": refresh_token })))
+}
+
+pub async fn refresh(
+    State(state): State<SharedState>,
+    Json(req): Json<RefreshRequest>,
+) -> Result<Json<Value>, ApiError> {
+    let token_hash = hash_refresh_token(&req.refresh_token);
+
+    let stored = db::find_refresh_token_by_hash(&state.db, &token_hash)
+        .await?
+        .ok_or(ApiError::Unauthorized)?;
+
+    // Validate expiry
+    let expires_at = chrono::NaiveDateTime::parse_from_str(&stored.expires_at, "%Y-%m-%d %H:%M:%S")
+        .map_err(|e| ApiError::DbError(format!("Invalid expiry format: {e}")))?;
+    let expires_at_utc = expires_at.and_utc();
+    if expires_at_utc < chrono::Utc::now() {
+        db::delete_refresh_token(&state.db, stored.id).await?;
+        return Err(ApiError::Unauthorized);
+    }
+
+    // Rotation: delete old refresh token (single-use)
+    db::delete_refresh_token(&state.db, stored.id).await?;
+
+    // Look up user
+    let user = db::find_admin_user_by_id(&state.db, stored.user_id)
+        .await?
+        .ok_or(ApiError::Unauthorized)?;
+
+    let (token, refresh_token) = issue_token_pair(&state.db, &state.jwt_secret, user.id, &user.username).await?;
+    Ok(Json(json!({ "token": token, "refresh_token": refresh_token })))
+}
+
+pub async fn logout(
+    State(state): State<SharedState>,
+    auth_user: AuthUser,
+) -> Result<Json<Value>, ApiError> {
+    let user = db::find_admin_user_by_username(&state.db, &auth_user.username)
+        .await?
+        .ok_or(ApiError::Unauthorized)?;
+
+    db::delete_refresh_tokens_for_user(&state.db, user.id).await?;
+
+    Ok(Json(json!({ "ok": true })))
 }
