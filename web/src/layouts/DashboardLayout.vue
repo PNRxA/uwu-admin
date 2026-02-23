@@ -31,6 +31,6 @@ const isConsolePage = computed(() => route.name === 'console')
       </main>
       <ConsolePanel v-if="!isConsolePage" />
     </SidebarInset>
-    <Toaster position="bottom-center" />
+    <Toaster position="bottom-center" rich-colors />
   </SidebarProvider>
 </template>
