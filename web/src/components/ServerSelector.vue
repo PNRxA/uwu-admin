@@ -86,14 +86,16 @@ async function onRemoveServer() {
 <template>
   <DropdownMenu>
     <DropdownMenuTrigger as-child>
-      <Button variant="ghost" class="gap-2 text-sm font-normal">
-        <Server class="size-4 text-muted-foreground" />
+      <Button variant="ghost" class="h-auto gap-2 py-1.5 font-normal">
+        <Server class="size-4 shrink-0 text-muted-foreground" />
         <template v-if="connection.activeServer">
-          <span class="text-muted-foreground">{{ connection.homeserver }}</span>
-          <span class="font-medium">{{ connection.userId }}</span>
+          <div class="flex flex-col items-start min-w-0">
+            <span class="text-xs truncate">{{ connection.homeserver }}</span>
+            <span class="text-[0.65rem] leading-tight text-muted-foreground truncate">{{ connection.userId }}</span>
+          </div>
         </template>
-        <span v-else class="text-muted-foreground">No server selected</span>
-        <ChevronDown class="size-3.5 text-muted-foreground" />
+        <span v-else class="text-sm text-muted-foreground">No server selected</span>
+        <ChevronDown class="size-3.5 shrink-0 text-muted-foreground" />
       </Button>
     </DropdownMenuTrigger>
     <DropdownMenuContent align="start" class="w-72">
