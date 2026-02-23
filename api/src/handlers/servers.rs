@@ -1,7 +1,10 @@
+use std::sync::Arc;
+
 use axum::Json;
 use axum::extract::{Path, State};
 use serde::Deserialize;
 use serde_json::{Value, json};
+use tokio::sync::Mutex;
 
 use crate::services::commands::validate_command;
 use crate::services::db;
@@ -53,7 +56,7 @@ pub async fn add_server(
     )
     .await?;
 
-    state.clients.lock().await.insert(server_id, client);
+    state.clients.lock().await.insert(server_id, Arc::new(Mutex::new(client)));
 
     tracing::info!(
         "Server added: id={}, homeserver={}, user_id={}",
@@ -110,9 +113,11 @@ pub async fn command(
 
     tracing::info!("Command executed: server_id={}, command='{}'", server_id, req.command);
 
-    let mut lock = state.clients.lock().await;
-    let client = lock.get_mut(&server_id).ok_or(ApiError::NotConnected)?;
-
+    let client = {
+        let lock = state.clients.lock().await;
+        Arc::clone(lock.get(&server_id).ok_or(ApiError::NotConnected)?)
+    };
+    let mut client = client.lock().await;
     let raw = client.execute_command(&req.command, server_id, &state.db).await?;
     let parsed = response::parse_response(&raw);
     Ok(Json(json!({ "response": raw, "parsed": parsed })))
@@ -122,9 +127,11 @@ pub async fn list_users(
     State(state): State<SharedState>,
     Path(server_id): Path<i32>,
 ) -> Result<Json<Value>, ApiError> {
-    let mut lock = state.clients.lock().await;
-    let client = lock.get_mut(&server_id).ok_or(ApiError::NotConnected)?;
-
+    let client = {
+        let lock = state.clients.lock().await;
+        Arc::clone(lock.get(&server_id).ok_or(ApiError::NotConnected)?)
+    };
+    let mut client = client.lock().await;
     let raw = client.execute_command("users list-users", server_id, &state.db).await?;
     let parsed = response::parse_response(&raw);
     Ok(Json(json!({ "response": raw, "parsed": parsed })))
@@ -145,8 +152,16 @@ pub async fn create_user(
         }
     }
 
-    let mut lock = state.clients.lock().await;
-    let client = lock.get_mut(&server_id).ok_or(ApiError::NotConnected)?;
+    validation::validate_command_arg(&req.username, "username")?;
+    if let Some(ref pw) = req.password {
+        validation::validate_command_arg(pw, "password")?;
+    }
+
+    let client = {
+        let lock = state.clients.lock().await;
+        Arc::clone(lock.get(&server_id).ok_or(ApiError::NotConnected)?)
+    };
+    let mut client = client.lock().await;
 
     let cmd = match req.password {
         Some(ref pw) => format!("users create-user {} {}", req.username, pw),
@@ -167,9 +182,11 @@ pub async fn list_rooms(
     State(state): State<SharedState>,
     Path(server_id): Path<i32>,
 ) -> Result<Json<Value>, ApiError> {
-    let mut lock = state.clients.lock().await;
-    let client = lock.get_mut(&server_id).ok_or(ApiError::NotConnected)?;
-
+    let client = {
+        let lock = state.clients.lock().await;
+        Arc::clone(lock.get(&server_id).ok_or(ApiError::NotConnected)?)
+    };
+    let mut client = client.lock().await;
     let raw = client.execute_command("rooms list-rooms", server_id, &state.db).await?;
     let parsed = response::parse_response(&raw);
     Ok(Json(json!({ "response": raw, "parsed": parsed })))
@@ -179,9 +196,11 @@ pub async fn server_status(
     State(state): State<SharedState>,
     Path(server_id): Path<i32>,
 ) -> Result<Json<Value>, ApiError> {
-    let mut lock = state.clients.lock().await;
-    let client = lock.get_mut(&server_id).ok_or(ApiError::NotConnected)?;
-
+    let client = {
+        let lock = state.clients.lock().await;
+        Arc::clone(lock.get(&server_id).ok_or(ApiError::NotConnected)?)
+    };
+    let mut client = client.lock().await;
     let raw = client
         .execute_command("server memory-usage", server_id, &state.db)
         .await?;
@@ -193,9 +212,11 @@ pub async fn server_uptime(
     State(state): State<SharedState>,
     Path(server_id): Path<i32>,
 ) -> Result<Json<Value>, ApiError> {
-    let mut lock = state.clients.lock().await;
-    let client = lock.get_mut(&server_id).ok_or(ApiError::NotConnected)?;
-
+    let client = {
+        let lock = state.clients.lock().await;
+        Arc::clone(lock.get(&server_id).ok_or(ApiError::NotConnected)?)
+    };
+    let mut client = client.lock().await;
     let raw = client
         .execute_command("server uptime", server_id, &state.db)
         .await?;

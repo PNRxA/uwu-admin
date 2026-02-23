@@ -14,6 +14,10 @@ static COMMAND_TREE: LazyLock<Vec<CommandNode>> = LazyLock::new(|| {
         .expect("invalid command-tree.json")
 });
 
+pub fn init() {
+    LazyLock::force(&COMMAND_TREE);
+}
+
 pub fn validate_command(input: &str) -> Result<(), String> {
     let tokens: Vec<&str> = input.split_whitespace().collect();
     if tokens.is_empty() {

@@ -42,6 +42,8 @@ static TABLE_ID_RE: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"^(!\S+)\s+").unwrap());
 static KV_RE: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"^(.+?):\s+(.+)$").unwrap());
+static NUMERIC_ENTITY_RE: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"&#(x[0-9a-fA-F]+|\d+);").unwrap());
 
 /// Extract "Key: Value" pairs from a string like "Members: 5  Name: General".
 /// Splits on successive `[A-Z]\w*:\s+` boundaries to avoid needing lookahead.
@@ -85,13 +87,27 @@ pub fn strip_html(html: &str) -> String {
     }
 
     // Decode common HTML entities
-    result
+    let result = result
         .replace("&amp;", "&")
         .replace("&lt;", "<")
         .replace("&gt;", ">")
         .replace("&quot;", "\"")
         .replace("&#39;", "'")
-        .replace("&nbsp;", " ")
+        .replace("&nbsp;", " ");
+
+    // Decode numeric HTML entities (decimal and hex)
+    NUMERIC_ENTITY_RE.replace_all(&result, |caps: &regex::Captures| {
+        let inner = &caps[1];
+        let code_point = if let Some(hex) = inner.strip_prefix('x') {
+            u32::from_str_radix(hex, 16).ok()
+        } else {
+            inner.parse::<u32>().ok()
+        };
+        match code_point.and_then(char::from_u32) {
+            Some(ch) => ch.to_string(),
+            None => caps[0].to_string(),
+        }
+    }).into_owned()
 }
 
 pub fn parse_response(html: &str) -> ParsedResponse {
@@ -213,6 +229,28 @@ mod tests {
     fn strip_html_decodes_entities() {
         assert_eq!(strip_html("&amp; &lt; &gt;"), "& < >");
         assert_eq!(strip_html("&quot;hi&#39;"), "\"hi'");
+    }
+
+    #[test]
+    fn strip_html_decodes_decimal_numeric_entities() {
+        assert_eq!(strip_html("&#65;&#66;&#67;"), "ABC");
+    }
+
+    #[test]
+    fn strip_html_decodes_hex_numeric_entities() {
+        assert_eq!(strip_html("&#x41;&#x42;&#x43;"), "ABC");
+    }
+
+    #[test]
+    fn strip_html_decodes_mixed_numeric_entities() {
+        // copyright sign (©) = &#169; and heart (♥) = &#x2665;
+        assert_eq!(strip_html("&#169; &#x2665;"), "\u{00A9} \u{2665}");
+    }
+
+    #[test]
+    fn strip_html_preserves_invalid_numeric_entity() {
+        // 0xFFFFFF is not a valid Unicode code point
+        assert_eq!(strip_html("&#xFFFFFF;"), "&#xFFFFFF;");
     }
 
     #[test]

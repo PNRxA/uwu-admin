@@ -5,6 +5,9 @@ mod routes;
 mod services;
 mod state;
 
+use std::sync::Arc;
+use tokio::sync::Mutex;
+
 use crate::services::matrix::MatrixClient;
 use crate::state::AppState;
 
@@ -14,6 +17,8 @@ async fn main() {
 
     // Load .env file if present (useful for development)
     dotenvy::dotenv().ok();
+
+    services::commands::init();
 
     let database_url =
         std::env::var("DATABASE_URL").unwrap_or_else(|_| "sqlite:uwu-admin.db?mode=rwc".into());
@@ -128,7 +133,7 @@ async fn main() {
                 {
                     Ok(client) => {
                         tracing::info!("Server {} restored for {}", server.id, server.user_id);
-                        state.clients.lock().await.insert(server.id, client);
+                        state.clients.lock().await.insert(server.id, Arc::new(Mutex::new(client)));
                     }
                     Err(e) => {
                         tracing::warn!(

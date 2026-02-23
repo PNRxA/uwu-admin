@@ -15,6 +15,8 @@ use http_body_util::BodyExt;
 use serde_json::{Value, json};
 use tower::ServiceExt;
 
+use zeroize::Zeroizing;
+
 use crate::services::db;
 use crate::state::{AppState, SharedState};
 
@@ -22,8 +24,8 @@ async fn test_state() -> SharedState {
     let db = db::init_db("sqlite::memory:")
         .await
         .expect("in-memory DB");
-    let jwt_secret = vec![0xAA; 32];
-    let encryption_key = vec![0xBB; 32];
+    let jwt_secret = Zeroizing::new(vec![0xAA; 32]);
+    let encryption_key = Zeroizing::new(vec![0xBB; 32]);
     AppState::new(db, jwt_secret, encryption_key)
 }
 

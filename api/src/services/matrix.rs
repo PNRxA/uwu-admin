@@ -5,6 +5,8 @@ use uuid::Uuid;
 use super::db;
 use crate::error::ApiError;
 
+const MATRIX_API_VERSION: &str = "v3";
+
 pub struct MatrixClient {
     http: reqwest::Client,
     pub homeserver: String,
@@ -35,7 +37,7 @@ impl MatrixClient {
             .map_err(|e| ApiError::MatrixError(e.to_string()))?;
         let hs = homeserver.trim_end_matches('/');
 
-        let login_url = format!("{hs}/_matrix/client/v3/login");
+        let login_url = format!("{hs}/_matrix/client/{MATRIX_API_VERSION}/login");
         let body = json!({
             "type": "m.login.password",
             "identifier": {
@@ -118,7 +120,7 @@ impl MatrixClient {
 
     async fn validate_token(&self) -> Result<(), ApiError> {
         let url = format!(
-            "{}/_matrix/client/v3/sync?timeout=0&filter={{\"room\":{{\"timeline\":{{\"limit\":0}}}}}}",
+            "{}/_matrix/client/{MATRIX_API_VERSION}/sync?timeout=0&filter={{\"room\":{{\"timeline\":{{\"limit\":0}}}}}}",
             self.homeserver
         );
 
@@ -140,7 +142,7 @@ impl MatrixClient {
 
     async fn initial_sync(&mut self) -> Result<(), ApiError> {
         let url = format!(
-            "{}/_matrix/client/v3/sync?timeout=0&filter={{\"room\":{{\"timeline\":{{\"limit\":0}}}}}}",
+            "{}/_matrix/client/{MATRIX_API_VERSION}/sync?timeout=0&filter={{\"room\":{{\"timeline\":{{\"limit\":0}}}}}}",
             self.homeserver
         );
 
@@ -169,7 +171,7 @@ impl MatrixClient {
     async fn send_message(&self, body: &str) -> Result<(), ApiError> {
         let txn_id = Uuid::new_v4().to_string();
         let url = format!(
-            "{}/_matrix/client/v3/rooms/{}/send/m.room.message/{txn_id}",
+            "{}/_matrix/client/{MATRIX_API_VERSION}/rooms/{}/send/m.room.message/{txn_id}",
             self.homeserver,
             urlencoded(&self.room_id)
         );
@@ -203,7 +205,7 @@ impl MatrixClient {
     ) -> Result<String, ApiError> {
         for _ in 0..3 {
             let mut url = format!(
-                "{}/_matrix/client/v3/sync?timeout=10000",
+                "{}/_matrix/client/{MATRIX_API_VERSION}/sync?timeout=10000",
                 self.homeserver
             );
             if let Some(since) = &self.since {
@@ -280,7 +282,7 @@ async fn resolve_alias(
     alias: &str,
 ) -> Result<String, ApiError> {
     let url = format!(
-        "{homeserver}/_matrix/client/v3/directory/room/{}",
+        "{homeserver}/_matrix/client/{MATRIX_API_VERSION}/directory/room/{}",
         urlencoded(alias)
     );
 

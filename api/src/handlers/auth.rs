@@ -10,6 +10,9 @@ use crate::services::db;
 use crate::error::ApiError;
 use crate::state::SharedState;
 
+const ACCESS_TOKEN_EXPIRY_MINUTES: i64 = 15;
+const REFRESH_TOKEN_EXPIRY_DAYS: i64 = 7;
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Claims {
     pub sub: String,
@@ -41,7 +44,7 @@ pub fn verify_password(password: &str, hash: &str) -> Result<bool, ApiError> {
 
 fn create_token(username: &str, secret: &[u8]) -> Result<String, ApiError> {
     let exp = chrono::Utc::now()
-        .checked_add_signed(chrono::Duration::minutes(15))
+        .checked_add_signed(chrono::Duration::minutes(ACCESS_TOKEN_EXPIRY_MINUTES))
         .ok_or_else(|| ApiError::BadRequest("Failed to compute token expiry".into()))?
         .timestamp() as usize;
 
@@ -80,7 +83,7 @@ async fn issue_token_pair(
     let raw_refresh = generate_refresh_token();
     let token_hash = hash_refresh_token(&raw_refresh);
     let expires_at = chrono::Utc::now()
-        .checked_add_signed(chrono::Duration::days(7))
+        .checked_add_signed(chrono::Duration::days(REFRESH_TOKEN_EXPIRY_DAYS))
         .ok_or_else(|| ApiError::BadRequest("Failed to compute refresh token expiry".into()))?
         .format("%Y-%m-%d %H:%M:%S")
         .to_string();
