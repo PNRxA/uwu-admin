@@ -627,6 +627,7 @@ struct TestArg {
     name: String,
     arg_type: String,
     required: bool,
+    long: Option<String>,
 }
 
 #[derive(Debug)]
@@ -655,6 +656,7 @@ fn parse_command_tree(value: &[Value]) -> Vec<TestNode> {
                             name: a["name"].as_str().unwrap_or("").to_string(),
                             arg_type: a["type"].as_str().unwrap_or("string").to_string(),
                             required: a["required"].as_bool().unwrap_or(false),
+                            long: a["long"].as_str().map(|s| s.to_string()),
                         })
                         .collect()
                 })
@@ -800,6 +802,9 @@ async fn execute_all_command_tree_commands() {
         "users force-join-list-of-local-users",
         // Requires confirmation flag
         "users force-join-all-local-users",
+        // Times out (long-running operation)
+        "query raw compact",
+        "debug trim-memory",
     ];
 
     let mut tested = 0u32;
@@ -836,8 +841,12 @@ async fn execute_all_command_tree_commands() {
                         "path" => "/tmp/test".to_string(),
                         _ => "test".to_string(),
                     };
-                    s.push(' ');
-                    s.push_str(&val);
+                    if let Some(long) = &arg.long {
+                        s.push_str(&format!(" --{long} {val}"));
+                    } else {
+                        s.push(' ');
+                        s.push_str(&val);
+                    }
                 }
                 s
             }

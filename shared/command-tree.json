@@ -1,7 +1,7 @@
 [
   {
     "name": "appservices",
-    "description": "Appservice management",
+    "description": "Commands for managing appservices",
     "children": [
       {
         "name": "register",
@@ -12,8 +12,8 @@
         "description": "Unregister an appservice using its ID",
         "args": [
           {
-            "name": "appservice_id",
-            "description": "Appservice identifier",
+            "name": "appservice_identifier",
+            "description": "The appservice to unregister",
             "required": true,
             "type": "string"
           }
@@ -21,11 +21,11 @@
       },
       {
         "name": "show-appservice-config",
-        "description": "Show an appservice config using its ID",
+        "description": "Show an appservice's config using its ID",
         "args": [
           {
-            "name": "appservice_id",
-            "description": "Appservice identifier",
+            "name": "appservice_identifier",
+            "description": "The appservice to show",
             "required": true,
             "type": "string"
           }
@@ -33,13 +33,13 @@
       },
       {
         "name": "list-registered",
-        "description": "List all currently registered appservices"
+        "description": "List all the currently registered appservices"
       }
     ]
   },
   {
     "name": "users",
-    "description": "User account management",
+    "description": "Commands for managing local users",
     "children": [
       {
         "name": "create-user",
@@ -47,13 +47,13 @@
         "args": [
           {
             "name": "username",
-            "description": "Username",
+            "description": "Username of the new user",
             "required": true,
-            "type": "string"
+            "type": "user_id"
           },
           {
             "name": "password",
-            "description": "Password",
+            "description": "Password of the new user, if unspecified one is generated",
             "required": false,
             "type": "string"
           }
@@ -65,13 +65,13 @@
         "args": [
           {
             "name": "username",
-            "description": "Username",
+            "description": "Username of the user for whom the password should be reset",
             "required": true,
-            "type": "string"
+            "type": "user_id"
           },
           {
             "name": "password",
-            "description": "New password",
+            "description": "New password for the user, if unspecified one is generated",
             "required": false,
             "type": "string"
           }
@@ -79,11 +79,11 @@
       },
       {
         "name": "deactivate",
-        "description": "Deactivate a user account",
+        "description": "Deactivate a user",
         "args": [
           {
             "name": "user_id",
-            "description": "Full user ID",
+            "description": "",
             "required": true,
             "type": "user_id"
           }
@@ -91,15 +91,15 @@
       },
       {
         "name": "deactivate-all",
-        "description": "Deactivate multiple users (code block)"
+        "description": "Deactivate a list of users"
       },
       {
         "name": "logout",
-        "description": "Force logout a user",
+        "description": "Forcefully log a user out of all of their devices",
         "args": [
           {
             "name": "user_id",
-            "description": "Full user ID",
+            "description": "Username of the user to log out",
             "required": true,
             "type": "user_id"
           }
@@ -107,11 +107,11 @@
       },
       {
         "name": "suspend",
-        "description": "Suspend a user (read-only access)",
+        "description": "Suspend a user",
         "args": [
           {
             "name": "user_id",
-            "description": "Full user ID",
+            "description": "Username of the user to suspend",
             "required": true,
             "type": "user_id"
           }
@@ -123,7 +123,7 @@
         "args": [
           {
             "name": "user_id",
-            "description": "Full user ID",
+            "description": "Username of the user to unsuspend",
             "required": true,
             "type": "user_id"
           }
@@ -131,11 +131,11 @@
       },
       {
         "name": "lock",
-        "description": "Lock a user account (no access)",
+        "description": "Lock a user",
         "args": [
           {
             "name": "user_id",
-            "description": "Full user ID",
+            "description": "Username of the user to lock",
             "required": true,
             "type": "user_id"
           }
@@ -143,11 +143,11 @@
       },
       {
         "name": "unlock",
-        "description": "Unlock a user account",
+        "description": "Unlock a user",
         "args": [
           {
             "name": "user_id",
-            "description": "Full user ID",
+            "description": "Username of the user to unlock",
             "required": true,
             "type": "user_id"
           }
@@ -159,7 +159,7 @@
         "args": [
           {
             "name": "user_id",
-            "description": "Full user ID",
+            "description": "Username of the user to enable login for",
             "required": true,
             "type": "user_id"
           }
@@ -167,11 +167,11 @@
       },
       {
         "name": "disable-login",
-        "description": "Disable login for a user (keep sessions)",
+        "description": "Disable login for a user",
         "args": [
           {
             "name": "user_id",
-            "description": "Full user ID",
+            "description": "Username of the user to disable login for",
             "required": true,
             "type": "user_id"
           }
@@ -179,15 +179,15 @@
       },
       {
         "name": "list-users",
-        "description": "List all local users"
+        "description": "List local users in the database"
       },
       {
         "name": "list-joined-rooms",
-        "description": "List rooms a user has joined",
+        "description": "Lists all the rooms (local and remote) that the specified user is joined in",
         "args": [
           {
             "name": "user_id",
-            "description": "Full user ID",
+            "description": "",
             "required": true,
             "type": "user_id"
           }
@@ -195,17 +195,17 @@
       },
       {
         "name": "force-join-room",
-        "description": "Force join a user to a room",
+        "description": "Manually join a local user to a room",
         "args": [
           {
             "name": "user_id",
-            "description": "Full user ID",
+            "description": "",
             "required": true,
             "type": "user_id"
           },
           {
             "name": "room_id",
-            "description": "Room ID or alias",
+            "description": "",
             "required": true,
             "type": "room_id"
           }
@@ -213,17 +213,17 @@
       },
       {
         "name": "force-leave-room",
-        "description": "Force a user to leave a room",
+        "description": "Manually leave a local user from a room",
         "args": [
           {
             "name": "user_id",
-            "description": "Full user ID",
+            "description": "",
             "required": true,
             "type": "user_id"
           },
           {
             "name": "room_id",
-            "description": "Room ID or alias",
+            "description": "",
             "required": true,
             "type": "room_id"
           }
@@ -231,41 +231,41 @@
       },
       {
         "name": "force-leave-remote-room",
-        "description": "Force leave a remote room",
+        "description": "Manually leave a remote room for a local user",
         "args": [
           {
             "name": "user_id",
-            "description": "Full user ID",
+            "description": "",
             "required": true,
             "type": "user_id"
           },
           {
             "name": "room_id",
-            "description": "Room ID or alias",
+            "description": "",
             "required": true,
             "type": "room_id"
           },
           {
             "name": "via",
-            "description": "Server to route via",
+            "description": "",
             "required": false,
-            "type": "server"
+            "type": "string"
           }
         ]
       },
       {
         "name": "force-demote",
-        "description": "Drop power levels for a user in a room",
+        "description": "Forces the specified user to drop their power levels to the room default, if their permissions allow and the auth check permits",
         "args": [
           {
             "name": "user_id",
-            "description": "Full user ID",
+            "description": "",
             "required": true,
             "type": "user_id"
           },
           {
             "name": "room_id",
-            "description": "Room ID or alias",
+            "description": "",
             "required": true,
             "type": "room_id"
           }
@@ -273,11 +273,11 @@
       },
       {
         "name": "make-user-admin",
-        "description": "Grant admin privileges to a user",
+        "description": "Grant server-admin privileges to a user",
         "args": [
           {
             "name": "user_id",
-            "description": "Full user ID",
+            "description": "",
             "required": true,
             "type": "user_id"
           }
@@ -285,23 +285,23 @@
       },
       {
         "name": "put-room-tag",
-        "description": "Set a room tag for a user",
+        "description": "Puts a room tag for the specified user and room ID",
         "args": [
           {
             "name": "user_id",
-            "description": "Full user ID",
+            "description": "",
             "required": true,
             "type": "user_id"
           },
           {
             "name": "room_id",
-            "description": "Room ID",
+            "description": "",
             "required": true,
             "type": "room_id"
           },
           {
             "name": "tag",
-            "description": "Tag name",
+            "description": "",
             "required": true,
             "type": "string"
           }
@@ -309,23 +309,23 @@
       },
       {
         "name": "delete-room-tag",
-        "description": "Delete a room tag for a user",
+        "description": "Deletes the room tag for the specified user and room ID",
         "args": [
           {
             "name": "user_id",
-            "description": "Full user ID",
+            "description": "",
             "required": true,
             "type": "user_id"
           },
           {
             "name": "room_id",
-            "description": "Room ID",
+            "description": "",
             "required": true,
             "type": "room_id"
           },
           {
             "name": "tag",
-            "description": "Tag name",
+            "description": "",
             "required": true,
             "type": "string"
           }
@@ -333,17 +333,17 @@
       },
       {
         "name": "get-room-tags",
-        "description": "Get room tags for a user",
+        "description": "Gets all the room tags for the specified user and room ID",
         "args": [
           {
             "name": "user_id",
-            "description": "Full user ID",
+            "description": "",
             "required": true,
             "type": "user_id"
           },
           {
             "name": "room_id",
-            "description": "Room ID",
+            "description": "",
             "required": true,
             "type": "room_id"
           }
@@ -351,11 +351,11 @@
       },
       {
         "name": "redact-event",
-        "description": "Redact an event from a local user",
+        "description": "Attempts to forcefully redact the specified event ID from the sender user",
         "args": [
           {
             "name": "event_id",
-            "description": "Event ID",
+            "description": "",
             "required": true,
             "type": "event_id"
           }
@@ -363,11 +363,11 @@
       },
       {
         "name": "force-join-list-of-local-users",
-        "description": "Bulk join local users to a room (code block)",
+        "description": "Force joins a specified list of local users to join the specified room",
         "args": [
           {
             "name": "room_id",
-            "description": "Room ID or alias",
+            "description": "",
             "required": true,
             "type": "room_id"
           }
@@ -375,11 +375,11 @@
       },
       {
         "name": "force-join-all-local-users",
-        "description": "Join all local users to a room",
+        "description": "Force joins all local users to the specified room",
         "args": [
           {
             "name": "room_id",
-            "description": "Room ID or alias",
+            "description": "",
             "required": true,
             "type": "room_id"
           }
@@ -389,11 +389,27 @@
   },
   {
     "name": "token",
-    "description": "Registration token management",
+    "description": "Commands for managing registration tokens",
     "children": [
       {
         "name": "issue",
-        "description": "Issue a new registration token"
+        "description": "Issue a new registration token",
+        "args": [
+          {
+            "name": "max_uses",
+            "description": "The maximum number of times this token is allowed to be used before it expires",
+            "required": false,
+            "type": "number",
+            "long": "max-uses"
+          },
+          {
+            "name": "max_age",
+            "description": "The maximum age of this token (e.g. 30s, 5m, 7d). It will expire after this much time has passed",
+            "required": false,
+            "type": "string",
+            "long": "max-age"
+          }
+        ]
       },
       {
         "name": "revoke",
@@ -401,7 +417,7 @@
         "args": [
           {
             "name": "token",
-            "description": "Token string",
+            "description": "The token to revoke",
             "required": true,
             "type": "string"
           }
@@ -415,43 +431,31 @@
   },
   {
     "name": "rooms",
-    "description": "Room management",
+    "description": "Commands for managing rooms",
     "children": [
       {
         "name": "list-rooms",
-        "description": "List all rooms",
+        "description": "List all rooms the server knows about",
         "args": [
           {
             "name": "page",
-            "description": "Page number",
+            "description": "",
             "required": false,
             "type": "number"
           }
         ]
       },
       {
-        "name": "exists",
-        "description": "Check if a room exists",
-        "args": [
-          {
-            "name": "room_id",
-            "description": "Room ID",
-            "required": true,
-            "type": "room_id"
-          }
-        ]
-      },
-      {
         "name": "info",
-        "description": "Room information commands",
+        "description": "View information about a room we know about",
         "children": [
           {
             "name": "list-joined-members",
-            "description": "List room members",
+            "description": "List joined members in a room",
             "args": [
               {
                 "name": "room_id",
-                "description": "Room ID",
+                "description": "",
                 "required": true,
                 "type": "room_id"
               }
@@ -459,11 +463,11 @@
           },
           {
             "name": "view-room-topic",
-            "description": "View the room topic",
+            "description": "Displays room topic",
             "args": [
               {
                 "name": "room_id",
-                "description": "Room ID",
+                "description": "",
                 "required": true,
                 "type": "room_id"
               }
@@ -473,15 +477,15 @@
       },
       {
         "name": "moderation",
-        "description": "Room moderation commands",
+        "description": "Manage moderation of remote or local rooms",
         "children": [
           {
             "name": "ban-room",
-            "description": "Ban a room",
+            "description": "Bans a room from local users joining and evicts all our local users (including server admins) from the room. Also blocks any invites (local and remote) for the banned room, and disables federation entirely with it",
             "args": [
               {
                 "name": "room",
-                "description": "Room ID or alias",
+                "description": "The room in the format of `!roomid:example.com` or a room alias in the format of `#roomalias:example.com`",
                 "required": true,
                 "type": "room_id"
               }
@@ -489,15 +493,15 @@
           },
           {
             "name": "ban-list-of-rooms",
-            "description": "Ban multiple rooms (code block)"
+            "description": "Bans a list of rooms (room IDs and room aliases) from a newline delimited codeblock similar to `user deactivate-all`. Applies the same steps as ban-room"
           },
           {
             "name": "unban-room",
-            "description": "Unban a room",
+            "description": "Unbans a room to allow local users to join again",
             "args": [
               {
                 "name": "room",
-                "description": "Room ID or alias",
+                "description": "The room in the format of `!roomid:example.com` or a room alias in the format of `#roomalias:example.com`",
                 "required": true,
                 "type": "room_id"
               }
@@ -505,27 +509,27 @@
           },
           {
             "name": "list-banned-rooms",
-            "description": "List all banned rooms"
+            "description": "List of all rooms we have banned"
           }
         ]
       },
       {
         "name": "alias",
-        "description": "Room alias commands",
+        "description": "Manage rooms' aliases",
         "children": [
           {
             "name": "set",
-            "description": "Set a room alias",
+            "description": "Make an alias point to a room",
             "args": [
               {
                 "name": "room_id",
-                "description": "Room ID",
+                "description": "The room id to set the alias on",
                 "required": true,
                 "type": "room_id"
               },
               {
-                "name": "alias_localpart",
-                "description": "Alias localpart",
+                "name": "room_alias_localpart",
+                "description": "The alias localpart to use (`alias`, not `#alias:servername.tld`)",
                 "required": true,
                 "type": "string"
               }
@@ -533,11 +537,11 @@
           },
           {
             "name": "remove",
-            "description": "Remove a room alias",
+            "description": "Remove a local alias",
             "args": [
               {
-                "name": "alias_localpart",
-                "description": "Alias localpart",
+                "name": "room_alias_localpart",
+                "description": "The alias localpart to remove (`alias`, not `#alias:servername.tld`)",
                 "required": true,
                 "type": "string"
               }
@@ -545,11 +549,11 @@
           },
           {
             "name": "which",
-            "description": "Show which room uses an alias",
+            "description": "Show which room is using an alias",
             "args": [
               {
-                "name": "alias_localpart",
-                "description": "Alias localpart",
+                "name": "room_alias_localpart",
+                "description": "The alias localpart to look up (`alias`, not `#alias:servername.tld`)",
                 "required": true,
                 "type": "string"
               }
@@ -557,11 +561,11 @@
           },
           {
             "name": "list",
-            "description": "List room aliases",
+            "description": "List aliases currently being used",
             "args": [
               {
                 "name": "room_id",
-                "description": "Room ID",
+                "description": "If set, only list the aliases for this room",
                 "required": false,
                 "type": "room_id"
               }
@@ -571,15 +575,15 @@
       },
       {
         "name": "directory",
-        "description": "Room directory commands",
+        "description": "Manage the room directory",
         "children": [
           {
             "name": "publish",
-            "description": "Publish a room to the directory",
+            "description": "Publish a room to the room directory",
             "args": [
               {
                 "name": "room_id",
-                "description": "Room ID",
+                "description": "The room id of the room to publish",
                 "required": true,
                 "type": "room_id"
               }
@@ -587,11 +591,11 @@
           },
           {
             "name": "unpublish",
-            "description": "Unpublish a room from the directory",
+            "description": "Unpublish a room to the room directory",
             "args": [
               {
                 "name": "room_id",
-                "description": "Room ID",
+                "description": "The room id of the room to unpublish",
                 "required": true,
                 "type": "room_id"
               }
@@ -599,15 +603,27 @@
           },
           {
             "name": "list",
-            "description": "List published rooms",
+            "description": "List rooms that are published",
             "args": [
               {
                 "name": "page",
-                "description": "Page number",
+                "description": "",
                 "required": false,
                 "type": "number"
               }
             ]
+          }
+        ]
+      },
+      {
+        "name": "exists",
+        "description": "Check if we know about a room",
+        "args": [
+          {
+            "name": "room_id",
+            "description": "",
+            "required": true,
+            "type": "room_id"
           }
         ]
       }
@@ -615,19 +631,19 @@
   },
   {
     "name": "federation",
-    "description": "Federation control",
+    "description": "Commands for managing federation",
     "children": [
       {
         "name": "incoming-federation",
-        "description": "List incoming PDU handling"
+        "description": "List all rooms we are currently handling an incoming pdu from"
       },
       {
         "name": "disable-room",
-        "description": "Disable federation for a room",
+        "description": "Disables incoming federation handling for a room",
         "args": [
           {
             "name": "room_id",
-            "description": "Room ID",
+            "description": "",
             "required": true,
             "type": "room_id"
           }
@@ -635,11 +651,11 @@
       },
       {
         "name": "enable-room",
-        "description": "Enable federation for a room",
+        "description": "Enables incoming federation handling for a room again",
         "args": [
           {
             "name": "room_id",
-            "description": "Room ID",
+            "description": "",
             "required": true,
             "type": "room_id"
           }
@@ -647,11 +663,11 @@
       },
       {
         "name": "fetch-support-well-known",
-        "description": "Fetch support info from a server",
+        "description": "Fetch `/.well-known/matrix/support` from the specified server",
         "args": [
           {
             "name": "server_name",
-            "description": "Server name",
+            "description": "",
             "required": true,
             "type": "server"
           }
@@ -659,11 +675,11 @@
       },
       {
         "name": "remote-user-in-rooms",
-        "description": "List rooms shared with a remote user",
+        "description": "Lists all the rooms we share/track with the specified *remote* user",
         "args": [
           {
             "name": "user_id",
-            "description": "Full user ID",
+            "description": "",
             "required": true,
             "type": "user_id"
           }
@@ -673,39 +689,39 @@
   },
   {
     "name": "server",
-    "description": "Server administration",
+    "description": "Commands for managing the server",
     "children": [
       {
         "name": "uptime",
-        "description": "Show server uptime"
+        "description": "Time elapsed since startup"
       },
       {
         "name": "show-config",
-        "description": "Show server configuration"
+        "description": "Show configuration values"
       },
       {
         "name": "reload-config",
-        "description": "Reload server configuration",
+        "description": "Reload configuration values",
         "args": [
           {
             "name": "path",
-            "description": "Config file path",
+            "description": "",
             "required": false,
-            "type": "path"
+            "type": "string"
           }
         ]
       },
       {
         "name": "memory-usage",
-        "description": "Show memory usage statistics"
+        "description": "Print database memory usage statistics"
       },
       {
         "name": "clear-caches",
-        "description": "Clear all server caches"
+        "description": "Clears all of Continuwuity's caches"
       },
       {
         "name": "backup-database",
-        "description": "Backup the database"
+        "description": "Performs an online backup of the database (only available for RocksDB at the moment)"
       },
       {
         "name": "list-backups",
@@ -713,19 +729,19 @@
       },
       {
         "name": "admin-notice",
-        "description": "Send a notice to the admin room",
+        "description": "Send a message to the admin room",
         "args": [
           {
             "name": "message",
-            "description": "Message text",
-            "required": true,
+            "description": "",
+            "required": false,
             "type": "string"
           }
         ]
       },
       {
         "name": "reload-mods",
-        "description": "Hot-reload server modules"
+        "description": "Hot-reload the server"
       },
       {
         "name": "restart",
@@ -739,31 +755,39 @@
   },
   {
     "name": "media",
-    "description": "Media file management",
+    "description": "Commands for managing media",
     "children": [
       {
         "name": "delete",
-        "description": "Delete media by MXC URI or event ID",
+        "description": "Deletes a single media file from our database and on the filesystem via a single MXC URL or event ID (not redacted)",
         "args": [
           {
             "name": "mxc",
-            "description": "MXC URI or --event-id",
+            "description": "The MXC URL to delete",
             "required": false,
-            "type": "string"
+            "type": "string",
+            "long": "mxc"
+          },
+          {
+            "name": "event_id",
+            "description": "The message event ID which contains the media and thumbnail MXC URLs",
+            "required": false,
+            "type": "event_id",
+            "long": "event-id"
           }
         ]
       },
       {
         "name": "delete-list",
-        "description": "Delete multiple MXC URIs (code block)"
+        "description": "Deletes a codeblock list of MXC URLs from our database and on the filesystem. This will always ignore errors"
       },
       {
         "name": "delete-past-remote-media",
-        "description": "Delete old remote media",
+        "description": "Deletes all remote (and optionally local) media created before/after\n[duration] ago, using filesystem metadata first created at date, or\nfallback to last modified date. This will always ignore errors by\ndefault.",
         "args": [
           {
             "name": "duration",
-            "description": "Duration threshold",
+            "description": "The relative time (e.g. 30s, 5m, 7d) from now within which to search",
             "required": true,
             "type": "string"
           }
@@ -771,23 +795,23 @@
       },
       {
         "name": "delete-all-from-user",
-        "description": "Delete all of a user's media",
+        "description": "Deletes all the local media from a local user on our server. This will always ignore errors by default",
         "args": [
           {
             "name": "username",
-            "description": "Username",
+            "description": "",
             "required": true,
-            "type": "string"
+            "type": "user_id"
           }
         ]
       },
       {
         "name": "delete-all-from-server",
-        "description": "Delete all media from a server",
+        "description": "Deletes all remote media from the specified remote server. This will always ignore errors by default",
         "args": [
           {
             "name": "server_name",
-            "description": "Server name",
+            "description": "",
             "required": true,
             "type": "server"
           }
@@ -795,11 +819,11 @@
       },
       {
         "name": "get-file-info",
-        "description": "Get media file metadata",
+        "description": "",
         "args": [
           {
             "name": "mxc",
-            "description": "MXC URI",
+            "description": "The MXC URL to lookup info for",
             "required": true,
             "type": "string"
           }
@@ -807,25 +831,67 @@
       },
       {
         "name": "get-remote-file",
-        "description": "Fetch a remote media file",
+        "description": "",
         "args": [
           {
             "name": "mxc",
-            "description": "MXC URI",
+            "description": "The MXC URL to fetch",
             "required": true,
             "type": "string"
+          },
+          {
+            "name": "server",
+            "description": "",
+            "required": false,
+            "type": "server",
+            "long": "server"
+          },
+          {
+            "name": "timeout",
+            "description": "",
+            "required": false,
+            "type": "number",
+            "long": "timeout"
           }
         ]
       },
       {
         "name": "get-remote-thumbnail",
-        "description": "Fetch a remote thumbnail",
+        "description": "",
         "args": [
           {
             "name": "mxc",
-            "description": "MXC URI",
+            "description": "The MXC URL to fetch",
             "required": true,
             "type": "string"
+          },
+          {
+            "name": "server",
+            "description": "",
+            "required": false,
+            "type": "server",
+            "long": "server"
+          },
+          {
+            "name": "timeout",
+            "description": "",
+            "required": false,
+            "type": "number",
+            "long": "timeout"
+          },
+          {
+            "name": "width",
+            "description": "",
+            "required": false,
+            "type": "number",
+            "long": "width"
+          },
+          {
+            "name": "height",
+            "description": "",
+            "required": false,
+            "type": "number",
+            "long": "height"
           }
         ]
       }
@@ -833,37 +899,37 @@
   },
   {
     "name": "check",
-    "description": "Database integrity checks",
+    "description": "Commands for checking integrity",
     "children": [
       {
         "name": "check-all-users",
-        "description": "Check all users in the database"
+        "description": "Uses the iterator in `src/database/key_value/users.rs` to iterator over every user in our database (remote and local). Reports total count, any errors if there were any, etc"
       }
     ]
   },
   {
     "name": "debug",
-    "description": "Debugging and troubleshooting",
+    "description": "Commands for debugging things",
     "children": [
       {
         "name": "echo",
-        "description": "Echo a message",
+        "description": "Echo input of admin command",
         "args": [
           {
             "name": "message",
-            "description": "Message text",
-            "required": true,
+            "description": "",
+            "required": false,
             "type": "string"
           }
         ]
       },
       {
         "name": "get-auth-chain",
-        "description": "Get auth chain for an event",
+        "description": "Get the auth_chain of a PDU",
         "args": [
           {
             "name": "event_id",
-            "description": "Event ID",
+            "description": "An event ID (the $ character followed by the base64 reference hash)",
             "required": true,
             "type": "event_id"
           }
@@ -871,15 +937,15 @@
       },
       {
         "name": "parse-pdu",
-        "description": "Parse a PDU from JSON (code block)"
+        "description": "Parse and print a PDU from a JSON"
       },
       {
         "name": "get-pdu",
-        "description": "Get a PDU from the database",
+        "description": "Retrieve and print a PDU by EventID from the Continuwuity database",
         "args": [
           {
             "name": "event_id",
-            "description": "Event ID",
+            "description": "An event ID (a $ followed by the base64 reference hash)",
             "required": true,
             "type": "event_id"
           }
@@ -887,17 +953,17 @@
       },
       {
         "name": "get-short-pdu",
-        "description": "Get a PDU by short IDs",
+        "description": "Retrieve and print a PDU by PduId from the Continuwuity database",
         "args": [
           {
             "name": "shortroomid",
-            "description": "Short room ID",
+            "description": "Shortroomid integer",
             "required": true,
             "type": "number"
           },
           {
             "name": "shorteventid",
-            "description": "Short event ID",
+            "description": "Shorteventid integer",
             "required": true,
             "type": "number"
           }
@@ -905,17 +971,17 @@
       },
       {
         "name": "get-remote-pdu",
-        "description": "Fetch a PDU from a remote server",
+        "description": "Attempts to retrieve a PDU from a remote server. **Does not** insert it into the database or persist it anywhere",
         "args": [
           {
             "name": "event_id",
-            "description": "Event ID",
+            "description": "An event ID (a $ followed by the base64 reference hash)",
             "required": true,
             "type": "event_id"
           },
           {
             "name": "server",
-            "description": "Server name",
+            "description": "Argument for us to attempt to fetch the event from the specified remote server",
             "required": true,
             "type": "server"
           }
@@ -923,11 +989,11 @@
       },
       {
         "name": "get-remote-pdu-list",
-        "description": "Fetch multiple PDUs from a server (code block)",
+        "description": "Same as `get-remote-pdu` but accepts a codeblock newline delimited list of PDUs and a single server to fetch from",
         "args": [
           {
             "name": "server",
-            "description": "Server name",
+            "description": "Argument for us to attempt to fetch all the events from the specified remote server",
             "required": true,
             "type": "server"
           }
@@ -935,11 +1001,11 @@
       },
       {
         "name": "get-room-state",
-        "description": "Get full room state",
+        "description": "Gets all the room state events for the specified room",
         "args": [
           {
             "name": "room_id",
-            "description": "Room ID or alias",
+            "description": "Room ID",
             "required": true,
             "type": "room_id"
           }
@@ -947,23 +1013,30 @@
       },
       {
         "name": "get-signing-keys",
-        "description": "Get signing keys for a server",
+        "description": "Get and display signing keys from local cache or remote server",
         "args": [
           {
             "name": "server_name",
-            "description": "Server name",
+            "description": "",
             "required": false,
             "type": "server"
+          },
+          {
+            "name": "notary",
+            "description": "",
+            "required": false,
+            "type": "server",
+            "long": "notary"
           }
         ]
       },
       {
         "name": "get-verify-keys",
-        "description": "Get verify keys for a server",
+        "description": "Get and display signing keys from local cache or remote server",
         "args": [
           {
             "name": "server_name",
-            "description": "Server name",
+            "description": "",
             "required": false,
             "type": "server"
           }
@@ -971,11 +1044,11 @@
       },
       {
         "name": "ping",
-        "description": "Ping a federation endpoint",
+        "description": "Sends a federation request to the remote server's `/_matrix/federation/v1/version` endpoint and measures the latency it took for the server to respond",
         "args": [
           {
             "name": "server",
-            "description": "Server name",
+            "description": "",
             "required": true,
             "type": "server"
           }
@@ -983,15 +1056,15 @@
       },
       {
         "name": "force-device-list-updates",
-        "description": "Mark all devices as needing update"
+        "description": "Forces device lists for all local and remote users to be updated (as having new keys available)"
       },
       {
         "name": "change-log-level",
-        "description": "Change server log level",
+        "description": "Change tracing log level/filter on the fly",
         "args": [
           {
             "name": "filter",
-            "description": "Log filter string",
+            "description": "Log level/filter",
             "required": false,
             "type": "string"
           }
@@ -999,15 +1072,15 @@
       },
       {
         "name": "verify-json",
-        "description": "Verify JSON signatures (code block)"
+        "description": "Verify JSON signatures"
       },
       {
         "name": "verify-pdu",
-        "description": "Re-verify a PDU",
+        "description": "Verify PDU",
         "args": [
           {
             "name": "event_id",
-            "description": "Event ID",
+            "description": "",
             "required": true,
             "type": "event_id"
           }
@@ -1015,11 +1088,11 @@
       },
       {
         "name": "first-pdu-in-room",
-        "description": "Get the first PDU in a room",
+        "description": "Prints the very first PDU in the specified room (typically m.room.create)",
         "args": [
           {
             "name": "room_id",
-            "description": "Room ID",
+            "description": "The room ID",
             "required": true,
             "type": "room_id"
           }
@@ -1027,11 +1100,11 @@
       },
       {
         "name": "latest-pdu-in-room",
-        "description": "Get the latest PDU in a room",
+        "description": "Prints the latest (\"last\") PDU in the specified room (typically a message)",
         "args": [
           {
             "name": "room_id",
-            "description": "Room ID",
+            "description": "The room ID",
             "required": true,
             "type": "room_id"
           }
@@ -1039,23 +1112,23 @@
       },
       {
         "name": "force-set-room-state-from-server",
-        "description": "Force room state from a remote server",
+        "description": "Forcefully replaces the room state of our local copy of the specified room, with the copy (auth chain and room state events) the specified remote server says",
         "args": [
           {
             "name": "room_id",
-            "description": "Room ID",
+            "description": "The impacted room ID",
             "required": true,
             "type": "room_id"
           },
           {
             "name": "server_name",
-            "description": "Server name",
+            "description": "The server we will use to query the room state for",
             "required": true,
             "type": "server"
           },
           {
             "name": "event_id",
-            "description": "Event ID",
+            "description": "The event ID of the latest known PDU in the room. Will be found automatically if not provided",
             "required": false,
             "type": "event_id"
           }
@@ -1063,11 +1136,11 @@
       },
       {
         "name": "resolve-true-destination",
-        "description": "Resolve true destination for a server",
+        "description": "Runs a server name through Continuwuity's true destination resolution process",
         "args": [
           {
             "name": "server_name",
-            "description": "Server name",
+            "description": "",
             "required": true,
             "type": "server"
           }
@@ -1075,11 +1148,11 @@
       },
       {
         "name": "memory-stats",
-        "description": "Show extended memory statistics",
+        "description": "Print extended memory usage",
         "args": [
           {
             "name": "opts",
-            "description": "Options",
+            "description": "",
             "required": false,
             "type": "string"
           }
@@ -1087,31 +1160,38 @@
       },
       {
         "name": "runtime-metrics",
-        "description": "Show tokio runtime metrics"
+        "description": "Print general tokio runtime metric totals"
       },
       {
         "name": "runtime-interval",
-        "description": "Show tokio runtime interval"
+        "description": "Print detailed tokio runtime metrics accumulated since last command invocation"
       },
       {
         "name": "time",
-        "description": "Show current server time"
+        "description": "Print the current time"
       },
       {
         "name": "database-stats",
-        "description": "Show database statistics",
+        "description": "Get database statistics",
         "args": [
           {
             "name": "property",
-            "description": "Property name",
+            "description": "",
             "required": false,
             "type": "string"
+          },
+          {
+            "name": "map",
+            "description": "",
+            "required": false,
+            "type": "string",
+            "long": "map"
           }
         ]
       },
       {
         "name": "trim-memory",
-        "description": "Trim memory allocator"
+        "description": "Trim memory usage"
       },
       {
         "name": "database-files",
@@ -1119,9 +1199,38 @@
         "args": [
           {
             "name": "map",
-            "description": "Map name",
+            "description": "",
             "required": false,
             "type": "string"
+          },
+          {
+            "name": "level",
+            "description": "",
+            "required": false,
+            "type": "number",
+            "long": "level"
+          }
+        ]
+      },
+      {
+        "name": "tester",
+        "description": "Developer test stubs",
+        "children": [
+          {
+            "name": "panic",
+            "description": ""
+          },
+          {
+            "name": "failure",
+            "description": ""
+          },
+          {
+            "name": "tester",
+            "description": ""
+          },
+          {
+            "name": "timer",
+            "description": ""
           }
         ]
       }
@@ -1129,15 +1238,15 @@
   },
   {
     "name": "query",
-    "description": "Low-level database queries",
+    "description": "Low-level queries for database getters and iterators",
     "children": [
       {
         "name": "account-data",
-        "description": "Account data queries",
+        "description": "account_data.rs iterators and getters",
         "children": [
           {
             "name": "changes-since",
-            "description": "Account data changes since timestamp",
+            "description": "Returns all changes to the account data that happened after `since`",
             "args": [
               {
                 "name": "user_id",
@@ -1147,13 +1256,13 @@
               },
               {
                 "name": "since",
-                "description": "UNIX timestamp",
+                "description": "UNIX timestamp since (u64)",
                 "required": true,
                 "type": "number"
               },
               {
                 "name": "room_id",
-                "description": "Room ID",
+                "description": "Optional room ID of the account data",
                 "required": false,
                 "type": "room_id"
               }
@@ -1161,7 +1270,7 @@
           },
           {
             "name": "account-data-get",
-            "description": "Get account data by kind",
+            "description": "Searches the account data for a specific kind",
             "args": [
               {
                 "name": "user_id",
@@ -1171,13 +1280,13 @@
               },
               {
                 "name": "kind",
-                "description": "Event type",
+                "description": "Account data event type",
                 "required": true,
                 "type": "string"
               },
               {
                 "name": "room_id",
-                "description": "Room ID",
+                "description": "Optional room ID of the account data",
                 "required": false,
                 "type": "room_id"
               }
@@ -1187,15 +1296,15 @@
       },
       {
         "name": "appservice",
-        "description": "Appservice queries",
+        "description": "appservice.rs iterators and getters",
         "children": [
           {
             "name": "get-registration",
-            "description": "Get appservice registration info",
+            "description": "Gets the appservice registration info/details from the ID as a string",
             "args": [
               {
                 "name": "appservice_id",
-                "description": "Appservice ID",
+                "description": "Appservice registration ID",
                 "required": true,
                 "type": "string"
               }
@@ -1203,17 +1312,17 @@
           },
           {
             "name": "all",
-            "description": "Get all appservice registrations"
+            "description": "Gets all appservice registrations with their ID and registration info"
           }
         ]
       },
       {
         "name": "presence",
-        "description": "Presence queries",
+        "description": "presence.rs iterators and getters",
         "children": [
           {
             "name": "get-presence",
-            "description": "Get latest presence for a user",
+            "description": "Returns the latest presence event for the given user",
             "args": [
               {
                 "name": "user_id",
@@ -1225,11 +1334,11 @@
           },
           {
             "name": "presence-since",
-            "description": "Presence updates since timestamp",
+            "description": "Iterator of the most recent presence updates that happened after the event with id `since`",
             "args": [
               {
                 "name": "since",
-                "description": "UNIX timestamp",
+                "description": "UNIX timestamp since (u64)",
                 "required": true,
                 "type": "number"
               }
@@ -1239,11 +1348,11 @@
       },
       {
         "name": "room-alias",
-        "description": "Room alias queries",
+        "description": "rooms/alias.rs iterators and getters",
         "children": [
           {
             "name": "resolve-local-alias",
-            "description": "Resolve a local room alias",
+            "description": "",
             "args": [
               {
                 "name": "alias",
@@ -1255,11 +1364,11 @@
           },
           {
             "name": "local-aliases-for-room",
-            "description": "List local aliases for a room",
+            "description": "Iterator of all our local room aliases for the room ID",
             "args": [
               {
                 "name": "room_id",
-                "description": "Room ID",
+                "description": "Full room ID",
                 "required": true,
                 "type": "room_id"
               }
@@ -1267,27 +1376,27 @@
           },
           {
             "name": "all-local-aliases",
-            "description": "List all local aliases"
+            "description": "Iterator of all our local aliases in our database with their room IDs"
           }
         ]
       },
       {
         "name": "room-state-cache",
-        "description": "Room state cache queries",
+        "description": "rooms/state_cache iterators and getters",
         "children": [
           {
             "name": "server-in-room",
-            "description": "Check if a server is in a room",
+            "description": "",
             "args": [
               {
                 "name": "server",
-                "description": "Server name",
+                "description": "",
                 "required": true,
                 "type": "server"
               },
               {
                 "name": "room_id",
-                "description": "Room ID",
+                "description": "",
                 "required": true,
                 "type": "room_id"
               }
@@ -1295,11 +1404,11 @@
           },
           {
             "name": "room-servers",
-            "description": "List servers in a room",
+            "description": "",
             "args": [
               {
                 "name": "room_id",
-                "description": "Room ID",
+                "description": "",
                 "required": true,
                 "type": "room_id"
               }
@@ -1307,11 +1416,11 @@
           },
           {
             "name": "server-rooms",
-            "description": "List rooms a server is in",
+            "description": "",
             "args": [
               {
                 "name": "server",
-                "description": "Server name",
+                "description": "",
                 "required": true,
                 "type": "server"
               }
@@ -1319,11 +1428,11 @@
           },
           {
             "name": "room-members",
-            "description": "List room members",
+            "description": "",
             "args": [
               {
                 "name": "room_id",
-                "description": "Room ID",
+                "description": "",
                 "required": true,
                 "type": "room_id"
               }
@@ -1331,11 +1440,11 @@
           },
           {
             "name": "local-users-in-room",
-            "description": "List local users in a room",
+            "description": "",
             "args": [
               {
                 "name": "room_id",
-                "description": "Room ID",
+                "description": "",
                 "required": true,
                 "type": "room_id"
               }
@@ -1343,11 +1452,11 @@
           },
           {
             "name": "active-local-users-in-room",
-            "description": "List active local users in a room",
+            "description": "",
             "args": [
               {
                 "name": "room_id",
-                "description": "Room ID",
+                "description": "",
                 "required": true,
                 "type": "room_id"
               }
@@ -1355,11 +1464,11 @@
           },
           {
             "name": "room-joined-count",
-            "description": "Get joined member count",
+            "description": "",
             "args": [
               {
                 "name": "room_id",
-                "description": "Room ID",
+                "description": "",
                 "required": true,
                 "type": "room_id"
               }
@@ -1367,11 +1476,11 @@
           },
           {
             "name": "room-invited-count",
-            "description": "Get invited member count",
+            "description": "",
             "args": [
               {
                 "name": "room_id",
-                "description": "Room ID",
+                "description": "",
                 "required": true,
                 "type": "room_id"
               }
@@ -1379,11 +1488,11 @@
           },
           {
             "name": "room-user-once-joined",
-            "description": "List users who once joined a room",
+            "description": "",
             "args": [
               {
                 "name": "room_id",
-                "description": "Room ID",
+                "description": "",
                 "required": true,
                 "type": "room_id"
               }
@@ -1391,11 +1500,11 @@
           },
           {
             "name": "room-members-invited",
-            "description": "List invited members",
+            "description": "",
             "args": [
               {
                 "name": "room_id",
-                "description": "Room ID",
+                "description": "",
                 "required": true,
                 "type": "room_id"
               }
@@ -1403,17 +1512,17 @@
           },
           {
             "name": "get-invite-count",
-            "description": "Get invite count for user in room",
+            "description": "",
             "args": [
               {
                 "name": "room_id",
-                "description": "Room ID",
+                "description": "",
                 "required": true,
                 "type": "room_id"
               },
               {
                 "name": "user_id",
-                "description": "Full user ID",
+                "description": "",
                 "required": true,
                 "type": "user_id"
               }
@@ -1421,17 +1530,17 @@
           },
           {
             "name": "get-left-count",
-            "description": "Get left count for user in room",
+            "description": "",
             "args": [
               {
                 "name": "room_id",
-                "description": "Room ID",
+                "description": "",
                 "required": true,
                 "type": "room_id"
               },
               {
                 "name": "user_id",
-                "description": "Full user ID",
+                "description": "",
                 "required": true,
                 "type": "user_id"
               }
@@ -1439,11 +1548,11 @@
           },
           {
             "name": "rooms-joined",
-            "description": "List rooms a user has joined",
+            "description": "",
             "args": [
               {
                 "name": "user_id",
-                "description": "Full user ID",
+                "description": "",
                 "required": true,
                 "type": "user_id"
               }
@@ -1451,11 +1560,11 @@
           },
           {
             "name": "rooms-left",
-            "description": "List rooms a user has left",
+            "description": "",
             "args": [
               {
                 "name": "user_id",
-                "description": "Full user ID",
+                "description": "",
                 "required": true,
                 "type": "user_id"
               }
@@ -1463,11 +1572,11 @@
           },
           {
             "name": "rooms-invited",
-            "description": "List rooms a user is invited to",
+            "description": "",
             "args": [
               {
                 "name": "user_id",
-                "description": "Full user ID",
+                "description": "",
                 "required": true,
                 "type": "user_id"
               }
@@ -1475,17 +1584,17 @@
           },
           {
             "name": "invite-state",
-            "description": "Get invite state for user in room",
+            "description": "",
             "args": [
               {
                 "name": "user_id",
-                "description": "Full user ID",
+                "description": "",
                 "required": true,
                 "type": "user_id"
               },
               {
                 "name": "room_id",
-                "description": "Room ID",
+                "description": "",
                 "required": true,
                 "type": "room_id"
               }
@@ -1495,33 +1604,40 @@
       },
       {
         "name": "room-timeline",
-        "description": "Room timeline queries",
+        "description": "rooms/timeline iterators and getters",
         "children": [
           {
             "name": "pdus",
-            "description": "Get PDUs from a room timeline",
+            "description": "",
             "args": [
               {
                 "name": "room_id",
-                "description": "Room ID or alias",
+                "description": "",
                 "required": true,
                 "type": "room_id"
               },
               {
                 "name": "from",
-                "description": "Pagination token",
+                "description": "",
                 "required": false,
                 "type": "string"
+              },
+              {
+                "name": "limit",
+                "description": "",
+                "required": false,
+                "type": "number",
+                "long": "limit"
               }
             ]
           },
           {
             "name": "last",
-            "description": "Get last event in room timeline",
+            "description": "",
             "args": [
               {
                 "name": "room_id",
-                "description": "Room ID or alias",
+                "description": "",
                 "required": true,
                 "type": "room_id"
               }
@@ -1531,29 +1647,29 @@
       },
       {
         "name": "globals",
-        "description": "Global database queries",
+        "description": "globals.rs iterators and getters",
         "children": [
           {
             "name": "database-version",
-            "description": "Get database version"
+            "description": ""
           },
           {
             "name": "current-count",
-            "description": "Get current count"
+            "description": ""
           },
           {
             "name": "last-check-for-announcements-id",
-            "description": "Get last announcements check ID"
+            "description": ""
           },
           {
             "name": "signing-keys-for",
-            "description": "Get signing keys for a server",
+            "description": "This returns an empty `Ok(BTreeMap<..>)` when there are no keys found for the server",
             "args": [
               {
-                "name": "server",
-                "description": "Server name",
+                "name": "origin",
+                "description": "",
                 "required": true,
-                "type": "server"
+                "type": "string"
               }
             ]
           }
@@ -1561,27 +1677,87 @@
       },
       {
         "name": "sending",
-        "description": "Sending service queries",
+        "description": "sending.rs iterators and getters",
         "children": [
           {
             "name": "active-requests",
-            "description": "List all active sending requests"
+            "description": "Queries database for all `servercurrentevent_data`"
           },
           {
             "name": "active-requests-for",
-            "description": "Active requests for a destination"
+            "description": "Queries database for `servercurrentevent_data` but for a specific destination",
+            "args": [
+              {
+                "name": "appservice_id",
+                "description": "",
+                "required": false,
+                "type": "string",
+                "long": "appservice-id"
+              },
+              {
+                "name": "server_name",
+                "description": "",
+                "required": false,
+                "type": "server",
+                "long": "server-name"
+              },
+              {
+                "name": "user_id",
+                "description": "",
+                "required": false,
+                "type": "user_id",
+                "long": "user-id"
+              },
+              {
+                "name": "push_key",
+                "description": "",
+                "required": false,
+                "type": "string",
+                "long": "push-key"
+              }
+            ]
           },
           {
             "name": "queued-requests",
-            "description": "List queued sending requests"
+            "description": "Queries database for `servernameevent_data` which are the queued up requests that will eventually be sent",
+            "args": [
+              {
+                "name": "appservice_id",
+                "description": "",
+                "required": false,
+                "type": "string",
+                "long": "appservice-id"
+              },
+              {
+                "name": "server_name",
+                "description": "",
+                "required": false,
+                "type": "server",
+                "long": "server-name"
+              },
+              {
+                "name": "user_id",
+                "description": "",
+                "required": false,
+                "type": "user_id",
+                "long": "user-id"
+              },
+              {
+                "name": "push_key",
+                "description": "",
+                "required": false,
+                "type": "string",
+                "long": "push-key"
+              }
+            ]
           },
           {
             "name": "get-latest-edu-count",
-            "description": "Get latest EDU count for a server",
+            "description": "",
             "args": [
               {
                 "name": "server_name",
-                "description": "Server name",
+                "description": "",
                 "required": true,
                 "type": "server"
               }
@@ -1591,27 +1767,27 @@
       },
       {
         "name": "users",
-        "description": "User database queries",
+        "description": "users.rs iterators and getters",
         "children": [
           {
             "name": "count-users",
-            "description": "Count all users"
+            "description": ""
           },
           {
             "name": "iter-users",
-            "description": "Iterate all users"
+            "description": ""
           },
           {
             "name": "iter-users2",
-            "description": "Iterate all users (variant 2)"
+            "description": ""
           },
           {
             "name": "password-hash",
-            "description": "Get password hash for a user",
+            "description": "",
             "args": [
               {
                 "name": "user_id",
-                "description": "Full user ID",
+                "description": "",
                 "required": true,
                 "type": "user_id"
               }
@@ -1619,11 +1795,11 @@
           },
           {
             "name": "list-devices",
-            "description": "List devices for a user",
+            "description": "",
             "args": [
               {
                 "name": "user_id",
-                "description": "Full user ID",
+                "description": "",
                 "required": true,
                 "type": "user_id"
               }
@@ -1631,11 +1807,11 @@
           },
           {
             "name": "list-devices-metadata",
-            "description": "List device metadata for a user",
+            "description": "",
             "args": [
               {
                 "name": "user_id",
-                "description": "Full user ID",
+                "description": "",
                 "required": true,
                 "type": "user_id"
               }
@@ -1643,17 +1819,17 @@
           },
           {
             "name": "get-device-metadata",
-            "description": "Get device metadata",
+            "description": "",
             "args": [
               {
                 "name": "user_id",
-                "description": "Full user ID",
+                "description": "",
                 "required": true,
                 "type": "user_id"
               },
               {
                 "name": "device_id",
-                "description": "Device ID",
+                "description": "",
                 "required": true,
                 "type": "string"
               }
@@ -1661,11 +1837,11 @@
           },
           {
             "name": "get-devices-version",
-            "description": "Get devices version for a user",
+            "description": "",
             "args": [
               {
                 "name": "user_id",
-                "description": "Full user ID",
+                "description": "",
                 "required": true,
                 "type": "user_id"
               }
@@ -1673,17 +1849,17 @@
           },
           {
             "name": "count-one-time-keys",
-            "description": "Count one-time keys for a device",
+            "description": "",
             "args": [
               {
                 "name": "user_id",
-                "description": "Full user ID",
+                "description": "",
                 "required": true,
                 "type": "user_id"
               },
               {
                 "name": "device_id",
-                "description": "Device ID",
+                "description": "",
                 "required": true,
                 "type": "string"
               }
@@ -1691,17 +1867,17 @@
           },
           {
             "name": "get-device-keys",
-            "description": "Get device keys",
+            "description": "",
             "args": [
               {
                 "name": "user_id",
-                "description": "Full user ID",
+                "description": "",
                 "required": true,
                 "type": "user_id"
               },
               {
                 "name": "device_id",
-                "description": "Device ID",
+                "description": "",
                 "required": true,
                 "type": "string"
               }
@@ -1709,11 +1885,11 @@
           },
           {
             "name": "get-user-signing-key",
-            "description": "Get user signing key",
+            "description": "",
             "args": [
               {
                 "name": "user_id",
-                "description": "Full user ID",
+                "description": "",
                 "required": true,
                 "type": "user_id"
               }
@@ -1721,11 +1897,11 @@
           },
           {
             "name": "get-master-key",
-            "description": "Get master cross-signing key",
+            "description": "",
             "args": [
               {
                 "name": "user_id",
-                "description": "Full user ID",
+                "description": "",
                 "required": true,
                 "type": "user_id"
               }
@@ -1733,17 +1909,17 @@
           },
           {
             "name": "get-to-device-events",
-            "description": "Get to-device events",
+            "description": "",
             "args": [
               {
                 "name": "user_id",
-                "description": "Full user ID",
+                "description": "",
                 "required": true,
                 "type": "user_id"
               },
               {
                 "name": "device_id",
-                "description": "Device ID",
+                "description": "",
                 "required": true,
                 "type": "string"
               }
@@ -1751,11 +1927,11 @@
           },
           {
             "name": "get-latest-backup",
-            "description": "Get latest backup for a user",
+            "description": "",
             "args": [
               {
                 "name": "user_id",
-                "description": "Full user ID",
+                "description": "",
                 "required": true,
                 "type": "user_id"
               }
@@ -1763,11 +1939,11 @@
           },
           {
             "name": "get-latest-backup-version",
-            "description": "Get latest backup version",
+            "description": "",
             "args": [
               {
                 "name": "user_id",
-                "description": "Full user ID",
+                "description": "",
                 "required": true,
                 "type": "user_id"
               }
@@ -1775,17 +1951,17 @@
           },
           {
             "name": "get-backup-algorithm",
-            "description": "Get backup algorithm",
+            "description": "",
             "args": [
               {
                 "name": "user_id",
-                "description": "Full user ID",
+                "description": "",
                 "required": true,
                 "type": "user_id"
               },
               {
                 "name": "version",
-                "description": "Backup version",
+                "description": "",
                 "required": true,
                 "type": "string"
               }
@@ -1793,17 +1969,17 @@
           },
           {
             "name": "get-all-backups",
-            "description": "Get all backups for a version",
+            "description": "",
             "args": [
               {
                 "name": "user_id",
-                "description": "Full user ID",
+                "description": "",
                 "required": true,
                 "type": "user_id"
               },
               {
                 "name": "version",
-                "description": "Backup version",
+                "description": "",
                 "required": true,
                 "type": "string"
               }
@@ -1811,23 +1987,23 @@
           },
           {
             "name": "get-room-backups",
-            "description": "Get room backups",
+            "description": "",
             "args": [
               {
                 "name": "user_id",
-                "description": "Full user ID",
+                "description": "",
                 "required": true,
                 "type": "user_id"
               },
               {
                 "name": "version",
-                "description": "Backup version",
+                "description": "",
                 "required": true,
                 "type": "string"
               },
               {
                 "name": "room_id",
-                "description": "Room ID",
+                "description": "",
                 "required": true,
                 "type": "room_id"
               }
@@ -1835,29 +2011,29 @@
           },
           {
             "name": "get-backup-session",
-            "description": "Get backup session",
+            "description": "",
             "args": [
               {
                 "name": "user_id",
-                "description": "Full user ID",
+                "description": "",
                 "required": true,
                 "type": "user_id"
               },
               {
                 "name": "version",
-                "description": "Backup version",
+                "description": "",
                 "required": true,
                 "type": "string"
               },
               {
                 "name": "room_id",
-                "description": "Room ID",
+                "description": "",
                 "required": true,
                 "type": "room_id"
               },
               {
                 "name": "session_id",
-                "description": "Session ID",
+                "description": "",
                 "required": true,
                 "type": "string"
               }
@@ -1865,17 +2041,17 @@
           },
           {
             "name": "get-shared-rooms",
-            "description": "Get shared rooms between two users",
+            "description": "",
             "args": [
               {
                 "name": "user_a",
-                "description": "First user ID",
+                "description": "",
                 "required": true,
                 "type": "user_id"
               },
               {
                 "name": "user_b",
-                "description": "Second user ID",
+                "description": "",
                 "required": true,
                 "type": "user_id"
               }
@@ -1885,7 +2061,7 @@
       },
       {
         "name": "resolver",
-        "description": "Resolver queries",
+        "description": "resolver service",
         "children": [
           {
             "name": "destinations-cache",
@@ -1893,7 +2069,7 @@
             "args": [
               {
                 "name": "server_name",
-                "description": "Server name",
+                "description": "",
                 "required": false,
                 "type": "server"
               }
@@ -1905,7 +2081,7 @@
             "args": [
               {
                 "name": "name",
-                "description": "Name to look up",
+                "description": "",
                 "required": false,
                 "type": "string"
               }
@@ -1913,13 +2089,13 @@
           },
           {
             "name": "flush-cache",
-            "description": "Flush resolver caches",
+            "description": "Flush a specific server from the resolver caches or everything",
             "args": [
               {
                 "name": "name",
-                "description": "Server name to flush",
+                "description": "",
                 "required": false,
-                "type": "server"
+                "type": "string"
               }
             ]
           }
@@ -1927,11 +2103,11 @@
       },
       {
         "name": "pusher",
-        "description": "Pusher queries",
+        "description": "pusher service",
         "children": [
           {
             "name": "get-pushers",
-            "description": "Get pushers for a user",
+            "description": "Returns all the pushers for the user",
             "args": [
               {
                 "name": "user_id",
@@ -1945,15 +2121,15 @@
       },
       {
         "name": "short",
-        "description": "Short ID queries",
+        "description": "short service",
         "children": [
           {
             "name": "short-event-id",
-            "description": "Get short ID for an event",
+            "description": "",
             "args": [
               {
                 "name": "event_id",
-                "description": "Event ID",
+                "description": "",
                 "required": true,
                 "type": "event_id"
               }
@@ -1961,11 +2137,11 @@
           },
           {
             "name": "short-room-id",
-            "description": "Get short ID for a room",
+            "description": "",
             "args": [
               {
                 "name": "room_id",
-                "description": "Room ID or alias",
+                "description": "",
                 "required": true,
                 "type": "room_id"
               }
@@ -1975,7 +2151,7 @@
       },
       {
         "name": "raw",
-        "description": "Raw database access",
+        "description": "raw service",
         "children": [
           {
             "name": "raw-maps",
@@ -2001,7 +2177,7 @@
           },
           {
             "name": "raw-del",
-            "description": "Raw database delete",
+            "description": "Raw database delete (for string keys)",
             "args": [
               {
                 "name": "map",
@@ -2019,7 +2195,7 @@
           },
           {
             "name": "raw-keys",
-            "description": "Iterate database keys",
+            "description": "Raw database keys iteration",
             "args": [
               {
                 "name": "map",
@@ -2037,7 +2213,7 @@
           },
           {
             "name": "raw-keys-sizes",
-            "description": "Key size breakdown",
+            "description": "Raw database key size breakdown",
             "args": [
               {
                 "name": "map",
@@ -2055,7 +2231,7 @@
           },
           {
             "name": "raw-keys-total",
-            "description": "Total key bytes",
+            "description": "Raw database keys total bytes",
             "args": [
               {
                 "name": "map",
@@ -2073,7 +2249,7 @@
           },
           {
             "name": "raw-vals-sizes",
-            "description": "Value size breakdown",
+            "description": "Raw database values size breakdown",
             "args": [
               {
                 "name": "map",
@@ -2091,7 +2267,7 @@
           },
           {
             "name": "raw-vals-total",
-            "description": "Total value bytes",
+            "description": "Raw database values total bytes",
             "args": [
               {
                 "name": "map",
@@ -2109,7 +2285,7 @@
           },
           {
             "name": "raw-iter",
-            "description": "Iterate database items",
+            "description": "Raw database items iteration",
             "args": [
               {
                 "name": "map",
@@ -2127,7 +2303,7 @@
           },
           {
             "name": "raw-keys-from",
-            "description": "Iterate keys from a lower bound",
+            "description": "Raw database keys iteration",
             "args": [
               {
                 "name": "map",
@@ -2137,15 +2313,22 @@
               },
               {
                 "name": "start",
-                "description": "Lower bound",
+                "description": "Lower-bound",
                 "required": true,
                 "type": "string"
+              },
+              {
+                "name": "limit",
+                "description": "Limit",
+                "required": false,
+                "type": "number",
+                "long": "limit"
               }
             ]
           },
           {
             "name": "raw-iter-from",
-            "description": "Iterate items from a lower bound",
+            "description": "Raw database items iteration",
             "args": [
               {
                 "name": "map",
@@ -2155,15 +2338,22 @@
               },
               {
                 "name": "start",
-                "description": "Lower bound",
+                "description": "Lower-bound",
                 "required": true,
                 "type": "string"
+              },
+              {
+                "name": "limit",
+                "description": "Limit",
+                "required": false,
+                "type": "number",
+                "long": "limit"
               }
             ]
           },
           {
             "name": "raw-count",
-            "description": "Count database records",
+            "description": "Raw database record count",
             "args": [
               {
                 "name": "map",
@@ -2185,9 +2375,45 @@
             "args": [
               {
                 "name": "map",
-                "description": "Column/map name",
+                "description": "",
                 "required": false,
-                "type": "string"
+                "type": "string",
+                "long": "map"
+              },
+              {
+                "name": "start",
+                "description": "",
+                "required": false,
+                "type": "string",
+                "long": "start"
+              },
+              {
+                "name": "stop",
+                "description": "",
+                "required": false,
+                "type": "string",
+                "long": "stop"
+              },
+              {
+                "name": "from",
+                "description": "",
+                "required": false,
+                "type": "number",
+                "long": "from"
+              },
+              {
+                "name": "into",
+                "description": "",
+                "required": false,
+                "type": "number",
+                "long": "into"
+              },
+              {
+                "name": "parallelism",
+                "description": "There is one compaction job per column; then this controls how many columns are compacted in parallel. If zero, one compaction job is still run at a time here, but in exclusive-mode blocking any other automatic compaction jobs until complete",
+                "required": false,
+                "type": "number",
+                "long": "parallelism"
               }
             ]
           }

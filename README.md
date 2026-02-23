@@ -85,6 +85,18 @@ See [containers/](containers/) for Docker and Podman Quadlet deployment options.
 
 Both require `JWT_SECRET` and `ENCRYPTION_KEY` to be set as environment variables — see the example compose file and quadlet config.
 
+## Command Tree
+
+The file `shared/command-tree.json` describes every admin command (names, descriptions, argument types) and powers the console's autocomplete. It is auto-generated from the continuwuity source code via a custom xtask.
+
+To regenerate it after continuwuity's admin commands change:
+
+```sh
+./scripts/update-command-tree.sh
+```
+
+This runs `cargo xtask generate-command-tree` in the sibling `../continuwuity` directory and writes the output to `shared/command-tree.json`. Build prerequisites for the xtask are the same as for continuwuity itself (Rust, C/C++ compiler, libclang, liburing, make).
+
 ## Pages
 
 - **Overview** - Connection info, server uptime, and stats
