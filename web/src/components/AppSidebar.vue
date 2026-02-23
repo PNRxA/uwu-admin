@@ -78,7 +78,7 @@ async function handleLogout() {
       </SidebarGroup>
     </SidebarContent>
     <SidebarFooter class="p-4">
-      <Button variant="ghost" class="w-full justify-start gap-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0" @click="handleLogout">
+      <Button variant="ghost" class="w-full justify-start gap-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0 hover:bg-pink-100/60 hover:text-pink-700 dark:hover:bg-pink-950/40 dark:hover:text-pink-300" @click="handleLogout">
         <LogOut class="size-4" />
         <span class="group-data-[collapsible=icon]:hidden">{{ $t('sidebar.logout') }}</span>
       </Button>

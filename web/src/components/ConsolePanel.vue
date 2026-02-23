@@ -79,7 +79,8 @@ watch(() => commandStore.panelOpen, (open) => {
               <Separator />
             </div>
             <div v-if="commandStore.history.length === 0" class="text-center text-muted-foreground py-4 text-sm">
-              No commands sent yet.
+              <div class="text-lg mb-1">(=^-ω-^=)</div>
+              No commands sent yet~ type something!
             </div>
             <div id="console-panel-bottom" />
           </div>

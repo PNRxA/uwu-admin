@@ -26,9 +26,13 @@ async function onSubmit() {
 </script>
 
 <template>
-  <div class="flex min-h-screen items-center justify-center p-4">
-    <Card class="w-full max-w-md">
+  <div class="relative flex min-h-screen items-center justify-center p-4">
+    <div class="pointer-events-none absolute inset-0 flex items-center justify-center">
+      <div class="h-[500px] w-[500px] rounded-full bg-[radial-gradient(circle,oklch(0.72_0.14_350/0.15),transparent_70%)] dark:bg-[radial-gradient(circle,oklch(0.55_0.12_350/0.12),transparent_70%)]" />
+    </div>
+    <Card class="relative w-full max-w-md rounded-2xl">
       <CardHeader class="text-center">
+        <div class="text-muted-foreground text-sm mb-1">(=^-ω-^=) welcome back!</div>
         <CardTitle class="flex justify-center">
           <AppLogo size="lg" />
         </CardTitle>

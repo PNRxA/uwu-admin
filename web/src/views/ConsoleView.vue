@@ -57,6 +57,7 @@ const {
               <Separator />
             </div>
             <div v-if="commandStore.history.length === 0" class="text-center text-muted-foreground py-8">
+              <div class="text-2xl mb-2">(=^-ω-^=)</div>
               {{ $t('console.noCommandsYet') }}
             </div>
             <div id="console-bottom" />
