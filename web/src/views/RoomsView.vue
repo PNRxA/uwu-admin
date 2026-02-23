@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useQuery, useQueryClient } from '@tanstack/vue-query'
+import { useConnectionStore } from '@/stores/connection'
 import { api } from '@/lib/api'
 import { stripHtml } from '@/lib/response-parser'
 import { queryKeys } from '@/lib/query-keys'
@@ -20,6 +21,8 @@ import { RefreshCw } from 'lucide-vue-next'
 import RoomActionsMenu from '@/components/RoomActionsMenu.vue'
 
 const queryClient = useQueryClient()
+const connection = useConnectionStore()
+const serverId = computed(() => connection.activeServerId)
 
 interface Room {
   id: string
@@ -28,9 +31,10 @@ interface Room {
 }
 
 const { data: roomsResponse, isPending, isFetching, refetch } = useQuery({
-  queryKey: queryKeys.rooms,
-  queryFn: async () => (await api.listRooms()).response,
+  queryKey: computed(() => queryKeys.rooms(serverId.value!)),
+  queryFn: async () => (await api.listRooms(serverId.value!)).response,
   staleTime: 30_000,
+  enabled: computed(() => serverId.value !== null),
 })
 
 const rooms = computed<Room[]>(() => {
@@ -46,7 +50,9 @@ const rooms = computed<Room[]>(() => {
 })
 
 function onActionComplete() {
-  queryClient.invalidateQueries({ queryKey: queryKeys.rooms })
+  if (serverId.value !== null) {
+    queryClient.invalidateQueries({ queryKey: queryKeys.rooms(serverId.value) })
+  }
 }
 </script>
 
@@ -54,13 +60,17 @@ function onActionComplete() {
   <div class="flex flex-col gap-6">
     <div class="flex items-center gap-2">
       <h1 class="text-2xl font-bold">Rooms</h1>
-      <Button variant="ghost" size="icon-sm" :disabled="isFetching" @click="refetch()">
+      <Button variant="ghost" size="icon-sm" :disabled="isFetching || !serverId" @click="refetch()">
         <RefreshCw class="size-4" :class="{ 'animate-spin': isFetching }" />
         <span class="sr-only">Refresh</span>
       </Button>
     </div>
 
-    <Card>
+    <div v-if="!serverId" class="text-muted-foreground text-sm">
+      No server selected. Add a server using the selector in the top bar.
+    </div>
+
+    <Card v-else>
       <CardHeader>
         <CardTitle>Room List</CardTitle>
       </CardHeader>

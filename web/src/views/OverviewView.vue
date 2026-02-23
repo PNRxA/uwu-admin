@@ -12,15 +12,18 @@ import { RefreshCw } from 'lucide-vue-next'
 
 const connection = useConnectionStore()
 
+const serverId = computed(() => connection.activeServerId)
+
 const {
   data: uptime,
   isPending: uptimePending,
   isFetching: uptimeFetching,
   refetch: refetchUptime,
 } = useQuery({
-  queryKey: queryKeys.serverUptime,
-  queryFn: async () => (await api.serverUptime()).response,
+  queryKey: computed(() => queryKeys.serverUptime(serverId.value!)),
+  queryFn: async () => (await api.serverUptime(serverId.value!)).response,
   staleTime: 15_000,
+  enabled: computed(() => serverId.value !== null),
 })
 
 const {
@@ -29,9 +32,10 @@ const {
   isFetching: statsFetching,
   refetch: refetchStats,
 } = useQuery({
-  queryKey: queryKeys.serverStatus,
-  queryFn: async () => (await api.serverStatus()).response,
+  queryKey: computed(() => queryKeys.serverStatus(serverId.value!)),
+  queryFn: async () => (await api.serverStatus(serverId.value!)).response,
   staleTime: 15_000,
+  enabled: computed(() => serverId.value !== null),
 })
 
 const loading = computed(() => uptimePending.value || statsPending.value)
@@ -98,13 +102,17 @@ const serviceCount = computed(() => {
   <div class="flex flex-col gap-6">
     <div class="flex items-center gap-2">
       <h1 class="text-2xl font-bold">Overview</h1>
-      <Button variant="ghost" size="icon-sm" :disabled="isFetching" @click="refetch()">
+      <Button variant="ghost" size="icon-sm" :disabled="isFetching || !serverId" @click="refetch()">
         <RefreshCw class="size-4" :class="{ 'animate-spin': isFetching }" />
         <span class="sr-only">Refresh</span>
       </Button>
     </div>
 
-    <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+    <div v-if="!serverId" class="text-muted-foreground text-sm">
+      No server selected. Add a server using the selector in the top bar.
+    </div>
+
+    <div v-else class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
       <Card class="md:col-span-2">
         <CardHeader>
           <CardTitle>Connection</CardTitle>

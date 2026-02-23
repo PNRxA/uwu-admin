@@ -1,6 +1,7 @@
 import { ref } from 'vue'
 import { defineStore } from 'pinia'
 import { api } from '@/lib/api'
+import { useConnectionStore } from '@/stores/connection'
 
 export interface CommandEntry {
   id: number
@@ -16,6 +17,12 @@ export const useCommandStore = defineStore('command', () => {
   let nextId = 1
 
   async function execute(command: string) {
+    const connection = useConnectionStore()
+    const serverId = connection.activeServerId
+    if (serverId === null) {
+      throw new Error('No server selected')
+    }
+
     loading.value = true
     const entry: CommandEntry = {
       id: nextId++,
@@ -28,7 +35,7 @@ export const useCommandStore = defineStore('command', () => {
     const idx = history.value.length - 1
 
     try {
-      const res = await api.command(command)
+      const res = await api.command(serverId, command)
       history.value[idx].response = res.response
       history.value[idx].success = true
     } catch (e) {

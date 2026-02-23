@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useRouter } from 'vue-router'
-import { useConnectionStore } from '@/stores/connection'
+import { useAuthStore } from '@/stores/auth'
 
 import {
   Sidebar,
@@ -26,7 +26,7 @@ import {
 } from 'lucide-vue-next'
 
 const router = useRouter()
-const connection = useConnectionStore()
+const auth = useAuthStore()
 
 const navItems = [
   { title: 'Overview', icon: LayoutDashboard, to: '/' },
@@ -37,9 +37,9 @@ const navItems = [
   { title: 'Console', icon: Terminal, to: '/console' },
 ]
 
-async function handleDisconnect() {
-  await connection.disconnect()
-  router.push({ name: 'setup' })
+function handleLogout() {
+  auth.logout()
+  router.push({ name: 'login' })
 }
 </script>
 
@@ -67,9 +67,9 @@ async function handleDisconnect() {
       </SidebarGroup>
     </SidebarContent>
     <SidebarFooter class="p-4">
-      <Button variant="ghost" class="w-full justify-start gap-2" @click="handleDisconnect">
+      <Button variant="ghost" class="w-full justify-start gap-2" @click="handleLogout">
         <LogOut class="size-4" />
-        Disconnect
+        Logout
       </Button>
     </SidebarFooter>
   </Sidebar>

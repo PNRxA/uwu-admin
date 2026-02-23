@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
 import { useConnectionStore } from '@/stores/connection'
 
 const router = createRouter({
@@ -8,6 +9,11 @@ const router = createRouter({
       path: '/setup',
       name: 'setup',
       component: () => import('@/views/SetupView.vue'),
+    },
+    {
+      path: '/login',
+      name: 'login',
+      component: () => import('@/views/LoginView.vue'),
     },
     {
       path: '/',
@@ -49,18 +55,34 @@ const router = createRouter({
 })
 
 router.beforeEach(async (to) => {
-  const connection = useConnectionStore()
+  const auth = useAuthStore()
 
-  if (!connection.connected) {
-    await connection.checkStatus()
+  // Check auth status on first load
+  if (!auth.initialized) {
+    await auth.checkAuthStatus()
   }
 
-  if (!connection.connected && to.name !== 'setup') {
+  // If setup is required, redirect to setup page
+  if (auth.setupRequired && to.name !== 'setup') {
     return { name: 'setup' }
   }
 
-  if (connection.connected && to.name === 'setup') {
+  // If setup is done but not authenticated, redirect to login
+  if (!auth.setupRequired && !auth.authenticated && to.name !== 'login') {
+    return { name: 'login' }
+  }
+
+  // If authenticated and trying to visit login/setup, redirect to overview
+  if (auth.authenticated && (to.name === 'login' || to.name === 'setup')) {
     return { name: 'overview' }
+  }
+
+  // If authenticated and going to dashboard, ensure servers are loaded
+  if (auth.authenticated && to.name !== 'login' && to.name !== 'setup') {
+    const connection = useConnectionStore()
+    if (!connection.loaded) {
+      await connection.fetchServers()
+    }
   }
 })
 

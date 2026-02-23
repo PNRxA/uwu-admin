@@ -1,3 +1,4 @@
+mod auth;
 mod commands;
 mod db;
 mod entity;
@@ -7,7 +8,7 @@ mod matrix;
 mod state;
 
 use axum::Router;
-use axum::routing::{get, post};
+use axum::routing::{get, post, delete};
 use tower_http::cors::CorsLayer;
 
 use crate::matrix::MatrixClient;
@@ -24,50 +25,76 @@ async fn main() {
         .await
         .expect("Failed to initialize database");
 
-    let state = AppState::new(db);
+    // Generate random JWT secret
+    let jwt_secret: Vec<u8> = {
+        use rand::Rng;
+        let mut rng = rand::thread_rng();
+        (0..32).map(|_| rng.r#gen::<u8>()).collect()
+    };
 
-    // Attempt to restore a saved session
-    match db::load_session(&state.db).await {
-        Ok(Some(session)) => {
-            match MatrixClient::restore(
-                session.homeserver,
-                session.access_token,
-                session.room_id,
-                session.user_id.clone(),
-                session.since,
-            )
-            .await
-            {
-                Ok(client) => {
-                    tracing::info!("Session restored for {}", session.user_id);
-                    *state.client.lock().await = Some(client);
-                }
-                Err(e) => {
-                    tracing::warn!("Saved session invalid, deleting: {e}");
-                    if let Err(e) = db::delete_session(&state.db).await {
-                        tracing::warn!("Failed to delete stale session: {e}");
+    let state = AppState::new(db, jwt_secret);
+
+    // Restore all saved servers
+    match db::load_all_servers(&state.db).await {
+        Ok(servers) => {
+            for server in servers {
+                match MatrixClient::restore(
+                    server.homeserver,
+                    server.access_token,
+                    server.room_id,
+                    server.user_id.clone(),
+                    server.since,
+                )
+                .await
+                {
+                    Ok(client) => {
+                        tracing::info!("Server {} restored for {}", server.id, server.user_id);
+                        state.clients.lock().await.insert(server.id, client);
+                    }
+                    Err(e) => {
+                        tracing::warn!(
+                            "Server {} session invalid, removing: {e}",
+                            server.id
+                        );
+                        if let Err(e) = db::delete_server(&state.db, server.id).await {
+                            tracing::warn!("Failed to delete stale server {}: {e}", server.id);
+                        }
                     }
                 }
             }
         }
-        Ok(None) => {
-            tracing::info!("No saved session found");
-        }
         Err(e) => {
-            tracing::warn!("Failed to load session from database: {e}");
+            tracing::warn!("Failed to load servers from database: {e}");
         }
     }
 
     let app = Router::new()
-        .route("/api/connect", post(handlers::connect))
-        .route("/api/disconnect", post(handlers::disconnect))
-        .route("/api/status", get(handlers::status))
-        .route("/api/command", post(handlers::command))
-        .route("/api/users", get(handlers::list_users).post(handlers::create_user))
-        .route("/api/rooms", get(handlers::list_rooms))
-        .route("/api/rooms/{room_id}", get(handlers::room_info))
-        .route("/api/server/status", get(handlers::server_status))
-        .route("/api/server/uptime", get(handlers::server_uptime))
+        // Auth routes (unauthenticated)
+        .route("/api/auth/status", get(auth::auth_status))
+        .route("/api/auth/setup", post(auth::setup))
+        .route("/api/auth/login", post(auth::login))
+        // Server management
+        .route("/api/servers", post(handlers::add_server).get(handlers::list_servers))
+        .route("/api/servers/{server_id}", delete(handlers::remove_server))
+        // Server-scoped routes
+        .route("/api/servers/{server_id}/command", post(handlers::command))
+        .route(
+            "/api/servers/{server_id}/users",
+            get(handlers::list_users).post(handlers::create_user),
+        )
+        .route("/api/servers/{server_id}/rooms", get(handlers::list_rooms))
+        .route(
+            "/api/servers/{server_id}/rooms/{room_id}",
+            get(handlers::room_info),
+        )
+        .route(
+            "/api/servers/{server_id}/server/status",
+            get(handlers::server_status),
+        )
+        .route(
+            "/api/servers/{server_id}/server/uptime",
+            get(handlers::server_uptime),
+        )
         .layer(CorsLayer::permissive())
         .with_state(state);
 

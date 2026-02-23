@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useQuery, useQueryClient } from '@tanstack/vue-query'
+import { useConnectionStore } from '@/stores/connection'
 import { api } from '@/lib/api'
 import { queryKeys } from '@/lib/query-keys'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -31,11 +32,14 @@ import { Plus, RefreshCw } from 'lucide-vue-next'
 import UserActionsMenu from '@/components/UserActionsMenu.vue'
 
 const queryClient = useQueryClient()
+const connection = useConnectionStore()
+const serverId = computed(() => connection.activeServerId)
 
 const { data: usersResponse, isPending, isFetching, refetch } = useQuery({
-  queryKey: queryKeys.users,
-  queryFn: async () => (await api.listUsers()).response,
+  queryKey: computed(() => queryKeys.users(serverId.value!)),
+  queryFn: async () => (await api.listUsers(serverId.value!)).response,
   staleTime: 30_000,
+  enabled: computed(() => serverId.value !== null),
 })
 
 const createDialogOpen = ref(false)
@@ -50,9 +54,10 @@ const users = computed(() => {
 })
 
 async function createUser() {
+  if (serverId.value === null) return
   creating.value = true
   try {
-    await api.createUser({
+    await api.createUser(serverId.value, {
       username: newUsername.value,
       password: newPassword.value || undefined,
     })
@@ -60,7 +65,7 @@ async function createUser() {
     createDialogOpen.value = false
     newUsername.value = ''
     newPassword.value = ''
-    await queryClient.invalidateQueries({ queryKey: queryKeys.users })
+    await queryClient.invalidateQueries({ queryKey: queryKeys.users(serverId.value) })
   } catch (e) {
     toast.error(e instanceof Error ? e.message : 'Failed to create user')
   } finally {
@@ -69,7 +74,9 @@ async function createUser() {
 }
 
 function onActionComplete() {
-  queryClient.invalidateQueries({ queryKey: queryKeys.users })
+  if (serverId.value !== null) {
+    queryClient.invalidateQueries({ queryKey: queryKeys.users(serverId.value) })
+  }
 }
 </script>
 
@@ -78,14 +85,14 @@ function onActionComplete() {
     <div class="flex items-center justify-between">
       <div class="flex items-center gap-2">
         <h1 class="text-2xl font-bold">Users</h1>
-        <Button variant="ghost" size="icon-sm" :disabled="isFetching" @click="refetch()">
+        <Button variant="ghost" size="icon-sm" :disabled="isFetching || !serverId" @click="refetch()">
           <RefreshCw class="size-4" :class="{ 'animate-spin': isFetching }" />
           <span class="sr-only">Refresh</span>
         </Button>
       </div>
       <Dialog v-model:open="createDialogOpen">
         <DialogTrigger as-child>
-          <Button>
+          <Button :disabled="!serverId">
             <Plus class="size-4" />
             Create User
           </Button>
@@ -114,7 +121,11 @@ function onActionComplete() {
       </Dialog>
     </div>
 
-    <Card>
+    <div v-if="!serverId" class="text-muted-foreground text-sm">
+      No server selected. Add a server using the selector in the top bar.
+    </div>
+
+    <Card v-else>
       <CardHeader>
         <CardTitle>User List</CardTitle>
       </CardHeader>

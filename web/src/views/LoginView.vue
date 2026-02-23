@@ -13,15 +13,10 @@ const auth = useAuthStore()
 
 const username = ref('')
 const password = ref('')
-const confirmPassword = ref('')
 
 async function onSubmit() {
-  if (password.value !== confirmPassword.value) {
-    auth.error = 'Passwords do not match'
-    return
-  }
   try {
-    await auth.register(username.value, password.value)
+    await auth.login(username.value, password.value)
     router.push({ name: 'overview' })
   } catch {
     // error is set in store
@@ -34,7 +29,7 @@ async function onSubmit() {
     <Card class="w-full max-w-md">
       <CardHeader class="text-center">
         <CardTitle class="text-2xl">uwu-admin</CardTitle>
-        <CardDescription>Create your admin account to get started</CardDescription>
+        <CardDescription>Sign in to your admin panel</CardDescription>
       </CardHeader>
       <CardContent>
         <form class="flex flex-col gap-4" @submit.prevent="onSubmit">
@@ -62,18 +57,8 @@ async function onSubmit() {
             />
           </div>
 
-          <div class="flex flex-col gap-2">
-            <Label for="confirm-password">Confirm Password</Label>
-            <Input
-              id="confirm-password"
-              v-model="confirmPassword"
-              type="password"
-              required
-            />
-          </div>
-
           <Button type="submit" class="w-full" :disabled="auth.loading">
-            {{ auth.loading ? 'Creating account...' : 'Create Account' }}
+            {{ auth.loading ? 'Signing in...' : 'Sign In' }}
           </Button>
         </form>
       </CardContent>

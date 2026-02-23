@@ -188,7 +188,11 @@ impl MatrixClient {
         Ok(())
     }
 
-    async fn wait_for_response(&mut self, db: &DatabaseConnection) -> Result<String, ApiError> {
+    async fn wait_for_response(
+        &mut self,
+        server_id: i32,
+        db: &DatabaseConnection,
+    ) -> Result<String, ApiError> {
         for _ in 0..3 {
             let mut url = format!(
                 "{}/_matrix/client/v3/sync?timeout=10000",
@@ -219,7 +223,7 @@ impl MatrixClient {
             self.since = data["next_batch"].as_str().map(|s| s.to_string());
 
             if let Some(ref since) = self.since {
-                if let Err(e) = db::update_since(db, since).await {
+                if let Err(e) = db::update_server_since(db, server_id, since).await {
                     tracing::warn!("Failed to persist since token: {e}");
                 }
             }
@@ -249,10 +253,15 @@ impl MatrixClient {
         Err(ApiError::Timeout)
     }
 
-    pub async fn execute_command(&mut self, command: &str, db: &DatabaseConnection) -> Result<String, ApiError> {
+    pub async fn execute_command(
+        &mut self,
+        command: &str,
+        server_id: i32,
+        db: &DatabaseConnection,
+    ) -> Result<String, ApiError> {
         let message = format!("!admin {command}");
         self.send_message(&message).await?;
-        self.wait_for_response(db).await
+        self.wait_for_response(server_id, db).await
     }
 }
 

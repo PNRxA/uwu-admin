@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useQuery } from '@tanstack/vue-query'
+import { useConnectionStore } from '@/stores/connection'
 import { api } from '@/lib/api'
 import { stripHtml } from '@/lib/response-parser'
 import { queryKeys } from '@/lib/query-keys'
@@ -17,15 +18,19 @@ import {
 } from '@/components/ui/table'
 import { RefreshCw } from 'lucide-vue-next'
 
+const connection = useConnectionStore()
+const serverId = computed(() => connection.activeServerId)
+
 const {
   data: uptime,
   isPending: uptimePending,
   isFetching: uptimeFetching,
   refetch: refetchUptime,
 } = useQuery({
-  queryKey: queryKeys.serverUptime,
-  queryFn: async () => (await api.serverUptime()).response,
+  queryKey: computed(() => queryKeys.serverUptime(serverId.value!)),
+  queryFn: async () => (await api.serverUptime(serverId.value!)).response,
   staleTime: 15_000,
+  enabled: computed(() => serverId.value !== null),
 })
 
 const {
@@ -34,9 +39,10 @@ const {
   isFetching: statsFetching,
   refetch: refetchStats,
 } = useQuery({
-  queryKey: queryKeys.serverStatus,
-  queryFn: async () => (await api.serverStatus()).response,
+  queryKey: computed(() => queryKeys.serverStatus(serverId.value!)),
+  queryFn: async () => (await api.serverStatus(serverId.value!)).response,
   staleTime: 15_000,
+  enabled: computed(() => serverId.value !== null),
 })
 
 const loading = computed(() => uptimePending.value || statsPending.value)
@@ -133,92 +139,98 @@ const totalDbMemory = computed(() => {
   <div class="flex flex-col gap-6">
     <div class="flex items-center gap-2">
       <h1 class="text-2xl font-bold">Server</h1>
-      <Button variant="ghost" size="icon-sm" :disabled="isFetching" @click="refetch()">
+      <Button variant="ghost" size="icon-sm" :disabled="isFetching || !serverId" @click="refetch()">
         <RefreshCw class="size-4" :class="{ 'animate-spin': isFetching }" />
         <span class="sr-only">Refresh</span>
       </Button>
     </div>
 
-    <div class="grid gap-4 md:grid-cols-2">
-      <Card>
-        <CardHeader>
-          <CardTitle>Uptime</CardTitle>
-          <CardDescription>How long the server has been running</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Skeleton v-if="loading" class="h-12 w-full" />
-          <div v-else class="flex items-baseline gap-3">
-            <template v-for="(part, i) in uptimeFormatted.parts" :key="i">
-              <div class="flex items-baseline gap-1">
-                <span class="text-3xl font-bold tabular-nums">{{ part.value }}</span>
-                <span class="text-sm text-muted-foreground">{{ part.unit }}</span>
-              </div>
-            </template>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Database Memory</CardTitle>
-          <CardDescription>Total memory used by database</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Skeleton v-if="loading" class="h-12 w-full" />
-          <div v-else class="flex items-baseline gap-1">
-            <span class="text-3xl font-bold tabular-nums">{{ totalDbMemory.split(' ')[0] }}</span>
-            <span class="text-sm text-muted-foreground">{{ totalDbMemory.split(' ')[1] }}</span>
-          </div>
-        </CardContent>
-      </Card>
+    <div v-if="!serverId" class="text-muted-foreground text-sm">
+      No server selected. Add a server using the selector in the top bar.
     </div>
 
-    <Card v-if="!loading && services.length > 0">
-      <CardHeader>
-        <CardTitle>Services</CardTitle>
-        <CardDescription>Active services and caches</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead class="w-32 text-right">Count</TableHead>
-              <TableHead class="w-32 text-right">Size</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            <TableRow v-for="service in services" :key="service.name">
-              <TableCell class="font-mono text-sm">{{ service.name }}</TableCell>
-              <TableCell class="text-right tabular-nums">{{ service.value }}</TableCell>
-              <TableCell class="text-right tabular-nums text-muted-foreground">{{ service.size || '\u2014' }}</TableCell>
-            </TableRow>
-          </TableBody>
-        </Table>
-      </CardContent>
-    </Card>
+    <template v-else>
+      <div class="grid gap-4 md:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>Uptime</CardTitle>
+            <CardDescription>How long the server has been running</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Skeleton v-if="loading" class="h-12 w-full" />
+            <div v-else class="flex items-baseline gap-3">
+              <template v-for="(part, i) in uptimeFormatted.parts" :key="i">
+                <div class="flex items-baseline gap-1">
+                  <span class="text-3xl font-bold tabular-nums">{{ part.value }}</span>
+                  <span class="text-sm text-muted-foreground">{{ part.unit }}</span>
+                </div>
+              </template>
+            </div>
+          </CardContent>
+        </Card>
 
-    <Card v-if="!loading && database.length > 0">
-      <CardHeader>
-        <CardTitle>Database</CardTitle>
-        <CardDescription>Memory allocation by component</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Component</TableHead>
-              <TableHead class="w-40 text-right">Memory</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            <TableRow v-for="entry in database" :key="entry.name">
-              <TableCell class="font-mono text-sm">{{ entry.name }}</TableCell>
-              <TableCell class="text-right tabular-nums">{{ entry.size }}</TableCell>
-            </TableRow>
-          </TableBody>
-        </Table>
-      </CardContent>
-    </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Database Memory</CardTitle>
+            <CardDescription>Total memory used by database</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Skeleton v-if="loading" class="h-12 w-full" />
+            <div v-else class="flex items-baseline gap-1">
+              <span class="text-3xl font-bold tabular-nums">{{ totalDbMemory.split(' ')[0] }}</span>
+              <span class="text-sm text-muted-foreground">{{ totalDbMemory.split(' ')[1] }}</span>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <Card v-if="!loading && services.length > 0">
+        <CardHeader>
+          <CardTitle>Services</CardTitle>
+          <CardDescription>Active services and caches</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead class="w-32 text-right">Count</TableHead>
+                <TableHead class="w-32 text-right">Size</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              <TableRow v-for="service in services" :key="service.name">
+                <TableCell class="font-mono text-sm">{{ service.name }}</TableCell>
+                <TableCell class="text-right tabular-nums">{{ service.value }}</TableCell>
+                <TableCell class="text-right tabular-nums text-muted-foreground">{{ service.size || '\u2014' }}</TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+
+      <Card v-if="!loading && database.length > 0">
+        <CardHeader>
+          <CardTitle>Database</CardTitle>
+          <CardDescription>Memory allocation by component</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Component</TableHead>
+                <TableHead class="w-40 text-right">Memory</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              <TableRow v-for="entry in database" :key="entry.name">
+                <TableCell class="font-mono text-sm">{{ entry.name }}</TableCell>
+                <TableCell class="text-right tabular-nums">{{ entry.size }}</TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+    </template>
   </div>
 </template>

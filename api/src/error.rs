@@ -8,6 +8,9 @@ pub enum ApiError {
     Timeout,
     DbError(String),
     InvalidCommand(String),
+    Unauthorized,
+    Forbidden(String),
+    BadRequest(String),
 }
 
 impl std::fmt::Display for ApiError {
@@ -18,6 +21,9 @@ impl std::fmt::Display for ApiError {
             ApiError::Timeout => write!(f, "Timed out waiting for response"),
             ApiError::DbError(msg) => write!(f, "Database error: {msg}"),
             ApiError::InvalidCommand(msg) => write!(f, "Invalid command: {msg}"),
+            ApiError::Unauthorized => write!(f, "Unauthorized"),
+            ApiError::Forbidden(msg) => write!(f, "Forbidden: {msg}"),
+            ApiError::BadRequest(msg) => write!(f, "Bad request: {msg}"),
         }
     }
 }
@@ -30,10 +36,16 @@ impl IntoResponse for ApiError {
             ApiError::Timeout => (StatusCode::GATEWAY_TIMEOUT, self.to_string()),
             ApiError::DbError(_) => (StatusCode::INTERNAL_SERVER_ERROR, self.to_string()),
             ApiError::InvalidCommand(_) => (StatusCode::BAD_REQUEST, self.to_string()),
+            ApiError::Unauthorized => (StatusCode::UNAUTHORIZED, self.to_string()),
+            ApiError::Forbidden(_) => (StatusCode::FORBIDDEN, self.to_string()),
+            ApiError::BadRequest(_) => (StatusCode::BAD_REQUEST, self.to_string()),
         };
 
         match &self {
-            ApiError::InvalidCommand(_) => tracing::warn!("{message}"),
+            ApiError::InvalidCommand(_) | ApiError::Unauthorized | ApiError::BadRequest(_) => {
+                tracing::warn!("{message}")
+            }
+            ApiError::Forbidden(_) => tracing::warn!("{message}"),
             _ => tracing::error!("{message}"),
         }
         let body = serde_json::json!({ "error": message });

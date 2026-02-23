@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 use sea_orm::DatabaseConnection;
@@ -7,15 +8,17 @@ use crate::matrix::MatrixClient;
 pub type SharedState = Arc<AppState>;
 
 pub struct AppState {
-    pub client: Mutex<Option<MatrixClient>>,
+    pub clients: Mutex<HashMap<i32, MatrixClient>>,
     pub db: DatabaseConnection,
+    pub jwt_secret: Vec<u8>,
 }
 
 impl AppState {
-    pub fn new(db: DatabaseConnection) -> SharedState {
+    pub fn new(db: DatabaseConnection, jwt_secret: Vec<u8>) -> SharedState {
         Arc::new(AppState {
-            client: Mutex::new(None),
+            clients: Mutex::new(HashMap::new()),
             db,
+            jwt_secret,
         })
     }
 }

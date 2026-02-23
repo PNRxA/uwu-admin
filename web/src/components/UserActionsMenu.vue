@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { api } from '@/lib/api'
+import { useConnectionStore } from '@/stores/connection'
 import { toast } from 'vue-sonner'
 import { Ellipsis } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
@@ -38,6 +39,8 @@ import ResponseDisplay from '@/components/ResponseDisplay.vue'
 const props = defineProps<{ userId: string }>()
 const emit = defineEmits<{ 'action-complete': [] }>()
 
+const connection = useConnectionStore()
+
 // Alert dialog state (simple confirm actions)
 const alertOpen = ref(false)
 const alertTitle = ref('')
@@ -67,9 +70,10 @@ function openConfirm(title: string, description: string, command: string, destru
 }
 
 async function executeConfirm() {
+  if (connection.activeServerId === null) return
   executing.value = true
   try {
-    await api.command(alertCommand.value)
+    await api.command(connection.activeServerId, alertCommand.value)
     toast.success(`${alertTitle.value} completed`)
     alertOpen.value = false
     emit('action-complete')
@@ -94,6 +98,7 @@ function openInputDialog(
 }
 
 async function executeInputDialog() {
+  if (connection.activeServerId === null) return
   const missing = inputFields.value.find((f) => f.required && !f.value.trim())
   if (missing) {
     toast.error(`${missing.label} is required`)
@@ -104,7 +109,7 @@ async function executeInputDialog() {
 
   executing.value = true
   try {
-    await api.command(command)
+    await api.command(connection.activeServerId, command)
     toast.success(`${inputDialogTitle.value} completed`)
     inputDialogOpen.value = false
     emit('action-complete')
@@ -116,11 +121,12 @@ async function executeInputDialog() {
 }
 
 async function executeReadOnly(title: string, command: string) {
+  if (connection.activeServerId === null) return
   resultDialogTitle.value = title
   resultResponse.value = 'Loading...'
   resultDialogOpen.value = true
   try {
-    const res = await api.command(command)
+    const res = await api.command(connection.activeServerId, command)
     resultResponse.value = res.response
   } catch (e) {
     resultResponse.value = e instanceof Error ? e.message : 'Failed to execute command'
