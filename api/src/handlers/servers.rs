@@ -3,7 +3,6 @@ use axum::extract::{Path, State};
 use serde::Deserialize;
 use serde_json::{Value, json};
 
-use super::auth::AuthUser;
 use crate::services::commands::validate_command;
 use crate::services::db;
 use crate::error::ApiError;
@@ -33,7 +32,6 @@ pub struct CreateUserRequest {
 
 pub async fn add_server(
     State(state): State<SharedState>,
-    _user: AuthUser,
     Json(req): Json<AddServerRequest>,
 ) -> Result<Json<Value>, ApiError> {
     validation::validate_homeserver_url(&req.homeserver)?;
@@ -71,7 +69,6 @@ pub async fn add_server(
 
 pub async fn list_servers(
     State(state): State<SharedState>,
-    _user: AuthUser,
 ) -> Result<Json<Value>, ApiError> {
     let servers = db::load_all_servers(&state.db, &state.encryption_key).await?;
     let clients = state.clients.lock().await;
@@ -93,7 +90,6 @@ pub async fn list_servers(
 
 pub async fn remove_server(
     State(state): State<SharedState>,
-    _user: AuthUser,
     Path(server_id): Path<i32>,
 ) -> Result<Json<Value>, ApiError> {
     state.clients.lock().await.remove(&server_id);
@@ -104,7 +100,6 @@ pub async fn remove_server(
 
 pub async fn command(
     State(state): State<SharedState>,
-    _user: AuthUser,
     Path(server_id): Path<i32>,
     Json(req): Json<CommandRequest>,
 ) -> Result<Json<Value>, ApiError> {
@@ -125,7 +120,6 @@ pub async fn command(
 
 pub async fn list_users(
     State(state): State<SharedState>,
-    _user: AuthUser,
     Path(server_id): Path<i32>,
 ) -> Result<Json<Value>, ApiError> {
     let mut lock = state.clients.lock().await;
@@ -138,7 +132,6 @@ pub async fn list_users(
 
 pub async fn create_user(
     State(state): State<SharedState>,
-    _user: AuthUser,
     Path(server_id): Path<i32>,
     Json(req): Json<CreateUserRequest>,
 ) -> Result<Json<Value>, ApiError> {
@@ -172,7 +165,6 @@ pub async fn create_user(
 
 pub async fn list_rooms(
     State(state): State<SharedState>,
-    _user: AuthUser,
     Path(server_id): Path<i32>,
 ) -> Result<Json<Value>, ApiError> {
     let mut lock = state.clients.lock().await;
@@ -185,7 +177,6 @@ pub async fn list_rooms(
 
 pub async fn server_status(
     State(state): State<SharedState>,
-    _user: AuthUser,
     Path(server_id): Path<i32>,
 ) -> Result<Json<Value>, ApiError> {
     let mut lock = state.clients.lock().await;
@@ -200,7 +191,6 @@ pub async fn server_status(
 
 pub async fn server_uptime(
     State(state): State<SharedState>,
-    _user: AuthUser,
     Path(server_id): Path<i32>,
 ) -> Result<Json<Value>, ApiError> {
     let mut lock = state.clients.lock().await;

@@ -1,9 +1,14 @@
 use axum::{
     body::Body,
+    extract::State,
     http::{Method, Request, StatusCode},
     middleware::Next,
     response::Response,
 };
+use jsonwebtoken::{decode, DecodingKey, Validation};
+
+use super::auth::{AuthUser, Claims};
+use crate::state::SharedState;
 
 /// Defense-in-depth: on mutating requests (POST/PUT/DELETE), verify that the
 /// `Origin` header (if present) matches the configured `CORS_ORIGIN`.
@@ -21,6 +26,35 @@ pub async fn validate_origin(req: Request<Body>, next: Next) -> Result<Response,
             }
         }
     }
+
+    Ok(next.run(req).await)
+}
+
+pub async fn require_auth(
+    State(state): State<SharedState>,
+    mut req: Request<Body>,
+    next: Next,
+) -> Result<Response, StatusCode> {
+    let auth_header = req
+        .headers()
+        .get("Authorization")
+        .and_then(|v| v.to_str().ok())
+        .ok_or(StatusCode::UNAUTHORIZED)?;
+
+    let token = auth_header
+        .strip_prefix("Bearer ")
+        .ok_or(StatusCode::UNAUTHORIZED)?;
+
+    let token_data = decode::<Claims>(
+        token,
+        &DecodingKey::from_secret(&state.jwt_secret),
+        &Validation::default(),
+    )
+    .map_err(|_| StatusCode::UNAUTHORIZED)?;
+
+    req.extensions_mut().insert(AuthUser {
+        username: token_data.claims.sub,
+    });
 
     Ok(next.run(req).await)
 }

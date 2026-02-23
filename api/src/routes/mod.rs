@@ -11,7 +11,13 @@ use crate::state::SharedState;
 pub fn build_router(state: SharedState) -> Router {
     Router::new()
         .merge(auth::auth_routes())
-        .merge(servers::protected_routes())
+        .merge(
+            servers::protected_routes()
+                .layer(axum::middleware::from_fn_with_state(
+                    state.clone(),
+                    crate::handlers::middleware::require_auth,
+                )),
+        )
         .layer(DefaultBodyLimit::max(65_536))
         .layer(axum::middleware::from_fn(crate::handlers::middleware::validate_origin))
         .layer({

@@ -1,7 +1,7 @@
 use axum::Json;
-use axum::extract::{FromRequestParts, State};
-use axum::http::request::Parts;
-use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
+use axum::Extension;
+use axum::extract::State;
+use jsonwebtoken::{encode, EncodingKey, Header};
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 use sha2::{Sha256, Digest};
@@ -91,39 +91,9 @@ async fn issue_token_pair(
     Ok((access_token, raw_refresh))
 }
 
-// Extractor for authenticated requests
+#[derive(Clone)]
 pub struct AuthUser {
     pub username: String,
-}
-
-impl FromRequestParts<SharedState> for AuthUser {
-    type Rejection = ApiError;
-
-    async fn from_request_parts(
-        parts: &mut Parts,
-        state: &SharedState,
-    ) -> Result<Self, Self::Rejection> {
-        let auth_header = parts
-            .headers
-            .get("Authorization")
-            .and_then(|v| v.to_str().ok())
-            .ok_or(ApiError::Unauthorized)?;
-
-        let token = auth_header
-            .strip_prefix("Bearer ")
-            .ok_or(ApiError::Unauthorized)?;
-
-        let token_data = decode::<Claims>(
-            token,
-            &DecodingKey::from_secret(&state.jwt_secret),
-            &Validation::default(),
-        )
-        .map_err(|_| ApiError::Unauthorized)?;
-
-        Ok(AuthUser {
-            username: token_data.claims.sub,
-        })
-    }
 }
 
 // --- Auth handlers ---
@@ -236,7 +206,7 @@ pub async fn refresh(
 
 pub async fn logout(
     State(state): State<SharedState>,
-    auth_user: AuthUser,
+    Extension(auth_user): Extension<AuthUser>,
 ) -> Result<Json<Value>, ApiError> {
     let user = db::find_admin_user_by_username(&state.db, &auth_user.username)
         .await?
