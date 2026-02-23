@@ -7,6 +7,7 @@ import { Toaster } from '@/components/ui/sonner'
 import AppSidebar from '@/components/AppSidebar.vue'
 import ConsolePanel from '@/components/ConsolePanel.vue'
 import ServerSelector from '@/components/ServerSelector.vue'
+import ThemeToggle from '@/components/ThemeToggle.vue'
 
 const route = useRoute()
 const isConsolePage = computed(() => route.name === 'console')
@@ -20,6 +21,9 @@ const isConsolePage = computed(() => route.name === 'console')
         <SidebarTrigger class="-ml-1" />
         <Separator orientation="vertical" class="mr-2 !h-4" />
         <ServerSelector />
+        <div class="ml-auto">
+          <ThemeToggle />
+        </div>
       </header>
       <main class="flex-1 overflow-auto p-6">
         <RouterView />
