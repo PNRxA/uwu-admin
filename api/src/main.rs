@@ -38,6 +38,37 @@ async fn main() {
     let jwt_secret = db::load_secret_from_env("JWT_SECRET");
     let encryption_key = db::load_secret_from_env("ENCRYPTION_KEY");
 
+    // Seed admin user from environment if set and no admin exists yet
+    if let (Ok(username), Ok(password)) = (
+        std::env::var("ADMIN_USERNAME"),
+        std::env::var("ADMIN_PASSWORD"),
+    ) {
+        if !username.is_empty() && !password.is_empty() {
+            match db::count_admin_users(&db).await {
+                Ok(0) => {
+                    if let Err(e) = validation::validate_username(&username) {
+                        panic!("ADMIN_USERNAME is invalid: {e}");
+                    }
+                    if let Err(e) = validation::validate_password(&password) {
+                        panic!("ADMIN_PASSWORD is invalid: {e}");
+                    }
+                    let hash = auth::hash_password(&password)
+                        .expect("Failed to hash ADMIN_PASSWORD");
+                    db::create_admin_user(&db, &username, &hash)
+                        .await
+                        .expect("Failed to create admin user from environment");
+                    tracing::info!("Admin user '{}' created from environment variables", username);
+                }
+                Ok(_) => {
+                    tracing::info!("Admin user already exists, skipping ADMIN_USERNAME/ADMIN_PASSWORD");
+                }
+                Err(e) => {
+                    tracing::warn!("Failed to check admin users: {e}");
+                }
+            }
+        }
+    }
+
     // Migrate any plaintext access tokens to encrypted
     match db::load_all_servers_raw(&db).await {
         Ok(servers) => {

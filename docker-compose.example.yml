@@ -9,6 +9,9 @@ services:
       # Generate with: openssl rand -hex 32
       JWT_SECRET: "${JWT_SECRET}"
       ENCRYPTION_KEY: "${ENCRYPTION_KEY}"
+      # Optional: seed an admin account on first start (skips the setup screen)
+      # ADMIN_USERNAME: "admin"
+      # ADMIN_PASSWORD: "changeme123"
     volumes:
       - uwu-data:/data
     restart: unless-stopped
