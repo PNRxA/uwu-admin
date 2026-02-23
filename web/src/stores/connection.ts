@@ -2,6 +2,7 @@ import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
 import { useQueryClient } from '@tanstack/vue-query'
 import { api } from '@/lib/api'
+import { useCommandStore } from '@/stores/command'
 
 export interface ServerInfo {
   id: number
@@ -49,6 +50,7 @@ export const useConnectionStore = defineStore('connection', () => {
   function setActiveServer(id: number) {
     activeServerId.value = id
     queryClient.clear()
+    useCommandStore().clear()
   }
 
   async function addServer(params: {
