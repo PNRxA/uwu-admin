@@ -263,12 +263,58 @@ impl MatrixClient {
         Err(ApiError::Timeout)
     }
 
+    /// Non-blocking sync that advances the `since` token to the present moment,
+    /// discarding any stale bot messages so the next `wait_for_response` only
+    /// sees messages that arrive after the command is sent.
+    async fn drain_pending_messages(
+        &mut self,
+        server_id: i32,
+        db: &DatabaseConnection,
+    ) -> Result<(), ApiError> {
+        let mut url = format!(
+            "{}/_matrix/client/{MATRIX_API_VERSION}/sync?timeout=0&filter={{\"room\":{{\"timeline\":{{\"limit\":0}}}}}}",
+            self.homeserver
+        );
+        if let Some(since) = &self.since {
+            url.push_str(&format!("&since={since}"));
+        }
+
+        let resp = self
+            .http
+            .get(&url)
+            .bearer_auth(&self.access_token)
+            .send()
+            .await
+            .map_err(|e| ApiError::MatrixError(e.to_string()))?;
+
+        if !resp.status().is_success() {
+            let text = resp.text().await.unwrap_or_default();
+            return Err(ApiError::MatrixError(format!("Drain sync failed: {text}")));
+        }
+
+        let data: Value = resp
+            .json()
+            .await
+            .map_err(|e| ApiError::MatrixError(e.to_string()))?;
+
+        self.since = data["next_batch"].as_str().map(|s| s.to_string());
+
+        if let Some(ref since) = self.since {
+            if let Err(e) = db::update_server_since(db, server_id, since).await {
+                tracing::warn!("Failed to persist since token: {e}");
+            }
+        }
+
+        Ok(())
+    }
+
     pub async fn execute_command(
         &mut self,
         command: &str,
         server_id: i32,
         db: &DatabaseConnection,
     ) -> Result<String, ApiError> {
+        self.drain_pending_messages(server_id, db).await?;
         let message = format!("!admin {command}");
         self.send_message(&message).await?;
         self.wait_for_response(server_id, db).await
