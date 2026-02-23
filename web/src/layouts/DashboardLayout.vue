@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import 'vue-sonner/style.css'
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar'
@@ -30,6 +31,6 @@ const isConsolePage = computed(() => route.name === 'console')
       </main>
       <ConsolePanel v-if="!isConsolePage" />
     </SidebarInset>
-    <Toaster />
+    <Toaster position="bottom-center" />
   </SidebarProvider>
 </template>

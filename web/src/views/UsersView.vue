@@ -39,7 +39,7 @@ const serverId = computed(() => connection.activeServerId)
 
 const { data: usersResponse, isPending, isFetching, refetch } = useQuery({
   queryKey: computed(() => queryKeys.users(serverId.value!)),
-  queryFn: () => api.listUsers(serverId.value!),
+  queryFn: () => api.command(serverId.value!, 'users list-users'),
   staleTime: 30_000,
   enabled: computed(() => serverId.value !== null),
 })
@@ -64,10 +64,10 @@ async function createUser() {
   if (serverId.value === null) return
   creating.value = true
   try {
-    await api.createUser(serverId.value, {
-      username: newUsername.value,
-      password: newPassword.value || undefined,
-    })
+    const cmd = newPassword.value
+      ? `users create-user ${newUsername.value} ${newPassword.value}`
+      : `users create-user ${newUsername.value}`
+    await api.command(serverId.value, cmd)
     toast.success(t('users.createdSuccess'))
     createDialogOpen.value = false
     newUsername.value = ''

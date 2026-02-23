@@ -37,11 +37,6 @@ interface AddServerResponse {
   user_id: string
 }
 
-interface CreateUserParams {
-  username: string
-  password?: string
-}
-
 interface AuthResponse {
   token: string
   refresh_token: string
@@ -245,28 +240,5 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ command }),
     })
-  },
-
-  listUsers(serverId: number) {
-    return request<CommandResponse>(`/api/servers/${serverId}/users`)
-  },
-
-  createUser(serverId: number, params: CreateUserParams) {
-    return request<CommandResponse>(`/api/servers/${serverId}/users`, {
-      method: 'POST',
-      body: JSON.stringify(params),
-    })
-  },
-
-  listRooms(serverId: number) {
-    return request<CommandResponse>(`/api/servers/${serverId}/rooms`)
-  },
-
-  serverStatus(serverId: number) {
-    return request<CommandResponse>(`/api/servers/${serverId}/server/status`)
-  },
-
-  serverUptime(serverId: number) {
-    return request<CommandResponse>(`/api/servers/${serverId}/server/uptime`)
   },
 }

@@ -32,7 +32,7 @@ interface Room {
 
 const { data: roomsResponse, isPending, isFetching, refetch } = useQuery({
   queryKey: computed(() => queryKeys.rooms(serverId.value!)),
-  queryFn: () => api.listRooms(serverId.value!),
+  queryFn: () => api.command(serverId.value!, 'rooms list-rooms'),
   staleTime: 30_000,
   enabled: computed(() => serverId.value !== null),
 })

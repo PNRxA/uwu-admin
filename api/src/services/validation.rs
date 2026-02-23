@@ -24,19 +24,6 @@ pub fn validate_password(password: &str) -> Result<(), ApiError> {
     Ok(())
 }
 
-/// Validates a single command argument: rejects empty, whitespace, and control chars.
-pub fn validate_command_arg(arg: &str, name: &str) -> Result<(), ApiError> {
-    if arg.is_empty()
-        || arg.chars().any(char::is_whitespace)
-        || arg.chars().any(char::is_control)
-    {
-        return Err(ApiError::BadRequest(
-            format!("Invalid {name}: must not be empty or contain whitespace/control characters"),
-        ));
-    }
-    Ok(())
-}
-
 pub fn validate_homeserver_url(url: &str) -> Result<(), ApiError> {
     if url.is_empty() {
         return Err(ApiError::BadRequest("Homeserver URL must not be empty".into()));
@@ -123,28 +110,6 @@ mod tests {
     #[test]
     fn password_control_chars() {
         assert!(validate_password("password\x00safe").is_err());
-    }
-
-    // --- validate_command_arg ---
-
-    #[test]
-    fn command_arg_valid() {
-        assert!(validate_command_arg("@user:host", "user").is_ok());
-    }
-
-    #[test]
-    fn command_arg_empty() {
-        assert!(validate_command_arg("", "arg").is_err());
-    }
-
-    #[test]
-    fn command_arg_whitespace() {
-        assert!(validate_command_arg("has space", "arg").is_err());
-    }
-
-    #[test]
-    fn command_arg_control_chars() {
-        assert!(validate_command_arg("val\x00ue", "arg").is_err());
     }
 
     // --- validate_homeserver_url ---

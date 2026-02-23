@@ -21,7 +21,7 @@ const {
   refetch: refetchUptime,
 } = useQuery({
   queryKey: computed(() => queryKeys.serverUptime(serverId.value!)),
-  queryFn: async () => (await api.serverUptime(serverId.value!)).response,
+  queryFn: async () => (await api.command(serverId.value!, 'server uptime')).response,
   staleTime: 15_000,
   enabled: computed(() => serverId.value !== null),
 })
@@ -33,7 +33,7 @@ const {
   refetch: refetchStats,
 } = useQuery({
   queryKey: computed(() => queryKeys.serverStatus(serverId.value!)),
-  queryFn: async () => (await api.serverStatus(serverId.value!)).response,
+  queryFn: async () => (await api.command(serverId.value!, 'server memory-usage')).response,
   staleTime: 15_000,
   enabled: computed(() => serverId.value !== null),
 })

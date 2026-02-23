@@ -1,5 +1,5 @@
 use axum::Router;
-use axum::routing::{delete, get, post};
+use axum::routing::{delete, post};
 
 use crate::handlers;
 use crate::state::SharedState;
@@ -21,22 +21,6 @@ pub fn protected_routes() -> Router<SharedState> {
         .route(
             "/api/servers/{server_id}/command",
             post(handlers::servers::command),
-        )
-        .route(
-            "/api/servers/{server_id}/users",
-            get(handlers::servers::list_users).post(handlers::servers::create_user),
-        )
-        .route(
-            "/api/servers/{server_id}/rooms",
-            get(handlers::servers::list_rooms),
-        )
-        .route(
-            "/api/servers/{server_id}/server/status",
-            get(handlers::servers::server_status),
-        )
-        .route(
-            "/api/servers/{server_id}/server/uptime",
-            get(handlers::servers::server_uptime),
         );
 
     #[cfg(not(test))]
