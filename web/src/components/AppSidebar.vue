@@ -55,8 +55,8 @@ async function handleLogout() {
 </script>
 
 <template>
-  <Sidebar>
-    <SidebarHeader class="p-4">
+  <Sidebar collapsible="icon">
+    <SidebarHeader class="p-4 group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-2 group-data-[collapsible=icon]:pt-4 group-data-[collapsible=icon]:pb-2">
       <AppLogo />
     </SidebarHeader>
     <SidebarContent>
@@ -78,9 +78,9 @@ async function handleLogout() {
       </SidebarGroup>
     </SidebarContent>
     <SidebarFooter class="p-4">
-      <Button variant="ghost" class="w-full justify-start gap-2" @click="handleLogout">
+      <Button variant="ghost" class="w-full justify-start gap-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0" @click="handleLogout">
         <LogOut class="size-4" />
-        {{ $t('sidebar.logout') }}
+        <span class="group-data-[collapsible=icon]:hidden">{{ $t('sidebar.logout') }}</span>
       </Button>
     </SidebarFooter>
   </Sidebar>

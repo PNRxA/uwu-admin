@@ -241,15 +241,19 @@ async fn execute_all_command_tree_commands() {
         )
         .await;
 
-        if status != StatusCode::OK {
+        // 422 = server understood the command but it failed with dummy data (expected).
+        // Only flag statuses that indicate a broken command tree or API issue.
+        if status != StatusCode::OK && status != StatusCode::UNPROCESSABLE_ENTITY {
             failures.push((path.clone(), format!("status={status}")));
-        } else if !body["response"].is_string() {
-            failures.push((path.clone(), "response is not a string".to_string()));
-        } else if let Some(resp_text) = body["response"].as_str() {
-            // Only flag CLI arg-parse errors (indicates wrong command tree definition).
-            // "Command failed with error:" is a valid server response to dummy data.
-            if resp_text.contains("error:") && !resp_text.contains("Command failed with error:") {
-                failures.push((path.clone(), resp_text.to_string()));
+        } else if status == StatusCode::OK {
+            if !body["response"].is_string() {
+                failures.push((path.clone(), "response is not a string".to_string()));
+            } else if let Some(resp_text) = body["response"].as_str() {
+                // Only flag CLI arg-parse errors (indicates wrong command tree definition).
+                // "Command failed with error:" is now caught by the API and returned as 422.
+                if resp_text.contains("error:") && !resp_text.contains("Command failed with error:") {
+                    failures.push((path.clone(), resp_text.to_string()));
+                }
             }
         }
 

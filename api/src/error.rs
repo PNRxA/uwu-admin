@@ -8,6 +8,7 @@ pub enum ApiError {
     Timeout,
     DbError(String),
     InvalidCommand(String),
+    CommandFailed(String),
     Unauthorized,
     Forbidden(String),
     BadRequest(String),
@@ -21,6 +22,7 @@ impl std::fmt::Display for ApiError {
             ApiError::Timeout => write!(f, "Timed out waiting for response"),
             ApiError::DbError(msg) => write!(f, "Database error: {msg}"),
             ApiError::InvalidCommand(msg) => write!(f, "Invalid command: {msg}"),
+            ApiError::CommandFailed(msg) => write!(f, "Command failed: {msg}"),
             ApiError::Unauthorized => write!(f, "Unauthorized"),
             ApiError::Forbidden(msg) => write!(f, "Forbidden: {msg}"),
             ApiError::BadRequest(msg) => write!(f, "Bad request: {msg}"),
@@ -32,7 +34,7 @@ impl IntoResponse for ApiError {
     fn into_response(self) -> Response {
         // Log full details before redacting
         match &self {
-            ApiError::InvalidCommand(_) | ApiError::Unauthorized | ApiError::BadRequest(_) => {
+            ApiError::InvalidCommand(_) | ApiError::CommandFailed(_) | ApiError::Unauthorized | ApiError::BadRequest(_) => {
                 tracing::warn!("{self}")
             }
             ApiError::Forbidden(_) => tracing::warn!("{self}"),
@@ -45,6 +47,7 @@ impl IntoResponse for ApiError {
             ApiError::Timeout => (StatusCode::GATEWAY_TIMEOUT, self.to_string()),
             ApiError::DbError(_) => (StatusCode::INTERNAL_SERVER_ERROR, "Internal server error".to_string()),
             ApiError::InvalidCommand(_) => (StatusCode::BAD_REQUEST, "Invalid command".to_string()),
+            ApiError::CommandFailed(msg) => (StatusCode::UNPROCESSABLE_ENTITY, msg.clone()),
             ApiError::Unauthorized => (StatusCode::UNAUTHORIZED, self.to_string()),
             ApiError::Forbidden(_) => (StatusCode::FORBIDDEN, "Forbidden".to_string()),
             ApiError::BadRequest(_) => (StatusCode::BAD_REQUEST, self.to_string()),
@@ -102,5 +105,10 @@ mod tests {
     #[test]
     fn bad_request_is_400() {
         assert_eq!(status_of(ApiError::BadRequest("oops".into())), StatusCode::BAD_REQUEST);
+    }
+
+    #[test]
+    fn command_failed_is_422() {
+        assert_eq!(status_of(ApiError::CommandFailed("User already exists".into())), StatusCode::UNPROCESSABLE_ENTITY);
     }
 }
