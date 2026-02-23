@@ -1,6 +1,8 @@
 <script setup lang="ts">
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
+import { watch } from 'vue'
 import { useAuthStore } from '@/stores/auth'
+import { useSidebar } from '@/components/ui/sidebar/utils'
 
 import {
   Sidebar,
@@ -26,7 +28,13 @@ import {
 } from 'lucide-vue-next'
 
 const router = useRouter()
+const route = useRoute()
 const auth = useAuthStore()
+const { setOpenMobile } = useSidebar()
+
+watch(() => route.path, () => {
+  setOpenMobile(false)
+})
 
 const navItems = [
   { title: 'Overview', icon: LayoutDashboard, to: '/' },
