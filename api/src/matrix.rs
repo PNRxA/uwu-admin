@@ -29,7 +29,10 @@ impl MatrixClient {
         password: &str,
         room_id: &str,
     ) -> Result<Self, ApiError> {
-        let http = reqwest::Client::new();
+        let http = reqwest::ClientBuilder::new()
+            .timeout(std::time::Duration::from_secs(30))
+            .build()
+            .map_err(|e| ApiError::MatrixError(e.to_string()))?;
         let hs = homeserver.trim_end_matches('/');
 
         let login_url = format!("{hs}/_matrix/client/v3/login");
@@ -95,8 +98,13 @@ impl MatrixClient {
         user_id: String,
         since: Option<String>,
     ) -> Result<Self, ApiError> {
+        let http = reqwest::ClientBuilder::new()
+            .timeout(std::time::Duration::from_secs(30))
+            .build()
+            .map_err(|e| ApiError::MatrixError(e.to_string()))?;
+
         let client = MatrixClient {
-            http: reqwest::Client::new(),
+            http,
             homeserver,
             access_token,
             room_id,

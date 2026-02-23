@@ -4,12 +4,6 @@ Web admin dashboard for [Continuwuity](https://continuwuity.org) Matrix homeserv
 
 Continuwuity only supports admin commands via messages in a special admin room. uwu-admin provides a proper web UI by connecting to the homeserver as a bot account, sending admin commands to the admin room, and displaying the results.
 
-## Security Warning
-
-**Do NOT expose the uwu-admin web interface to the public internet.** The dashboard provides full admin control over your homeserver and has no authentication layer of its own - anyone who can reach the UI can connect a bot and manage your server.
-
-Run it on `localhost` only, or behind a VPN/firewall restricted to trusted networks.
-
 ## Architecture
 
 ```
@@ -20,28 +14,6 @@ Browser (Vue)  →  uwu-admin-api (Rust/axum :3001)  →  Matrix Homeserver
                                                     reads server responses)
 ```
 
-## Session Persistence
-
-The API server stores the active bot session in a local SQLite database (`uwu-admin.db` by default) so it survives restarts. The database contains a single `sessions` table with one row:
-
-| Column | Description |
-|--------|-------------|
-| `homeserver` | Matrix homeserver URL |
-| `access_token` | Bot account access token |
-| `room_id` | Resolved admin room ID |
-| `user_id` | Bot user ID |
-| `since` | Last sync batch token (for resuming where the bot left off) |
-
-On startup the API checks for a saved session, validates the token against the homeserver, and restores the connection automatically. If the token is invalid the stale session is deleted.
-
-Set `DATABASE_URL` to override the default path:
-
-```sh
-DATABASE_URL="sqlite:/path/to/sessions.db?mode=rwc" cargo run --release
-```
-
-The room field can be either a room ID (`!abc:example.com`) or a room alias (`#admins:example.com`) — aliases are resolved automatically on connect.
-
 ## Setup
 
 ### Prerequisites
@@ -49,6 +21,30 @@ The room field can be either a room ID (`!abc:example.com`) or a room alias (`#a
 - Rust (2024 edition)
 - Node.js 22+
 - A Continuwuity homeserver with an admin bot account and admin room
+
+### Configuration
+
+Copy the example environment file and generate secrets:
+
+```sh
+cp .env.example .env
+```
+
+Generate values for `JWT_SECRET` and `ENCRYPTION_KEY`:
+
+```sh
+openssl rand -hex 32
+```
+
+Paste a unique value into each field in `.env`. If left unset the API will generate random secrets on startup, but sessions and encrypted tokens won't survive restarts.
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `JWT_SECRET` | 32-byte hex key for signing auth tokens | random (ephemeral) |
+| `ENCRYPTION_KEY` | 32-byte hex key for encrypting access tokens at rest | random (ephemeral) |
+| `DATABASE_URL` | SQLite connection string | `sqlite:uwu-admin.db?mode=rwc` |
+| `API_LISTEN` | API bind address | `127.0.0.1:3001` |
+| `CORS_ORIGIN` | Allowed CORS origin | none |
 
 ### API
 
@@ -71,13 +67,23 @@ npm run build        # Production build (output in dist/)
 
 1. Start the API server (`cargo run` in `api/`)
 2. Start the web dev server (`npm run dev` in `web/`) or serve the built `web/dist/` directory
-3. Open the dashboard in your browser
-4. Enter your homeserver URL, bot credentials, and admin room ID or alias
-5. Connect and manage your server through the dashboard
+3. Open the dashboard and create an admin account on first launch
+4. Add a homeserver by entering its URL, bot credentials, and admin room ID or alias
+5. Manage your servers through the dashboard
+
+Room fields accept either a room ID (`!abc:example.com`) or a room alias (`#admins:example.com`) — aliases are resolved automatically on connect.
+
+## Session Persistence
+
+The API stores server connections in a local SQLite database (`uwu-admin.db` by default). Access tokens are encrypted at rest using ChaCha20-Poly1305.
+
+On startup the API restores saved connections, validates each token against its homeserver, and removes any stale sessions automatically.
 
 ## Container Deployment
 
 See [containers/](containers/) for Docker and Podman Quadlet deployment options.
+
+Both require `JWT_SECRET` and `ENCRYPTION_KEY` to be set as environment variables — see the example compose file and quadlet config.
 
 ## Pages
 

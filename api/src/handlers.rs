@@ -35,6 +35,8 @@ pub async fn add_server(
     _user: AuthUser,
     Json(req): Json<AddServerRequest>,
 ) -> Result<Json<Value>, ApiError> {
+    validation::validate_homeserver_url(&req.homeserver)?;
+
     let client = MatrixClient::login(&req.homeserver, &req.username, &req.password, &req.room_id)
         .await?;
 
@@ -48,10 +50,16 @@ pub async fn add_server(
         &client.room_id,
         &client.user_id,
         client.since(),
+        &state.encryption_key,
     )
     .await?;
 
     state.clients.lock().await.insert(server_id, client);
+
+    tracing::info!(
+        "Server added: id={}, homeserver={}, user_id={}",
+        server_id, homeserver, user_id
+    );
 
     Ok(Json(json!({
         "id": server_id,
@@ -64,7 +72,7 @@ pub async fn list_servers(
     State(state): State<SharedState>,
     _user: AuthUser,
 ) -> Result<Json<Value>, ApiError> {
-    let servers = db::load_all_servers(&state.db).await?;
+    let servers = db::load_all_servers(&state.db, &state.encryption_key).await?;
     let clients = state.clients.lock().await;
 
     let list: Vec<Value> = servers
@@ -89,6 +97,7 @@ pub async fn remove_server(
 ) -> Result<Json<Value>, ApiError> {
     state.clients.lock().await.remove(&server_id);
     db::delete_server(&state.db, server_id).await?;
+    tracing::info!("Server removed: id={}", server_id);
     Ok(Json(json!({ "removed": true })))
 }
 
@@ -99,6 +108,8 @@ pub async fn command(
     Json(req): Json<CommandRequest>,
 ) -> Result<Json<Value>, ApiError> {
     validate_command(&req.command).map_err(ApiError::InvalidCommand)?;
+
+    tracing::info!("Command executed: server_id={}, command='{}'", server_id, req.command);
 
     let mut lock = state.clients.lock().await;
     let client = lock.get_mut(&server_id).ok_or(ApiError::NotConnected)?;
@@ -137,6 +148,11 @@ pub async fn create_user(
         Some(ref pw) => format!("users create-user {} {}", req.username, pw),
         None => format!("users create-user {}", req.username),
     };
+
+    tracing::info!(
+        "User creation command sent: server_id={}, username='{}'",
+        server_id, req.username
+    );
 
     let response = client.execute_command(&cmd, server_id, &state.db).await?;
     Ok(Json(json!({ "response": response })))

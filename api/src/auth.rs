@@ -126,8 +126,16 @@ pub async fn setup(
         return Err(ApiError::BadRequest("Username and password are required".into()));
     }
 
+    if req.password.len() < 8 {
+        return Err(ApiError::BadRequest(
+            "Password must be at least 8 characters".into(),
+        ));
+    }
+
     let password_hash = hash_password(&req.password)?;
     db::create_admin_user(&state.db, &req.username, &password_hash).await?;
+
+    tracing::info!("Admin account setup completed for user '{}'", req.username);
 
     let token = create_token(&req.username, &state.jwt_secret)?;
     Ok(Json(json!({ "token": token })))
@@ -137,13 +145,20 @@ pub async fn login(
     State(state): State<SharedState>,
     Json(req): Json<LoginRequest>,
 ) -> Result<Json<Value>, ApiError> {
-    let user = db::find_admin_user_by_username(&state.db, &req.username)
-        .await?
-        .ok_or(ApiError::Unauthorized)?;
+    let user = match db::find_admin_user_by_username(&state.db, &req.username).await? {
+        Some(user) => user,
+        None => {
+            tracing::warn!("Login failed: unknown username '{}'", req.username);
+            return Err(ApiError::Unauthorized);
+        }
+    };
 
     if !verify_password(&req.password, &user.password_hash)? {
+        tracing::warn!("Login failed: incorrect password for user '{}'", req.username);
         return Err(ApiError::Unauthorized);
     }
+
+    tracing::info!("Admin login successful for user '{}'", req.username);
 
     let token = create_token(&req.username, &state.jwt_secret)?;
     Ok(Json(json!({ "token": token })))

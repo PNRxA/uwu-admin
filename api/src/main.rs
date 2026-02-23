@@ -1,5 +1,6 @@
 mod auth;
 mod commands;
+mod crypto;
 mod db;
 mod entity;
 mod error;
@@ -8,9 +9,13 @@ mod matrix;
 mod state;
 mod validation;
 
+use std::time::Duration;
+
 use axum::Router;
-use axum::http::{HeaderName, Method};
+use axum::error_handling::HandleErrorLayer;
+use axum::http::{HeaderName, Method, StatusCode};
 use axum::routing::{get, post, delete};
+use tower::ServiceBuilder;
 use tower_http::cors::{AllowOrigin, CorsLayer};
 
 use crate::matrix::MatrixClient;
@@ -20,6 +25,9 @@ use crate::state::AppState;
 async fn main() {
     tracing_subscriber::fmt::init();
 
+    // Load .env file if present (useful for development)
+    dotenvy::dotenv().ok();
+
     let database_url =
         std::env::var("DATABASE_URL").unwrap_or_else(|_| "sqlite:uwu-admin.db?mode=rwc".into());
 
@@ -27,17 +35,38 @@ async fn main() {
         .await
         .expect("Failed to initialize database");
 
-    // Generate random JWT secret
-    let jwt_secret: Vec<u8> = {
-        use rand::Rng;
-        let mut rng = rand::thread_rng();
-        (0..32).map(|_| rng.r#gen::<u8>()).collect()
-    };
+    let jwt_secret = db::load_secret_from_env("JWT_SECRET");
+    let encryption_key = db::load_secret_from_env("ENCRYPTION_KEY");
 
-    let state = AppState::new(db, jwt_secret);
+    // Migrate any plaintext access tokens to encrypted
+    match db::load_all_servers_raw(&db).await {
+        Ok(servers) => {
+            for server in &servers {
+                if !crypto::is_encrypted(&server.access_token) {
+                    match crypto::encrypt(&encryption_key, &server.access_token) {
+                        Ok(encrypted) => {
+                            if let Err(e) = db::update_server_token(&db, server.id, &encrypted).await {
+                                tracing::warn!("Failed to migrate token for server {}: {e}", server.id);
+                            } else {
+                                tracing::info!("Migrated plaintext token to encrypted for server {}", server.id);
+                            }
+                        }
+                        Err(e) => {
+                            tracing::warn!("Failed to encrypt token for server {}: {e}", server.id);
+                        }
+                    }
+                }
+            }
+        }
+        Err(e) => {
+            tracing::warn!("Failed to load servers for token migration: {e}");
+        }
+    }
+
+    let state = AppState::new(db, jwt_secret, encryption_key);
 
     // Restore all saved servers
-    match db::load_all_servers(&state.db).await {
+    match db::load_all_servers(&state.db, &state.encryption_key).await {
         Ok(servers) => {
             for server in servers {
                 match MatrixClient::restore(
@@ -70,11 +99,21 @@ async fn main() {
         }
     }
 
-    let app = Router::new()
-        // Auth routes (unauthenticated)
+    let auth_routes = Router::new()
         .route("/api/auth/status", get(auth::auth_status))
         .route("/api/auth/setup", post(auth::setup))
         .route("/api/auth/login", post(auth::login))
+        .layer(
+            ServiceBuilder::new()
+                .layer(HandleErrorLayer::new(|_: Box<dyn std::error::Error + Send + Sync>| async {
+                    StatusCode::TOO_MANY_REQUESTS
+                }))
+                .buffer(100)
+                .rate_limit(5, Duration::from_secs(60)),
+        );
+
+    let app = Router::new()
+        .merge(auth_routes)
         // Server management
         .route("/api/servers", post(handlers::add_server).get(handlers::list_servers))
         .route("/api/servers/{server_id}", delete(handlers::remove_server))

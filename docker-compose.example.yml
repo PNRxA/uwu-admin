@@ -5,6 +5,10 @@ services:
       dockerfile: containers/docker/Dockerfile
     ports:
       - "8080:8080"
+    environment:
+      # Generate with: openssl rand -hex 32
+      JWT_SECRET: "${JWT_SECRET}"
+      ENCRYPTION_KEY: "${ENCRYPTION_KEY}"
     volumes:
       - uwu-data:/data
     restart: unless-stopped
