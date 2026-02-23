@@ -44,9 +44,9 @@ impl IntoResponse for ApiError {
             ApiError::MatrixError(_) => (StatusCode::BAD_GATEWAY, "Matrix server error".to_string()),
             ApiError::Timeout => (StatusCode::GATEWAY_TIMEOUT, self.to_string()),
             ApiError::DbError(_) => (StatusCode::INTERNAL_SERVER_ERROR, "Internal server error".to_string()),
-            ApiError::InvalidCommand(_) => (StatusCode::BAD_REQUEST, self.to_string()),
+            ApiError::InvalidCommand(_) => (StatusCode::BAD_REQUEST, "Invalid command".to_string()),
             ApiError::Unauthorized => (StatusCode::UNAUTHORIZED, self.to_string()),
-            ApiError::Forbidden(_) => (StatusCode::FORBIDDEN, self.to_string()),
+            ApiError::Forbidden(_) => (StatusCode::FORBIDDEN, "Forbidden".to_string()),
             ApiError::BadRequest(_) => (StatusCode::BAD_REQUEST, self.to_string()),
         };
 

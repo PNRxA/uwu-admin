@@ -6,6 +6,8 @@ mod entity;
 mod error;
 mod handlers;
 mod matrix;
+mod middleware;
+mod response;
 mod state;
 mod validation;
 
@@ -13,6 +15,7 @@ use std::time::Duration;
 
 use axum::Router;
 use axum::error_handling::HandleErrorLayer;
+use axum::extract::DefaultBodyLimit;
 use axum::http::{HeaderName, Method, StatusCode};
 use axum::routing::{get, post, delete};
 use tower::ServiceBuilder;
@@ -69,11 +72,32 @@ async fn main() {
         }
     }
 
-    // Migrate any plaintext access tokens to encrypted
+    // Migrate access tokens: plaintext → encrypted, legacy hex → prefixed
     match db::load_all_servers_raw(&db).await {
         Ok(servers) => {
             for server in &servers {
-                if !crypto::is_encrypted(&server.access_token) {
+                if crypto::is_encrypted(&server.access_token) {
+                    // Already has enc: prefix, nothing to do
+                    continue;
+                }
+
+                if crypto::is_legacy_encrypted(&server.access_token) {
+                    // Legacy format (all-hex, no prefix): decrypt then re-encrypt with prefix
+                    match crypto::decrypt(&encryption_key, &server.access_token) {
+                        Ok(plaintext) => match crypto::encrypt(&encryption_key, &plaintext) {
+                            Ok(encrypted) => {
+                                if let Err(e) = db::update_server_token(&db, server.id, &encrypted).await {
+                                    tracing::warn!("Failed to re-encrypt token for server {}: {e}", server.id);
+                                } else {
+                                    tracing::info!("Migrated legacy encrypted token to prefixed for server {}", server.id);
+                                }
+                            }
+                            Err(e) => tracing::warn!("Failed to re-encrypt token for server {}: {e}", server.id),
+                        },
+                        Err(e) => tracing::warn!("Failed to decrypt legacy token for server {}: {e}", server.id),
+                    }
+                } else {
+                    // Plaintext token: encrypt with prefix
                     match crypto::encrypt(&encryption_key, &server.access_token) {
                         Ok(encrypted) => {
                             if let Err(e) = db::update_server_token(&db, server.id, &encrypted).await {
@@ -82,9 +106,7 @@ async fn main() {
                                 tracing::info!("Migrated plaintext token to encrypted for server {}", server.id);
                             }
                         }
-                        Err(e) => {
-                            tracing::warn!("Failed to encrypt token for server {}: {e}", server.id);
-                        }
+                        Err(e) => tracing::warn!("Failed to encrypt token for server {}: {e}", server.id),
                     }
                 }
             }
@@ -155,8 +177,7 @@ async fn main() {
                 .rate_limit(5, Duration::from_secs(60)),
         );
 
-    let app = Router::new()
-        .merge(auth_routes)
+    let protected_routes = Router::new()
         .route("/api/auth/logout", post(auth::logout))
         // Server management
         .route("/api/servers", post(handlers::add_server).get(handlers::list_servers))
@@ -176,6 +197,20 @@ async fn main() {
             "/api/servers/{server_id}/server/uptime",
             get(handlers::server_uptime),
         )
+        .layer(
+            ServiceBuilder::new()
+                .layer(HandleErrorLayer::new(|_: Box<dyn std::error::Error + Send + Sync>| async {
+                    StatusCode::TOO_MANY_REQUESTS
+                }))
+                .buffer(100)
+                .rate_limit(30, Duration::from_secs(60)),
+        );
+
+    let app = Router::new()
+        .merge(auth_routes)
+        .merge(protected_routes)
+        .layer(DefaultBodyLimit::max(65_536))
+        .layer(axum::middleware::from_fn(middleware::validate_origin))
         .layer({
             let cors = CorsLayer::new()
                 .allow_methods([Method::GET, Method::POST, Method::DELETE])

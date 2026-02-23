@@ -8,6 +8,7 @@ use crate::commands::validate_command;
 use crate::db;
 use crate::error::ApiError;
 use crate::matrix::MatrixClient;
+use crate::response;
 use crate::state::SharedState;
 use crate::validation;
 
@@ -107,6 +108,9 @@ pub async fn command(
     Path(server_id): Path<i32>,
     Json(req): Json<CommandRequest>,
 ) -> Result<Json<Value>, ApiError> {
+    if req.command.chars().any(char::is_control) {
+        return Err(ApiError::BadRequest("Command must not contain control characters".into()));
+    }
     validate_command(&req.command).map_err(ApiError::InvalidCommand)?;
 
     tracing::info!("Command executed: server_id={}, command='{}'", server_id, req.command);
@@ -114,8 +118,9 @@ pub async fn command(
     let mut lock = state.clients.lock().await;
     let client = lock.get_mut(&server_id).ok_or(ApiError::NotConnected)?;
 
-    let response = client.execute_command(&req.command, server_id, &state.db).await?;
-    Ok(Json(json!({ "response": response })))
+    let raw = client.execute_command(&req.command, server_id, &state.db).await?;
+    let parsed = response::parse_response(&raw);
+    Ok(Json(json!({ "response": raw, "parsed": parsed })))
 }
 
 pub async fn list_users(
@@ -126,8 +131,9 @@ pub async fn list_users(
     let mut lock = state.clients.lock().await;
     let client = lock.get_mut(&server_id).ok_or(ApiError::NotConnected)?;
 
-    let response = client.execute_command("users list-users", server_id, &state.db).await?;
-    Ok(Json(json!({ "response": response })))
+    let raw = client.execute_command("users list-users", server_id, &state.db).await?;
+    let parsed = response::parse_response(&raw);
+    Ok(Json(json!({ "response": raw, "parsed": parsed })))
 }
 
 pub async fn create_user(
@@ -139,6 +145,11 @@ pub async fn create_user(
     validation::validate_username(&req.username)?;
     if let Some(ref pw) = req.password {
         validation::validate_password(pw)?;
+        if pw.chars().any(char::is_whitespace) {
+            return Err(ApiError::BadRequest(
+                "Password for Matrix user creation must not contain spaces (protocol limitation)".into(),
+            ));
+        }
     }
 
     let mut lock = state.clients.lock().await;
@@ -154,8 +165,9 @@ pub async fn create_user(
         server_id, req.username
     );
 
-    let response = client.execute_command(&cmd, server_id, &state.db).await?;
-    Ok(Json(json!({ "response": response })))
+    let raw = client.execute_command(&cmd, server_id, &state.db).await?;
+    let parsed = response::parse_response(&raw);
+    Ok(Json(json!({ "response": raw, "parsed": parsed })))
 }
 
 pub async fn list_rooms(
@@ -166,8 +178,9 @@ pub async fn list_rooms(
     let mut lock = state.clients.lock().await;
     let client = lock.get_mut(&server_id).ok_or(ApiError::NotConnected)?;
 
-    let response = client.execute_command("rooms list-rooms", server_id, &state.db).await?;
-    Ok(Json(json!({ "response": response })))
+    let raw = client.execute_command("rooms list-rooms", server_id, &state.db).await?;
+    let parsed = response::parse_response(&raw);
+    Ok(Json(json!({ "response": raw, "parsed": parsed })))
 }
 
 pub async fn server_status(
@@ -178,10 +191,11 @@ pub async fn server_status(
     let mut lock = state.clients.lock().await;
     let client = lock.get_mut(&server_id).ok_or(ApiError::NotConnected)?;
 
-    let response = client
+    let raw = client
         .execute_command("server memory-usage", server_id, &state.db)
         .await?;
-    Ok(Json(json!({ "response": response })))
+    let parsed = response::parse_response(&raw);
+    Ok(Json(json!({ "response": raw, "parsed": parsed })))
 }
 
 pub async fn server_uptime(
@@ -192,8 +206,9 @@ pub async fn server_uptime(
     let mut lock = state.clients.lock().await;
     let client = lock.get_mut(&server_id).ok_or(ApiError::NotConnected)?;
 
-    let response = client
+    let raw = client
         .execute_command("server uptime", server_id, &state.db)
         .await?;
-    Ok(Json(json!({ "response": response })))
+    let parsed = response::parse_response(&raw);
+    Ok(Json(json!({ "response": raw, "parsed": parsed })))
 }

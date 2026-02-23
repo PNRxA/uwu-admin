@@ -2,8 +2,15 @@ interface StatusResponse {
   setup_required: boolean
 }
 
-interface CommandResponse {
+export type ParsedResponse =
+  | { type: 'table'; header: string | null; columns: string[]; rows: string[][] }
+  | { type: 'list'; header: string | null; items: string[] }
+  | { type: 'kv'; header: string | null; entries: { key: string; value: string }[] }
+  | { type: 'text'; text: string }
+
+export interface CommandResponse {
   response: string
+  parsed: ParsedResponse
 }
 
 interface AddServerParams {

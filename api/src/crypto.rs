@@ -3,6 +3,8 @@ use chacha20poly1305::{
     aead::Aead,
 };
 
+const ENC_PREFIX: &str = "enc:";
+
 pub fn encrypt(key: &[u8], plaintext: &str) -> Result<String, String> {
     let cipher = ChaCha20Poly1305::new_from_slice(key)
         .map_err(|e| format!("Invalid encryption key: {e}"))?;
@@ -17,13 +19,16 @@ pub fn encrypt(key: &[u8], plaintext: &str) -> Result<String, String> {
         .encrypt(nonce, plaintext.as_bytes())
         .map_err(|e| format!("Encryption failed: {e}"))?;
 
-    // Prepend nonce to ciphertext and hex-encode
+    // Prepend nonce to ciphertext, hex-encode, and add prefix
     let mut combined = nonce_bytes.to_vec();
     combined.extend_from_slice(&ciphertext);
-    Ok(bytes_to_hex(&combined))
+    Ok(format!("{}{}", ENC_PREFIX, bytes_to_hex(&combined)))
 }
 
-pub fn decrypt(key: &[u8], hex_data: &str) -> Result<String, String> {
+pub fn decrypt(key: &[u8], token: &str) -> Result<String, String> {
+    // Accept both prefixed and unprefixed for backward compat
+    let hex_data = token.strip_prefix(ENC_PREFIX).unwrap_or(token);
+
     let data = hex_to_bytes(hex_data)?;
 
     if data.len() < 12 {
@@ -43,10 +48,13 @@ pub fn decrypt(key: &[u8], hex_data: &str) -> Result<String, String> {
     String::from_utf8(plaintext).map_err(|e| format!("Invalid UTF-8 in decrypted data: {e}"))
 }
 
-/// Heuristic to distinguish encrypted (hex-encoded) tokens from raw Matrix tokens.
-/// Encrypted tokens are all hex digits and long enough (nonce + ciphertext + tag).
-/// Raw Matrix tokens contain non-hex chars like `_`.
+/// Deterministic check: encrypted tokens always start with the `enc:` prefix.
 pub fn is_encrypted(value: &str) -> bool {
+    value.starts_with(ENC_PREFIX)
+}
+
+/// Legacy heuristic for migration: all-hex and long enough (nonce + ciphertext + tag).
+pub fn is_legacy_encrypted(value: &str) -> bool {
     value.len() >= 58 && value.chars().all(|c| c.is_ascii_hexdigit())
 }
 

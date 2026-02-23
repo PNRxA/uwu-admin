@@ -32,14 +32,28 @@ interface Room {
 
 const { data: roomsResponse, isPending, isFetching, refetch } = useQuery({
   queryKey: computed(() => queryKeys.rooms(serverId.value!)),
-  queryFn: async () => (await api.listRooms(serverId.value!)).response,
+  queryFn: () => api.listRooms(serverId.value!),
   staleTime: 30_000,
   enabled: computed(() => serverId.value !== null),
 })
 
 const rooms = computed<Room[]>(() => {
   if (!roomsResponse.value) return []
-  return stripHtml(roomsResponse.value)
+  const { parsed, response } = roomsResponse.value
+  if (parsed.type === 'table') {
+    const membersIdx = parsed.columns.indexOf('Members')
+    const nameIdx = parsed.columns.indexOf('Name')
+    return parsed.rows
+      .map((row) => {
+        const id = row[0]
+        const members = membersIdx >= 0 ? parseInt(row[membersIdx] ?? '0', 10) : 0
+        const name = nameIdx >= 0 ? (row[nameIdx] ?? '') : ''
+        return id ? { id, members, name } : null
+      })
+      .filter((r): r is Room => r !== null)
+  }
+  // Fallback to regex extraction
+  return stripHtml(response)
     .split('\n')
     .map((line) => {
       const match = line.match(/^(!\S+)\s+Members:\s*(\d+)\s+Name:\s*(.+)$/)

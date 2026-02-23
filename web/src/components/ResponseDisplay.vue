@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { parseResponse, type ParsedResponse } from '@/lib/response-parser'
+import type { ParsedResponse as ApiParsedResponse } from '@/lib/api'
 import {
   Table,
   TableBody,
@@ -10,23 +11,25 @@ import {
   TableRow,
 } from '@/components/ui/table'
 
-const props = defineProps<{ response: string }>()
+const props = defineProps<{ response: string; parsed?: ApiParsedResponse }>()
 
-const parsed = computed<ParsedResponse>(() => parseResponse(props.response))
+const resolvedParsed = computed<ParsedResponse>(() =>
+  props.parsed ?? parseResponse(props.response),
+)
 </script>
 
 <template>
   <div class="max-h-[60vh] overflow-auto">
-    <template v-if="parsed.type === 'table'">
-      <p v-if="parsed.header" class="mb-2 text-sm font-medium text-muted-foreground">{{ parsed.header }}</p>
+    <template v-if="resolvedParsed.type === 'table'">
+      <p v-if="resolvedParsed.header" class="mb-2 text-sm font-medium text-muted-foreground">{{ resolvedParsed.header }}</p>
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead v-for="col in parsed.columns" :key="col">{{ col }}</TableHead>
+            <TableHead v-for="col in resolvedParsed.columns" :key="col">{{ col }}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          <TableRow v-for="(row, i) in parsed.rows" :key="i">
+          <TableRow v-for="(row, i) in resolvedParsed.rows" :key="i">
             <TableCell
               v-for="(cell, j) in row"
               :key="j"
@@ -39,21 +42,21 @@ const parsed = computed<ParsedResponse>(() => parseResponse(props.response))
       </Table>
     </template>
 
-    <template v-else-if="parsed.type === 'list'">
-      <p v-if="parsed.header" class="mb-2 text-sm font-medium text-muted-foreground">{{ parsed.header }}</p>
+    <template v-else-if="resolvedParsed.type === 'list'">
+      <p v-if="resolvedParsed.header" class="mb-2 text-sm font-medium text-muted-foreground">{{ resolvedParsed.header }}</p>
       <Table>
         <TableBody>
-          <TableRow v-for="item in parsed.items" :key="item">
+          <TableRow v-for="item in resolvedParsed.items" :key="item">
             <TableCell class="font-mono text-sm">{{ item }}</TableCell>
           </TableRow>
         </TableBody>
       </Table>
     </template>
 
-    <template v-else-if="parsed.type === 'kv'">
-      <p v-if="parsed.header" class="mb-2 text-sm font-medium text-muted-foreground">{{ parsed.header }}</p>
+    <template v-else-if="resolvedParsed.type === 'kv'">
+      <p v-if="resolvedParsed.header" class="mb-2 text-sm font-medium text-muted-foreground">{{ resolvedParsed.header }}</p>
       <dl class="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
-        <template v-for="entry in parsed.entries" :key="entry.key">
+        <template v-for="entry in resolvedParsed.entries" :key="entry.key">
           <dt class="text-muted-foreground font-medium">{{ entry.key }}</dt>
           <dd class="font-mono truncate">{{ entry.value }}</dd>
         </template>
@@ -61,7 +64,7 @@ const parsed = computed<ParsedResponse>(() => parseResponse(props.response))
     </template>
 
     <template v-else>
-      <pre class="whitespace-pre-wrap text-sm rounded-md bg-muted p-4">{{ parsed.text }}</pre>
+      <pre class="whitespace-pre-wrap text-sm rounded-md bg-muted p-4">{{ resolvedParsed.text }}</pre>
     </template>
   </div>
 </template>

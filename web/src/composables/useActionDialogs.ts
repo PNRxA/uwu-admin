@@ -77,6 +77,11 @@ export function useActionDialogs(onComplete?: () => void) {
       toast.error(`${missing.label} is required`)
       return
     }
+    const badField = inputFields.value.find((f) => f.value.trim() && /\s/.test(f.value.trim()))
+    if (badField) {
+      toast.error(`${badField.label} must not contain whitespace`)
+      return
+    }
     const args = inputFields.value.map((f) => f.value.trim()).filter(Boolean)
     const command = `${inputDialogCommand.value} ${args.join(' ')}`.trim()
 

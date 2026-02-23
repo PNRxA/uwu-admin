@@ -15,11 +15,23 @@ pub fn validate_username(username: &str) -> Result<(), ApiError> {
 pub fn validate_password(password: &str) -> Result<(), ApiError> {
     if password.is_empty()
         || password.len() < 8
-        || password.chars().any(char::is_whitespace)
         || password.chars().any(char::is_control)
     {
         return Err(ApiError::BadRequest(
-            "Invalid password: must be at least 8 characters and not contain whitespace/control characters".into(),
+            "Invalid password: must be at least 8 characters and not contain control characters".into(),
+        ));
+    }
+    Ok(())
+}
+
+/// Validates a single command argument: rejects empty, whitespace, and control chars.
+pub fn validate_command_arg(arg: &str, name: &str) -> Result<(), ApiError> {
+    if arg.is_empty()
+        || arg.chars().any(char::is_whitespace)
+        || arg.chars().any(char::is_control)
+    {
+        return Err(ApiError::BadRequest(
+            format!("Invalid {name}: must not be empty or contain whitespace/control characters"),
         ));
     }
     Ok(())

@@ -37,7 +37,7 @@ const serverId = computed(() => connection.activeServerId)
 
 const { data: usersResponse, isPending, isFetching, refetch } = useQuery({
   queryKey: computed(() => queryKeys.users(serverId.value!)),
-  queryFn: async () => (await api.listUsers(serverId.value!)).response,
+  queryFn: () => api.listUsers(serverId.value!),
   staleTime: 30_000,
   enabled: computed(() => serverId.value !== null),
 })
@@ -49,7 +49,12 @@ const creating = ref(false)
 
 const users = computed(() => {
   if (!usersResponse.value) return []
-  const matches = usersResponse.value.match(/@[a-zA-Z0-9._=\-/]+:[a-zA-Z0-9.\-]+/g)
+  const { parsed, response } = usersResponse.value
+  if (parsed.type === 'list') {
+    return parsed.items
+  }
+  // Fallback to regex extraction
+  const matches = response.match(/@[a-zA-Z0-9._=\-/]+:[a-zA-Z0-9.\-]+/g)
   return matches ? [...new Set(matches)] : []
 })
 
