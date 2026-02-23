@@ -331,6 +331,7 @@ pub async fn load_all_servers_raw(db: &DatabaseConnection) -> Result<Vec<server:
         .map_err(|e| ApiError::DbError(e.to_string()))
 }
 
+#[allow(unused)]
 pub async fn load_server(
     db: &DatabaseConnection,
     id: i32,
