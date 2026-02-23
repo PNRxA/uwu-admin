@@ -5,6 +5,7 @@ mod routes;
 mod services;
 mod state;
 
+use std::net::SocketAddr;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
@@ -168,9 +169,12 @@ async fn main() {
 
     tracing::info!("uwu-admin-api listening on {listen_addr}");
 
-    axum::serve(listener, app)
-        .await
-        .expect("Server error");
+    axum::serve(
+        listener,
+        app.into_make_service_with_connect_info::<SocketAddr>(),
+    )
+    .await
+    .expect("Server error");
 }
 
 #[cfg(test)]
