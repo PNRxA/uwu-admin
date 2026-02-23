@@ -1,7 +1,6 @@
 <script setup lang="ts">
-import { ref, computed, nextTick, watch } from 'vue'
-import { useCommandStore } from '@/stores/command'
-import { validateCommand } from '@/composables/useCommandAutocomplete'
+import { watch, nextTick } from 'vue'
+import { useConsole, sanitizeHtml } from '@/composables/useConsole'
 import CommandAutocomplete from '@/components/CommandAutocomplete.vue'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -14,41 +13,14 @@ import { useRouter } from 'vue-router'
 
 const router = useRouter()
 
-const commandStore = useCommandStore()
-const commandInput = ref('')
-const submittedError = ref<string | null>(null)
-const autocompleteRef = ref<InstanceType<typeof CommandAutocomplete> | null>(null)
-
-const validation = computed(() => {
-  const cmd = commandInput.value.trim()
-  if (!cmd) return null
-  return validateCommand(cmd)
-})
-
-watch(commandInput, () => {
-  submittedError.value = null
-})
-
-async function sendCommand() {
-  const cmd = commandInput.value.trim()
-  if (!cmd) return
-  const result = validateCommand(cmd)
-  if (!result.valid) {
-    submittedError.value = result.error ?? 'Invalid command'
-    return
-  }
-  submittedError.value = null
-  commandInput.value = ''
-  await commandStore.execute(cmd)
-  await nextTick()
-  const el = document.getElementById('console-panel-bottom')
-  el?.scrollIntoView({ behavior: 'smooth' })
-  autocompleteRef.value?.focus()
-}
-
-function formatTime(date: Date) {
-  return date.toLocaleTimeString()
-}
+const {
+  commandStore,
+  commandInput,
+  submittedError,
+  autocompleteRef,
+  sendCommand,
+  formatTime,
+} = useConsole('console-panel-bottom')
 
 watch(() => commandStore.panelOpen, (open) => {
   if (open) {
@@ -100,7 +72,7 @@ watch(() => commandStore.panelOpen, (open) => {
                 <code class="text-xs font-medium">!admin {{ entry.command }}</code>
                 <span class="ml-auto text-xs text-muted-foreground">{{ formatTime(entry.timestamp) }}</span>
               </div>
-              <div class="console-response text-xs rounded-md bg-muted p-2 max-h-40 overflow-auto" v-html="entry.response || 'Waiting for response...'" />
+              <div class="console-response text-xs rounded-md bg-muted p-2 max-h-40 overflow-auto" v-html="sanitizeHtml(entry.response || 'Waiting for response...')" />
               <Separator />
             </div>
             <div v-if="commandStore.history.length === 0" class="text-center text-muted-foreground py-4 text-sm">

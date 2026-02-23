@@ -30,24 +30,26 @@ impl std::fmt::Display for ApiError {
 
 impl IntoResponse for ApiError {
     fn into_response(self) -> Response {
+        // Log full details before redacting
+        match &self {
+            ApiError::InvalidCommand(_) | ApiError::Unauthorized | ApiError::BadRequest(_) => {
+                tracing::warn!("{self}")
+            }
+            ApiError::Forbidden(_) => tracing::warn!("{self}"),
+            _ => tracing::error!("{self}"),
+        }
+
         let (status, message) = match &self {
             ApiError::NotConnected => (StatusCode::SERVICE_UNAVAILABLE, self.to_string()),
-            ApiError::MatrixError(_) => (StatusCode::BAD_GATEWAY, self.to_string()),
+            ApiError::MatrixError(_) => (StatusCode::BAD_GATEWAY, "Matrix server error".to_string()),
             ApiError::Timeout => (StatusCode::GATEWAY_TIMEOUT, self.to_string()),
-            ApiError::DbError(_) => (StatusCode::INTERNAL_SERVER_ERROR, self.to_string()),
+            ApiError::DbError(_) => (StatusCode::INTERNAL_SERVER_ERROR, "Internal server error".to_string()),
             ApiError::InvalidCommand(_) => (StatusCode::BAD_REQUEST, self.to_string()),
             ApiError::Unauthorized => (StatusCode::UNAUTHORIZED, self.to_string()),
             ApiError::Forbidden(_) => (StatusCode::FORBIDDEN, self.to_string()),
             ApiError::BadRequest(_) => (StatusCode::BAD_REQUEST, self.to_string()),
         };
 
-        match &self {
-            ApiError::InvalidCommand(_) | ApiError::Unauthorized | ApiError::BadRequest(_) => {
-                tracing::warn!("{message}")
-            }
-            ApiError::Forbidden(_) => tracing::warn!("{message}"),
-            _ => tracing::error!("{message}"),
-        }
         let body = serde_json::json!({ "error": message });
         (status, axum::Json(body)).into_response()
     }

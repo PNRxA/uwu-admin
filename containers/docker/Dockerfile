@@ -18,8 +18,11 @@ RUN apt-get update && \
     apt-get install -y --no-install-recommends nginx ca-certificates && \
     rm -rf /var/lib/apt/lists/*
 
-# Create data directory for SQLite
-RUN mkdir -p /data
+# Create non-root user and data directory
+RUN groupadd -r uwu && useradd -r -g uwu -s /usr/sbin/nologin uwu && \
+    mkdir -p /data && \
+    chown uwu:uwu /data && \
+    chown -R uwu:uwu /var/lib/nginx /var/log/nginx /usr/share/nginx/html
 
 # Copy API binary
 COPY --from=backend /build/api/target/release/uwu-admin-api /usr/local/bin/uwu-admin-api
@@ -30,9 +33,12 @@ COPY --from=frontend /build/web/dist/ /usr/share/nginx/html/
 # Copy nginx config and entrypoint
 COPY containers/docker/nginx.conf /etc/nginx/nginx.conf
 COPY containers/docker/entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
+RUN chmod +x /entrypoint.sh && \
+    chown -R uwu:uwu /usr/share/nginx/html
 
-EXPOSE 80
+USER uwu
+
+EXPOSE 8080
 VOLUME /data
 
 ENTRYPOINT ["/entrypoint.sh"]

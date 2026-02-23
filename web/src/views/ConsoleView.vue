@@ -1,7 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, nextTick, watch } from 'vue'
-import { useCommandStore } from '@/stores/command'
-import { validateCommand } from '@/composables/useCommandAutocomplete'
+import { useConsole, sanitizeHtml } from '@/composables/useConsole'
 import CommandAutocomplete from '@/components/CommandAutocomplete.vue'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
@@ -11,35 +9,14 @@ import { Separator } from '@/components/ui/separator'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Send, Trash2, CircleAlert } from 'lucide-vue-next'
 
-const commandStore = useCommandStore()
-const commandInput = ref('')
-const submittedError = ref<string | null>(null)
-const autocompleteRef = ref<InstanceType<typeof CommandAutocomplete> | null>(null)
-
-watch(commandInput, () => {
-  submittedError.value = null
-})
-
-async function sendCommand() {
-  const cmd = commandInput.value.trim()
-  if (!cmd) return
-  const result = validateCommand(cmd)
-  if (!result.valid) {
-    submittedError.value = result.error ?? 'Invalid command'
-    return
-  }
-  submittedError.value = null
-  commandInput.value = ''
-  await commandStore.execute(cmd)
-  await nextTick()
-  const el = document.getElementById('console-bottom')
-  el?.scrollIntoView({ behavior: 'smooth' })
-  autocompleteRef.value?.focus()
-}
-
-function formatTime(date: Date) {
-  return date.toLocaleTimeString()
-}
+const {
+  commandStore,
+  commandInput,
+  submittedError,
+  autocompleteRef,
+  sendCommand,
+  formatTime,
+} = useConsole('console-bottom')
 </script>
 
 <template>
@@ -73,7 +50,7 @@ function formatTime(date: Date) {
                 <code class="text-sm font-medium">!admin {{ entry.command }}</code>
                 <span class="ml-auto text-xs text-muted-foreground">{{ formatTime(entry.timestamp) }}</span>
               </div>
-              <div class="console-response text-sm rounded-md bg-muted p-3 max-h-64 overflow-auto" v-html="entry.response || 'Waiting for response...'" />
+              <div class="console-response text-sm rounded-md bg-muted p-3 max-h-64 overflow-auto" v-html="sanitizeHtml(entry.response || 'Waiting for response...')" />
               <Separator />
             </div>
             <div v-if="commandStore.history.length === 0" class="text-center text-muted-foreground py-8">

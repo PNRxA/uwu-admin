@@ -11,6 +11,8 @@ export interface CommandEntry {
   success: boolean
 }
 
+const MAX_HISTORY = 500
+
 export const useCommandStore = defineStore('command', () => {
   const history = ref<CommandEntry[]>([])
   const loading = ref(false)
@@ -32,6 +34,9 @@ export const useCommandStore = defineStore('command', () => {
       success: false,
     }
     history.value.push(entry)
+    if (history.value.length > MAX_HISTORY) {
+      history.value = history.value.slice(-MAX_HISTORY)
+    }
     const idx = history.value.length - 1
 
     try {

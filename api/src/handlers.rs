@@ -9,6 +9,7 @@ use crate::db;
 use crate::error::ApiError;
 use crate::matrix::MatrixClient;
 use crate::state::SharedState;
+use crate::validation;
 
 #[derive(Deserialize)]
 pub struct AddServerRequest {
@@ -124,6 +125,11 @@ pub async fn create_user(
     Path(server_id): Path<i32>,
     Json(req): Json<CreateUserRequest>,
 ) -> Result<Json<Value>, ApiError> {
+    validation::validate_username(&req.username)?;
+    if let Some(ref pw) = req.password {
+        validation::validate_password(pw)?;
+    }
+
     let mut lock = state.clients.lock().await;
     let client = lock.get_mut(&server_id).ok_or(ApiError::NotConnected)?;
 
@@ -153,6 +159,8 @@ pub async fn room_info(
     _user: AuthUser,
     Path((server_id, room_id)): Path<(i32, String)>,
 ) -> Result<Json<Value>, ApiError> {
+    validation::validate_matrix_room_id(&room_id)?;
+
     let mut lock = state.clients.lock().await;
     let client = lock.get_mut(&server_id).ok_or(ApiError::NotConnected)?;
 

@@ -63,10 +63,24 @@ async function request<T>(url: string, options?: RequestInit): Promise<T> {
     headers['Authorization'] = `Bearer ${authToken}`
   }
 
-  const res = await fetch(url, {
-    headers,
-    ...options,
-  })
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), 30_000)
+
+  let res: Response
+  try {
+    res = await fetch(url, {
+      headers,
+      signal: controller.signal,
+      ...options,
+    })
+  } catch (e) {
+    if (e instanceof DOMException && e.name === 'AbortError') {
+      throw new Error('Request timed out')
+    }
+    throw e
+  } finally {
+    clearTimeout(timeout)
+  }
 
   if (res.status === 401) {
     setAuthToken(null)

@@ -6,10 +6,12 @@ mod error;
 mod handlers;
 mod matrix;
 mod state;
+mod validation;
 
 use axum::Router;
+use axum::http::{HeaderName, Method};
 use axum::routing::{get, post, delete};
-use tower_http::cors::CorsLayer;
+use tower_http::cors::{AllowOrigin, CorsLayer};
 
 use crate::matrix::MatrixClient;
 use crate::state::AppState;
@@ -95,14 +97,28 @@ async fn main() {
             "/api/servers/{server_id}/server/uptime",
             get(handlers::server_uptime),
         )
-        .layer(CorsLayer::permissive())
+        .layer({
+            let cors = CorsLayer::new()
+                .allow_methods([Method::GET, Method::POST, Method::DELETE])
+                .allow_headers([
+                    HeaderName::from_static("content-type"),
+                    HeaderName::from_static("authorization"),
+                ]);
+            match std::env::var("CORS_ORIGIN") {
+                Ok(origin) => cors.allow_origin(origin.parse::<axum::http::HeaderValue>().expect("Invalid CORS_ORIGIN")),
+                Err(_) => cors.allow_origin(AllowOrigin::default()),
+            }
+        })
         .with_state(state);
 
-    let listener = tokio::net::TcpListener::bind("0.0.0.0:3001")
-        .await
-        .expect("Failed to bind to port 3001");
+    let listen_addr =
+        std::env::var("API_LISTEN").unwrap_or_else(|_| "127.0.0.1:3001".into());
 
-    tracing::info!("uwu-admin-api listening on :3001");
+    let listener = tokio::net::TcpListener::bind(&listen_addr)
+        .await
+        .unwrap_or_else(|_| panic!("Failed to bind to {listen_addr}"));
+
+    tracing::info!("uwu-admin-api listening on {listen_addr}");
 
     axum::serve(listener, app)
         .await
