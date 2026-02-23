@@ -22,17 +22,17 @@ const {
 <template>
   <div class="flex flex-col gap-6 h-[calc(100vh-8rem)]">
     <div class="flex items-center justify-between">
-      <h1 class="text-2xl font-bold">Console</h1>
+      <h1 class="text-2xl font-bold">{{ $t('console.title') }}</h1>
       <Button variant="ghost" size="sm" @click="commandStore.clear">
         <Trash2 class="size-4" />
-        Clear
+        {{ $t('console.clear') }}
       </Button>
     </div>
 
     <Card class="flex-1 flex flex-col min-h-0">
       <CardHeader class="pb-3">
         <CardTitle class="text-sm text-muted-foreground">
-          Commands are sent as <code class="rounded bg-muted px-1">!admin &lt;command&gt;</code>
+          {{ $t('console.commandHint') }} <code class="rounded bg-muted px-1">!admin &lt;command&gt;</code>
         </CardTitle>
       </CardHeader>
       <CardContent class="flex-1 min-h-0 flex flex-col">
@@ -44,17 +44,20 @@ const {
               class="flex flex-col gap-2"
             >
               <div class="flex items-center gap-2">
-                <Badge :variant="entry.success ? 'default' : 'destructive'" class="text-xs">
-                  {{ entry.success ? 'OK' : 'ERR' }}
+                <Badge v-if="entry.success === null" variant="secondary" class="text-xs animate-pulse">
+                  ...
+                </Badge>
+                <Badge v-else :variant="entry.success ? 'default' : 'destructive'" class="text-xs">
+                  {{ entry.success ? $t('console.statusOk') : $t('console.statusError') }}
                 </Badge>
                 <code class="text-sm font-medium">!admin {{ entry.command }}</code>
                 <span class="ml-auto text-xs text-muted-foreground">{{ formatTime(entry.timestamp) }}</span>
               </div>
-              <div class="console-response text-sm rounded-md bg-muted p-3 max-h-64 overflow-auto" v-html="sanitizeHtml(entry.response || 'Waiting for response...')" />
+              <div class="console-response text-sm rounded-md bg-muted p-3 max-h-64 overflow-auto" v-html="sanitizeHtml(entry.response || $t('console.waitingForResponse'))" />
               <Separator />
             </div>
             <div v-if="commandStore.history.length === 0" class="text-center text-muted-foreground py-8">
-              No commands sent yet. Type a command below to get started.
+              {{ $t('console.noCommandsYet') }}
             </div>
             <div id="console-bottom" />
           </div>

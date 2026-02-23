@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useRouter, useRoute } from 'vue-router'
 import { watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/stores/auth'
 import { useSidebar } from '@/components/ui/sidebar/utils'
 
@@ -26,7 +27,9 @@ import {
   Terminal,
   LogOut,
 } from 'lucide-vue-next'
+import AppLogo from '@/components/AppLogo.vue'
 
+const { t } = useI18n()
 const router = useRouter()
 const route = useRoute()
 const auth = useAuthStore()
@@ -37,12 +40,12 @@ watch(() => route.path, () => {
 })
 
 const navItems = [
-  { title: 'Overview', icon: LayoutDashboard, to: '/' },
-  { title: 'Users', icon: Users, to: '/users' },
-  { title: 'Rooms', icon: DoorOpen, to: '/rooms' },
-  { title: 'Federation', icon: Globe, to: '/federation' },
-  { title: 'Server', icon: Server, to: '/server' },
-  { title: 'Console', icon: Terminal, to: '/console' },
+  { titleKey: 'sidebar.overview', icon: LayoutDashboard, to: '/' },
+  { titleKey: 'sidebar.users', icon: Users, to: '/users' },
+  { titleKey: 'sidebar.rooms', icon: DoorOpen, to: '/rooms' },
+  { titleKey: 'sidebar.federation', icon: Globe, to: '/federation' },
+  { titleKey: 'sidebar.server', icon: Server, to: '/server' },
+  { titleKey: 'sidebar.console', icon: Terminal, to: '/console' },
 ]
 
 async function handleLogout() {
@@ -54,18 +57,18 @@ async function handleLogout() {
 <template>
   <Sidebar>
     <SidebarHeader class="p-4">
-      <span class="text-lg font-bold">uwu-admin</span>
+      <AppLogo />
     </SidebarHeader>
     <SidebarContent>
       <SidebarGroup>
-        <SidebarGroupLabel>Navigation</SidebarGroupLabel>
+        <SidebarGroupLabel>{{ $t('sidebar.navigation') }}</SidebarGroupLabel>
         <SidebarGroupContent>
           <SidebarMenu>
-            <SidebarMenuItem v-for="item in navItems" :key="item.title">
-              <SidebarMenuButton as-child :tooltip="item.title" :is-active="item.to === '/' ? route.path === '/' : route.path.startsWith(item.to)">
+            <SidebarMenuItem v-for="item in navItems" :key="item.titleKey">
+              <SidebarMenuButton as-child :tooltip="t(item.titleKey)" :is-active="item.to === '/' ? route.path === '/' : route.path.startsWith(item.to)">
                 <RouterLink :to="item.to">
                   <component :is="item.icon" />
-                  <span>{{ item.title }}</span>
+                  <span>{{ t(item.titleKey) }}</span>
                 </RouterLink>
               </SidebarMenuButton>
             </SidebarMenuItem>
@@ -77,7 +80,7 @@ async function handleLogout() {
     <SidebarFooter class="p-4">
       <Button variant="ghost" class="w-full justify-start gap-2" @click="handleLogout">
         <LogOut class="size-4" />
-        Logout
+        {{ $t('sidebar.logout') }}
       </Button>
     </SidebarFooter>
   </Sidebar>

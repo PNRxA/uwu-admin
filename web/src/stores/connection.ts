@@ -3,6 +3,9 @@ import { defineStore } from 'pinia'
 import { useQueryClient } from '@tanstack/vue-query'
 import { api } from '@/lib/api'
 import { useCommandStore } from '@/stores/command'
+import i18n from '@/i18n'
+
+const t = i18n.global.t
 
 export interface ServerInfo {
   id: number
@@ -43,7 +46,7 @@ export const useConnectionStore = defineStore('connection', () => {
       }
       loaded.value = true
     } catch (e) {
-      error.value = e instanceof Error ? e.message : 'Failed to load servers'
+      error.value = e instanceof Error ? e.message : t('connection.loadFailed')
     }
   }
 
@@ -71,7 +74,7 @@ export const useConnectionStore = defineStore('connection', () => {
       })
       setActiveServer(res.id)
     } catch (e) {
-      error.value = e instanceof Error ? e.message : 'Failed to add server'
+      error.value = e instanceof Error ? e.message : t('connection.addFailed')
       throw e
     } finally {
       loading.value = false

@@ -1,6 +1,9 @@
 import { ref } from 'vue'
 import { defineStore } from 'pinia'
 import { api, setAuthToken, setRefreshToken, loadAuthToken, clearAllTokens } from '@/lib/api'
+import i18n from '@/i18n'
+
+const t = i18n.global.t
 
 export const useAuthStore = defineStore('auth', () => {
   const token = ref<string | null>(loadAuthToken())
@@ -33,7 +36,7 @@ export const useAuthStore = defineStore('auth', () => {
       setRefreshToken(res.refresh_token)
       authenticated.value = true
     } catch (e) {
-      error.value = e instanceof Error ? e.message : 'Login failed'
+      error.value = e instanceof Error ? e.message : t('auth.loginFailed')
       throw e
     } finally {
       loading.value = false
@@ -51,7 +54,7 @@ export const useAuthStore = defineStore('auth', () => {
       authenticated.value = true
       setupRequired.value = false
     } catch (e) {
-      error.value = e instanceof Error ? e.message : 'Registration failed'
+      error.value = e instanceof Error ? e.message : t('auth.registrationFailed')
       throw e
     } finally {
       loading.value = false

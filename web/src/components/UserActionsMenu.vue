@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import { useActionDialogs } from '@/composables/useActionDialogs'
 import { Settings2 } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
@@ -36,6 +37,8 @@ import ResponseDisplay from '@/components/ResponseDisplay.vue'
 const props = defineProps<{ userId: string }>()
 const emit = defineEmits<{ 'action-complete': [] }>()
 
+const { t } = useI18n()
+
 const {
   alertOpen,
   alertTitle,
@@ -62,68 +65,68 @@ const uid = () => props.userId
 // Simple confirm actions (only user_id arg)
 const confirmActions = {
   suspend: () =>
-    openConfirm('Suspend User', `Suspend ${uid()}? They will have read-only access.`, `users suspend ${uid()}`),
+    openConfirm(t('users.actions.suspend'), t('users.actions.suspendDescription', { userId: uid() }), `users suspend ${uid()}`),
   unsuspend: () =>
-    openConfirm('Unsuspend User', `Unsuspend ${uid()}?`, `users unsuspend ${uid()}`),
+    openConfirm(t('users.actions.unsuspend'), t('users.actions.unsuspendDescription', { userId: uid() }), `users unsuspend ${uid()}`),
   lock: () =>
-    openConfirm('Lock User', `Lock ${uid()}? They will lose all access.`, `users lock ${uid()}`),
+    openConfirm(t('users.actions.lock'), t('users.actions.lockDescription', { userId: uid() }), `users lock ${uid()}`),
   unlock: () =>
-    openConfirm('Unlock User', `Unlock ${uid()}?`, `users unlock ${uid()}`),
+    openConfirm(t('users.actions.unlock'), t('users.actions.unlockDescription', { userId: uid() }), `users unlock ${uid()}`),
   logout: () =>
-    openConfirm('Force Logout', `Force logout all sessions for ${uid()}?`, `users logout ${uid()}`),
+    openConfirm(t('users.actions.forceLogout'), t('users.actions.forceLogoutDescription', { userId: uid() }), `users logout ${uid()}`),
   enableLogin: () =>
-    openConfirm('Enable Login', `Enable login for ${uid()}?`, `users enable-login ${uid()}`),
+    openConfirm(t('users.actions.enableLogin'), t('users.actions.enableLoginDescription', { userId: uid() }), `users enable-login ${uid()}`),
   disableLogin: () =>
-    openConfirm('Disable Login', `Disable login for ${uid()}? Existing sessions will be kept.`, `users disable-login ${uid()}`),
+    openConfirm(t('users.actions.disableLogin'), t('users.actions.disableLoginDescription', { userId: uid() }), `users disable-login ${uid()}`),
   makeAdmin: () =>
-    openConfirm('Make Admin', `Grant admin privileges to ${uid()}?`, `users make-user-admin ${uid()}`),
+    openConfirm(t('users.actions.makeAdmin'), t('users.actions.makeAdminDescription', { userId: uid() }), `users make-user-admin ${uid()}`),
   deactivate: () =>
-    openConfirm('Deactivate Account', `Permanently deactivate ${uid()}? This cannot be undone.`, `users deactivate ${uid()}`, true),
+    openConfirm(t('users.actions.deactivateAccount'), t('users.actions.deactivateDescription', { userId: uid() }), `users deactivate ${uid()}`, true),
 }
 
 // Actions needing extra input
 const inputActions = {
   resetPassword: () =>
-    openInputDialog('Reset Password', `Reset password for ${uid()}.`, `users reset-password ${uid()}`, [
-      { name: 'password', label: 'New Password', placeholder: 'Leave blank for auto-generated', required: false },
+    openInputDialog(t('users.actions.resetPassword'), t('users.actions.resetPasswordDescription', { userId: uid() }), `users reset-password ${uid()}`, [
+      { name: 'password', label: t('users.actions.newPassword'), placeholder: t('users.actions.newPasswordPlaceholder'), required: false },
     ]),
   forceJoinRoom: () =>
-    openInputDialog('Force Join Room', `Force ${uid()} to join a room.`, `users force-join-room ${uid()}`, [
-      { name: 'room_id', label: 'Room ID', placeholder: '!room:server.com', required: true },
+    openInputDialog(t('users.actions.forceJoinRoom'), t('users.actions.forceJoinRoomDescription', { userId: uid() }), `users force-join-room ${uid()}`, [
+      { name: 'room_id', label: t('users.actions.roomId'), placeholder: t('users.actions.roomIdPlaceholder'), required: true },
     ]),
   forceLeaveRoom: () =>
-    openInputDialog('Force Leave Room', `Force ${uid()} to leave a room.`, `users force-leave-room ${uid()}`, [
-      { name: 'room_id', label: 'Room ID', placeholder: '!room:server.com', required: true },
+    openInputDialog(t('users.actions.forceLeaveRoom'), t('users.actions.forceLeaveRoomDescription', { userId: uid() }), `users force-leave-room ${uid()}`, [
+      { name: 'room_id', label: t('users.actions.roomId'), placeholder: t('users.actions.roomIdPlaceholder'), required: true },
     ]),
   forceLeaveRemoteRoom: () =>
-    openInputDialog('Force Leave Remote Room', `Force ${uid()} to leave a remote room.`, `users force-leave-remote-room ${uid()}`, [
-      { name: 'room_id', label: 'Room ID', placeholder: '!room:server.com', required: true },
-      { name: 'via', label: 'Via Server', placeholder: 'server.com (optional)', required: false },
+    openInputDialog(t('users.actions.forceLeaveRemoteRoom'), t('users.actions.forceLeaveRemoteRoomDescription', { userId: uid() }), `users force-leave-remote-room ${uid()}`, [
+      { name: 'room_id', label: t('users.actions.roomId'), placeholder: t('users.actions.roomIdPlaceholder'), required: true },
+      { name: 'via', label: t('users.actions.viaServer'), placeholder: t('users.actions.viaServerPlaceholder'), required: false },
     ]),
   forceDemote: () =>
-    openInputDialog('Force Demote', `Drop power levels for ${uid()} in a room.`, `users force-demote ${uid()}`, [
-      { name: 'room_id', label: 'Room ID', placeholder: '!room:server.com', required: true },
+    openInputDialog(t('users.actions.forceDemote'), t('users.actions.forceDemoteDescription', { userId: uid() }), `users force-demote ${uid()}`, [
+      { name: 'room_id', label: t('users.actions.roomId'), placeholder: t('users.actions.roomIdPlaceholder'), required: true },
     ]),
   putRoomTag: () =>
-    openInputDialog('Set Room Tag', `Set a room tag for ${uid()}.`, `users put-room-tag ${uid()}`, [
-      { name: 'room_id', label: 'Room ID', placeholder: '!room:server.com', required: true },
-      { name: 'tag', label: 'Tag Name', placeholder: 'e.g. m.favourite', required: true },
+    openInputDialog(t('users.actions.setRoomTag'), t('users.actions.setRoomTagDescription', { userId: uid() }), `users put-room-tag ${uid()}`, [
+      { name: 'room_id', label: t('users.actions.roomId'), placeholder: t('users.actions.roomIdPlaceholder'), required: true },
+      { name: 'tag', label: t('users.actions.tagName'), placeholder: t('users.actions.tagNamePlaceholder'), required: true },
     ]),
   deleteRoomTag: () =>
-    openInputDialog('Delete Room Tag', `Delete a room tag for ${uid()}.`, `users delete-room-tag ${uid()}`, [
-      { name: 'room_id', label: 'Room ID', placeholder: '!room:server.com', required: true },
-      { name: 'tag', label: 'Tag Name', placeholder: 'e.g. m.favourite', required: true },
+    openInputDialog(t('users.actions.deleteRoomTag'), t('users.actions.deleteRoomTagDescription', { userId: uid() }), `users delete-room-tag ${uid()}`, [
+      { name: 'room_id', label: t('users.actions.roomId'), placeholder: t('users.actions.roomIdPlaceholder'), required: true },
+      { name: 'tag', label: t('users.actions.tagName'), placeholder: t('users.actions.tagNamePlaceholder'), required: true },
     ]),
   getRoomTags: () =>
-    openInputDialog('Get Room Tags', `Get room tags for ${uid()}.`, `users get-room-tags ${uid()}`, [
-      { name: 'room_id', label: 'Room ID', placeholder: '!room:server.com', required: true },
+    openInputDialog(t('users.actions.getRoomTags'), t('users.actions.getRoomTagsDescription', { userId: uid() }), `users get-room-tags ${uid()}`, [
+      { name: 'room_id', label: t('users.actions.roomId'), placeholder: t('users.actions.roomIdPlaceholder'), required: true },
     ]),
 }
 
 // Read-only actions
 const readOnlyActions = {
   listJoinedRooms: () =>
-    executeReadOnly('Joined Rooms', `users list-joined-rooms ${uid()}`),
+    executeReadOnly(t('users.actions.joinedRooms'), `users list-joined-rooms ${uid()}`),
 }
 </script>
 
@@ -132,52 +135,52 @@ const readOnlyActions = {
     <DropdownMenuTrigger as-child>
       <Button variant="ghost" size="icon-sm">
         <Settings2 class="size-4" />
-        <span class="sr-only">Actions</span>
+        <span class="sr-only">{{ $t('common.actions') }}</span>
       </Button>
     </DropdownMenuTrigger>
     <DropdownMenuContent align="start" class="w-52">
-      <DropdownMenuLabel>User Actions</DropdownMenuLabel>
+      <DropdownMenuLabel>{{ $t('users.actions.title') }}</DropdownMenuLabel>
       <DropdownMenuSeparator />
 
       <DropdownMenuGroup>
-        <DropdownMenuLabel class="text-xs text-muted-foreground font-normal">Account</DropdownMenuLabel>
-        <DropdownMenuItem @click="inputActions.resetPassword()">Reset Password</DropdownMenuItem>
-        <DropdownMenuItem @click="confirmActions.makeAdmin()">Make Admin</DropdownMenuItem>
+        <DropdownMenuLabel class="text-xs text-muted-foreground font-normal">{{ $t('users.actions.account') }}</DropdownMenuLabel>
+        <DropdownMenuItem @click="inputActions.resetPassword()">{{ $t('users.actions.resetPassword') }}</DropdownMenuItem>
+        <DropdownMenuItem @click="confirmActions.makeAdmin()">{{ $t('users.actions.makeAdmin') }}</DropdownMenuItem>
       </DropdownMenuGroup>
       <DropdownMenuSeparator />
 
       <DropdownMenuGroup>
-        <DropdownMenuLabel class="text-xs text-muted-foreground font-normal">Account Status</DropdownMenuLabel>
-        <DropdownMenuItem @click="confirmActions.suspend()">Suspend</DropdownMenuItem>
-        <DropdownMenuItem @click="confirmActions.unsuspend()">Unsuspend</DropdownMenuItem>
-        <DropdownMenuItem @click="confirmActions.lock()">Lock</DropdownMenuItem>
-        <DropdownMenuItem @click="confirmActions.unlock()">Unlock</DropdownMenuItem>
+        <DropdownMenuLabel class="text-xs text-muted-foreground font-normal">{{ $t('users.actions.accountStatus') }}</DropdownMenuLabel>
+        <DropdownMenuItem @click="confirmActions.suspend()">{{ $t('users.actions.suspend') }}</DropdownMenuItem>
+        <DropdownMenuItem @click="confirmActions.unsuspend()">{{ $t('users.actions.unsuspend') }}</DropdownMenuItem>
+        <DropdownMenuItem @click="confirmActions.lock()">{{ $t('users.actions.lock') }}</DropdownMenuItem>
+        <DropdownMenuItem @click="confirmActions.unlock()">{{ $t('users.actions.unlock') }}</DropdownMenuItem>
       </DropdownMenuGroup>
       <DropdownMenuSeparator />
 
       <DropdownMenuGroup>
-        <DropdownMenuLabel class="text-xs text-muted-foreground font-normal">Session</DropdownMenuLabel>
-        <DropdownMenuItem @click="confirmActions.logout()">Force Logout</DropdownMenuItem>
-        <DropdownMenuItem @click="confirmActions.enableLogin()">Enable Login</DropdownMenuItem>
-        <DropdownMenuItem @click="confirmActions.disableLogin()">Disable Login</DropdownMenuItem>
+        <DropdownMenuLabel class="text-xs text-muted-foreground font-normal">{{ $t('users.actions.session') }}</DropdownMenuLabel>
+        <DropdownMenuItem @click="confirmActions.logout()">{{ $t('users.actions.forceLogout') }}</DropdownMenuItem>
+        <DropdownMenuItem @click="confirmActions.enableLogin()">{{ $t('users.actions.enableLogin') }}</DropdownMenuItem>
+        <DropdownMenuItem @click="confirmActions.disableLogin()">{{ $t('users.actions.disableLogin') }}</DropdownMenuItem>
       </DropdownMenuGroup>
       <DropdownMenuSeparator />
 
       <DropdownMenuGroup>
-        <DropdownMenuLabel class="text-xs text-muted-foreground font-normal">Rooms</DropdownMenuLabel>
-        <DropdownMenuItem @click="readOnlyActions.listJoinedRooms()">List Joined Rooms</DropdownMenuItem>
-        <DropdownMenuItem @click="inputActions.forceJoinRoom()">Force Join Room</DropdownMenuItem>
-        <DropdownMenuItem @click="inputActions.forceLeaveRoom()">Force Leave Room</DropdownMenuItem>
-        <DropdownMenuItem @click="inputActions.forceLeaveRemoteRoom()">Force Leave Remote Room</DropdownMenuItem>
-        <DropdownMenuItem @click="inputActions.forceDemote()">Force Demote</DropdownMenuItem>
+        <DropdownMenuLabel class="text-xs text-muted-foreground font-normal">{{ $t('users.actions.rooms') }}</DropdownMenuLabel>
+        <DropdownMenuItem @click="readOnlyActions.listJoinedRooms()">{{ $t('users.actions.listJoinedRooms') }}</DropdownMenuItem>
+        <DropdownMenuItem @click="inputActions.forceJoinRoom()">{{ $t('users.actions.forceJoinRoom') }}</DropdownMenuItem>
+        <DropdownMenuItem @click="inputActions.forceLeaveRoom()">{{ $t('users.actions.forceLeaveRoom') }}</DropdownMenuItem>
+        <DropdownMenuItem @click="inputActions.forceLeaveRemoteRoom()">{{ $t('users.actions.forceLeaveRemoteRoom') }}</DropdownMenuItem>
+        <DropdownMenuItem @click="inputActions.forceDemote()">{{ $t('users.actions.forceDemote') }}</DropdownMenuItem>
       </DropdownMenuGroup>
       <DropdownMenuSeparator />
 
       <DropdownMenuGroup>
-        <DropdownMenuLabel class="text-xs text-muted-foreground font-normal">Room Tags</DropdownMenuLabel>
-        <DropdownMenuItem @click="inputActions.getRoomTags()">Get Room Tags</DropdownMenuItem>
-        <DropdownMenuItem @click="inputActions.putRoomTag()">Set Room Tag</DropdownMenuItem>
-        <DropdownMenuItem @click="inputActions.deleteRoomTag()">Delete Room Tag</DropdownMenuItem>
+        <DropdownMenuLabel class="text-xs text-muted-foreground font-normal">{{ $t('users.actions.roomTags') }}</DropdownMenuLabel>
+        <DropdownMenuItem @click="inputActions.getRoomTags()">{{ $t('users.actions.getRoomTags') }}</DropdownMenuItem>
+        <DropdownMenuItem @click="inputActions.putRoomTag()">{{ $t('users.actions.setRoomTag') }}</DropdownMenuItem>
+        <DropdownMenuItem @click="inputActions.deleteRoomTag()">{{ $t('users.actions.deleteRoomTag') }}</DropdownMenuItem>
       </DropdownMenuGroup>
       <DropdownMenuSeparator />
 
@@ -185,7 +188,7 @@ const readOnlyActions = {
         class="text-destructive focus:text-destructive"
         @click="confirmActions.deactivate()"
       >
-        Deactivate Account
+        {{ $t('users.actions.deactivateAccount') }}
       </DropdownMenuItem>
     </DropdownMenuContent>
   </DropdownMenu>
@@ -198,13 +201,13 @@ const readOnlyActions = {
         <AlertDialogDescription>{{ alertDescription }}</AlertDialogDescription>
       </AlertDialogHeader>
       <AlertDialogFooter>
-        <AlertDialogCancel :disabled="executing">Cancel</AlertDialogCancel>
+        <AlertDialogCancel :disabled="executing">{{ $t('common.cancel') }}</AlertDialogCancel>
         <AlertDialogAction
           :class="alertDestructive ? 'bg-destructive text-white hover:bg-destructive/90' : ''"
           :disabled="executing"
           @click.prevent="executeConfirm"
         >
-          {{ executing ? 'Executing...' : 'Confirm' }}
+          {{ executing ? $t('common.executing') : $t('common.confirm') }}
         </AlertDialogAction>
       </AlertDialogFooter>
     </AlertDialogContent>
@@ -229,7 +232,7 @@ const readOnlyActions = {
         </div>
         <DialogFooter>
           <Button type="submit" :disabled="executing">
-            {{ executing ? 'Executing...' : 'Execute' }}
+            {{ executing ? $t('common.executing') : $t('common.execute') }}
           </Button>
         </DialogFooter>
       </form>
@@ -241,7 +244,7 @@ const readOnlyActions = {
     <DialogContent class="sm:max-w-4xl">
       <DialogHeader>
         <DialogTitle>{{ resultDialogTitle }}</DialogTitle>
-        <DialogDescription>Results for {{ userId }}</DialogDescription>
+        <DialogDescription>{{ $t('users.actions.resultsFor', { userId }) }}</DialogDescription>
       </DialogHeader>
       <ResponseDisplay :response="resultResponse" />
     </DialogContent>

@@ -138,23 +138,23 @@ const totalDbMemory = computed(() => {
 <template>
   <div class="flex flex-col gap-6">
     <div class="flex items-center gap-2">
-      <h1 class="text-2xl font-bold">Server</h1>
+      <h1 class="text-2xl font-bold">{{ $t('server.title') }}</h1>
       <Button variant="ghost" size="icon-sm" :disabled="isFetching || !serverId" @click="refetch()">
         <RefreshCw class="size-4" :class="{ 'animate-spin': isFetching }" />
-        <span class="sr-only">Refresh</span>
+        <span class="sr-only">{{ $t('common.refresh') }}</span>
       </Button>
     </div>
 
     <div v-if="!serverId" class="text-muted-foreground text-sm">
-      No server selected. Add a server using the selector in the top bar.
+      {{ $t('common.noServerSelected') }}
     </div>
 
     <template v-else>
       <div class="grid gap-4 md:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle>Uptime</CardTitle>
-            <CardDescription>How long the server has been running</CardDescription>
+            <CardTitle>{{ $t('server.uptime') }}</CardTitle>
+            <CardDescription>{{ $t('server.uptimeDescription') }}</CardDescription>
           </CardHeader>
           <CardContent>
             <Skeleton v-if="loading" class="h-12 w-full" />
@@ -171,8 +171,8 @@ const totalDbMemory = computed(() => {
 
         <Card>
           <CardHeader>
-            <CardTitle>Database Memory</CardTitle>
-            <CardDescription>Total memory used by database</CardDescription>
+            <CardTitle>{{ $t('server.databaseMemory') }}</CardTitle>
+            <CardDescription>{{ $t('server.databaseMemoryDescription') }}</CardDescription>
           </CardHeader>
           <CardContent>
             <Skeleton v-if="loading" class="h-12 w-full" />
@@ -186,16 +186,16 @@ const totalDbMemory = computed(() => {
 
       <Card v-if="!loading && services.length > 0">
         <CardHeader>
-          <CardTitle>Services</CardTitle>
-          <CardDescription>Active services and caches</CardDescription>
+          <CardTitle>{{ $t('server.services') }}</CardTitle>
+          <CardDescription>{{ $t('server.servicesDescription') }}</CardDescription>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead class="w-32 text-right">Count</TableHead>
-                <TableHead class="w-32 text-right">Size</TableHead>
+                <TableHead>{{ $t('server.serviceName') }}</TableHead>
+                <TableHead class="w-32 text-right">{{ $t('server.count') }}</TableHead>
+                <TableHead class="w-32 text-right">{{ $t('server.size') }}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -211,15 +211,15 @@ const totalDbMemory = computed(() => {
 
       <Card v-if="!loading && database.length > 0">
         <CardHeader>
-          <CardTitle>Database</CardTitle>
-          <CardDescription>Memory allocation by component</CardDescription>
+          <CardTitle>{{ $t('server.database') }}</CardTitle>
+          <CardDescription>{{ $t('server.databaseDescription') }}</CardDescription>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Component</TableHead>
-                <TableHead class="w-40 text-right">Memory</TableHead>
+                <TableHead>{{ $t('server.component') }}</TableHead>
+                <TableHead class="w-40 text-right">{{ $t('server.memory') }}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

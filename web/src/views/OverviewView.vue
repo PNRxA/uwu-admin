@@ -101,33 +101,33 @@ const serviceCount = computed(() => {
 <template>
   <div class="flex flex-col gap-6">
     <div class="flex items-center gap-2">
-      <h1 class="text-2xl font-bold">Overview</h1>
+      <h1 class="text-2xl font-bold">{{ $t('overview.title') }}</h1>
       <Button variant="ghost" size="icon-sm" :disabled="isFetching || !serverId" @click="refetch()">
         <RefreshCw class="size-4" :class="{ 'animate-spin': isFetching }" />
-        <span class="sr-only">Refresh</span>
+        <span class="sr-only">{{ $t('common.refresh') }}</span>
       </Button>
     </div>
 
     <div v-if="!serverId" class="text-muted-foreground text-sm">
-      No server selected. Add a server using the selector in the top bar.
+      {{ $t('common.noServerSelected') }}
     </div>
 
     <div v-else class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
       <Card class="md:col-span-2">
         <CardHeader>
-          <CardTitle>Connection</CardTitle>
-          <CardDescription>Current homeserver connection</CardDescription>
+          <CardTitle>{{ $t('overview.connection') }}</CardTitle>
+          <CardDescription>{{ $t('overview.connectionDescription') }}</CardDescription>
         </CardHeader>
         <CardContent class="flex flex-col gap-1 text-sm">
-          <div><span class="text-muted-foreground">Homeserver:</span> {{ connection.homeserver }}</div>
-          <div><span class="text-muted-foreground">User ID:</span> {{ connection.userId }}</div>
+          <div><span class="text-muted-foreground">{{ $t('overview.homeserver') }}</span> {{ connection.homeserver }}</div>
+          <div><span class="text-muted-foreground">{{ $t('overview.userId') }}</span> {{ connection.userId }}</div>
         </CardContent>
       </Card>
 
       <Card>
         <CardHeader>
-          <CardTitle>Uptime</CardTitle>
-          <CardDescription>Server uptime</CardDescription>
+          <CardTitle>{{ $t('overview.uptime') }}</CardTitle>
+          <CardDescription>{{ $t('overview.serverUptime') }}</CardDescription>
         </CardHeader>
         <CardContent>
           <Skeleton v-if="loading" class="h-10 w-full" />
@@ -144,8 +144,8 @@ const serviceCount = computed(() => {
 
       <Card>
         <CardHeader>
-          <CardTitle>Memory</CardTitle>
-          <CardDescription>Database usage</CardDescription>
+          <CardTitle>{{ $t('overview.memory') }}</CardTitle>
+          <CardDescription>{{ $t('overview.databaseUsage') }}</CardDescription>
         </CardHeader>
         <CardContent>
           <Skeleton v-if="loading" class="h-10 w-full" />
@@ -154,9 +154,9 @@ const serviceCount = computed(() => {
               <span class="text-2xl font-bold tabular-nums">{{ totalDbMemory.split(' ')[0] }}</span>
               <span class="text-xs text-muted-foreground">{{ totalDbMemory.split(' ')[1] }}</span>
             </div>
-            <span v-else class="text-sm text-muted-foreground">No data</span>
+            <span v-else class="text-sm text-muted-foreground">{{ $t('common.noData') }}</span>
             <div v-if="serviceCount" class="mt-1 text-xs text-muted-foreground">
-              {{ serviceCount }} active services
+              {{ $t('overview.activeServices', { count: serviceCount }) }}
             </div>
           </template>
         </CardContent>

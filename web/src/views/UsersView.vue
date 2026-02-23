@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useQuery, useQueryClient } from '@tanstack/vue-query'
 import { useConnectionStore } from '@/stores/connection'
 import { api } from '@/lib/api'
@@ -31,6 +32,7 @@ import { toast } from 'vue-sonner'
 import { Plus, RefreshCw } from 'lucide-vue-next'
 import UserActionsMenu from '@/components/UserActionsMenu.vue'
 
+const { t } = useI18n()
 const queryClient = useQueryClient()
 const connection = useConnectionStore()
 const serverId = computed(() => connection.activeServerId)
@@ -66,13 +68,13 @@ async function createUser() {
       username: newUsername.value,
       password: newPassword.value || undefined,
     })
-    toast.success('User created successfully')
+    toast.success(t('users.createdSuccess'))
     createDialogOpen.value = false
     newUsername.value = ''
     newPassword.value = ''
     await queryClient.invalidateQueries({ queryKey: queryKeys.users(serverId.value) })
   } catch (e) {
-    toast.error(e instanceof Error ? e.message : 'Failed to create user')
+    toast.error(e instanceof Error ? e.message : t('users.createFailed'))
   } finally {
     creating.value = false
   }
@@ -89,36 +91,36 @@ function onActionComplete() {
   <div class="flex flex-col gap-6">
     <div class="flex items-center justify-between">
       <div class="flex items-center gap-2">
-        <h1 class="text-2xl font-bold">Users</h1>
+        <h1 class="text-2xl font-bold">{{ $t('users.title') }}</h1>
         <Button variant="ghost" size="icon-sm" :disabled="isFetching || !serverId" @click="refetch()">
           <RefreshCw class="size-4" :class="{ 'animate-spin': isFetching }" />
-          <span class="sr-only">Refresh</span>
+          <span class="sr-only">{{ $t('common.refresh') }}</span>
         </Button>
       </div>
       <Dialog v-model:open="createDialogOpen">
         <DialogTrigger as-child>
           <Button :disabled="!serverId">
             <Plus class="size-4" />
-            Create User
+            {{ $t('users.createUser') }}
           </Button>
         </DialogTrigger>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Create User</DialogTitle>
-            <DialogDescription>Create a new user on the homeserver.</DialogDescription>
+            <DialogTitle>{{ $t('users.createUser') }}</DialogTitle>
+            <DialogDescription>{{ $t('users.createUserDescription') }}</DialogDescription>
           </DialogHeader>
           <form class="flex flex-col gap-4" @submit.prevent="createUser">
             <div class="flex flex-col gap-2">
-              <Label for="new-username">Username</Label>
+              <Label for="new-username">{{ $t('users.username') }}</Label>
               <Input id="new-username" v-model="newUsername" placeholder="username" required />
             </div>
             <div class="flex flex-col gap-2">
-              <Label for="new-password">Password (optional)</Label>
+              <Label for="new-password">{{ $t('users.passwordOptional') }}</Label>
               <Input id="new-password" v-model="newPassword" type="password" />
             </div>
             <DialogFooter>
               <Button type="submit" :disabled="creating">
-                {{ creating ? 'Creating...' : 'Create' }}
+                {{ creating ? $t('users.creating') : $t('users.create') }}
               </Button>
             </DialogFooter>
           </form>
@@ -127,25 +129,25 @@ function onActionComplete() {
     </div>
 
     <div v-if="!serverId" class="text-muted-foreground text-sm">
-      No server selected. Add a server using the selector in the top bar.
+      {{ $t('common.noServerSelected') }}
     </div>
 
     <Card v-else>
       <CardHeader>
-        <CardTitle>User List</CardTitle>
+        <CardTitle>{{ $t('users.userList') }}</CardTitle>
       </CardHeader>
       <CardContent>
         <Skeleton v-if="isPending" class="h-32 w-full" />
         <Table v-else>
           <TableHeader>
             <TableRow>
-              <TableHead class="w-12">Actions</TableHead>
-              <TableHead>User ID</TableHead>
+              <TableHead class="w-12">{{ $t('common.actions') }}</TableHead>
+              <TableHead>{{ $t('users.userId') }}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             <TableEmpty v-if="users.length === 0" :colspan="2">
-              No users found.
+              {{ $t('users.noUsersFound') }}
             </TableEmpty>
             <TableRow v-for="user in users" :key="user">
               <TableCell>

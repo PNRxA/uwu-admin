@@ -66,7 +66,10 @@ watch(() => commandStore.panelOpen, (open) => {
               class="flex flex-col gap-1.5"
             >
               <div class="flex items-center gap-2">
-                <Badge :variant="entry.success ? 'default' : 'destructive'" class="text-xs">
+                <Badge v-if="entry.success === null" variant="secondary" class="text-xs animate-pulse">
+                  ...
+                </Badge>
+                <Badge v-else :variant="entry.success ? 'default' : 'destructive'" class="text-xs">
                   {{ entry.success ? 'OK' : 'ERR' }}
                 </Badge>
                 <code class="text-xs font-medium">!admin {{ entry.command }}</code>
@@ -104,8 +107,8 @@ watch(() => commandStore.panelOpen, (open) => {
                 />
               </div>
             </div>
-            <Button type="submit" size="sm" :disabled="commandStore.loading || !commandInput.trim()">
-              <Send class="size-3.5" />
+            <Button type="submit" size="default" :disabled="commandStore.loading || !commandInput.trim()">
+              <Send class="size-4" />
             </Button>
           </form>
         </div>

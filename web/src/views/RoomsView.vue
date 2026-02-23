@@ -73,35 +73,35 @@ function onActionComplete() {
 <template>
   <div class="flex flex-col gap-6">
     <div class="flex items-center gap-2">
-      <h1 class="text-2xl font-bold">Rooms</h1>
+      <h1 class="text-2xl font-bold">{{ $t('rooms.title') }}</h1>
       <Button variant="ghost" size="icon-sm" :disabled="isFetching || !serverId" @click="refetch()">
         <RefreshCw class="size-4" :class="{ 'animate-spin': isFetching }" />
-        <span class="sr-only">Refresh</span>
+        <span class="sr-only">{{ $t('common.refresh') }}</span>
       </Button>
     </div>
 
     <div v-if="!serverId" class="text-muted-foreground text-sm">
-      No server selected. Add a server using the selector in the top bar.
+      {{ $t('common.noServerSelected') }}
     </div>
 
     <Card v-else>
       <CardHeader>
-        <CardTitle>Room List</CardTitle>
+        <CardTitle>{{ $t('rooms.roomList') }}</CardTitle>
       </CardHeader>
       <CardContent>
         <Skeleton v-if="isPending" class="h-32 w-full" />
         <Table v-else>
           <TableHeader>
             <TableRow>
-              <TableHead class="w-12">Actions</TableHead>
-              <TableHead>Room ID</TableHead>
-              <TableHead class="w-24 text-right">Members</TableHead>
-              <TableHead>Name</TableHead>
+              <TableHead class="w-12">{{ $t('common.actions') }}</TableHead>
+              <TableHead>{{ $t('rooms.roomId') }}</TableHead>
+              <TableHead class="w-24 text-right">{{ $t('rooms.members') }}</TableHead>
+              <TableHead>{{ $t('rooms.name') }}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             <TableEmpty v-if="rooms.length === 0" :colspan="4">
-              No rooms found.
+              {{ $t('rooms.noRoomsFound') }}
             </TableEmpty>
             <TableRow v-for="room in rooms" :key="room.id">
               <TableCell>

@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import AppLogo from '@/components/AppLogo.vue'
 
 const router = useRouter()
 const auth = useAuthStore()
@@ -28,8 +29,10 @@ async function onSubmit() {
   <div class="flex min-h-screen items-center justify-center p-4">
     <Card class="w-full max-w-md">
       <CardHeader class="text-center">
-        <CardTitle class="text-2xl">uwu-admin</CardTitle>
-        <CardDescription>Sign in to your admin panel</CardDescription>
+        <CardTitle class="flex justify-center">
+          <AppLogo size="lg" />
+        </CardTitle>
+        <CardDescription>{{ $t('login.description') }}</CardDescription>
       </CardHeader>
       <CardContent>
         <form class="flex flex-col gap-4" @submit.prevent="onSubmit">
@@ -38,7 +41,7 @@ async function onSubmit() {
           </Alert>
 
           <div class="flex flex-col gap-2">
-            <Label for="username">Username</Label>
+            <Label for="username">{{ $t('login.username') }}</Label>
             <Input
               id="username"
               v-model="username"
@@ -48,7 +51,7 @@ async function onSubmit() {
           </div>
 
           <div class="flex flex-col gap-2">
-            <Label for="password">Password</Label>
+            <Label for="password">{{ $t('login.password') }}</Label>
             <Input
               id="password"
               v-model="password"
@@ -58,7 +61,7 @@ async function onSubmit() {
           </div>
 
           <Button type="submit" class="w-full" :disabled="auth.loading">
-            {{ auth.loading ? 'Signing in...' : 'Sign In' }}
+            {{ auth.loading ? $t('login.signingIn') : $t('login.signIn') }}
           </Button>
         </form>
       </CardContent>

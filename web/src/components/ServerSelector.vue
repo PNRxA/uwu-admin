@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useConnectionStore } from '@/stores/connection'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -34,6 +35,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { ChevronDown, Plus, Trash2, Server } from 'lucide-vue-next'
 import { toast } from 'vue-sonner'
 
+const { t } = useI18n()
 const connection = useConnectionStore()
 
 // Add server dialog
@@ -51,7 +53,7 @@ async function onAddServer() {
       password: password.value,
       room_id: roomId.value,
     })
-    toast.success('Server added successfully')
+    toast.success(t('serverSelector.serverAdded'))
     addDialogOpen.value = false
     homeserver.value = ''
     username.value = ''
@@ -75,10 +77,10 @@ async function onRemoveServer() {
   if (!serverToRemove.value) return
   try {
     await connection.removeServer(serverToRemove.value.id)
-    toast.success('Server removed')
+    toast.success(t('serverSelector.serverRemoved'))
     removeDialogOpen.value = false
   } catch (e) {
-    toast.error(e instanceof Error ? e.message : 'Failed to remove server')
+    toast.error(e instanceof Error ? e.message : t('serverSelector.removeFailed'))
   }
 }
 </script>
@@ -94,12 +96,12 @@ async function onRemoveServer() {
             <span class="text-[0.65rem] leading-tight text-muted-foreground truncate">{{ connection.userId }}</span>
           </div>
         </template>
-        <span v-else class="text-sm text-muted-foreground">No server selected</span>
+        <span v-else class="text-sm text-muted-foreground">{{ $t('serverSelector.noServerSelected') }}</span>
         <ChevronDown class="size-3.5 shrink-0 text-muted-foreground" />
       </Button>
     </DropdownMenuTrigger>
     <DropdownMenuContent align="start" class="w-72">
-      <DropdownMenuLabel>Servers</DropdownMenuLabel>
+      <DropdownMenuLabel>{{ $t('serverSelector.servers') }}</DropdownMenuLabel>
       <DropdownMenuSeparator />
 
       <DropdownMenuItem
@@ -126,7 +128,7 @@ async function onRemoveServer() {
 
       <DropdownMenuItem @click="addDialogOpen = true">
         <Plus class="size-4" />
-        Add Server
+        {{ $t('serverSelector.addServer') }}
       </DropdownMenuItem>
     </DropdownMenuContent>
   </DropdownMenu>
@@ -135,8 +137,8 @@ async function onRemoveServer() {
   <Dialog v-model:open="addDialogOpen">
     <DialogContent>
       <DialogHeader>
-        <DialogTitle>Add Server</DialogTitle>
-        <DialogDescription>Connect to a Continuwuity homeserver admin room.</DialogDescription>
+        <DialogTitle>{{ $t('serverSelector.addServer') }}</DialogTitle>
+        <DialogDescription>{{ $t('serverSelector.addServerDescription') }}</DialogDescription>
       </DialogHeader>
       <form class="flex flex-col gap-4" @submit.prevent="onAddServer">
         <Alert v-if="connection.error" variant="destructive">
@@ -144,7 +146,7 @@ async function onRemoveServer() {
         </Alert>
 
         <div class="flex flex-col gap-2">
-          <Label for="add-homeserver">Homeserver URL</Label>
+          <Label for="add-homeserver">{{ $t('serverSelector.homeserverUrl') }}</Label>
           <Input
             id="add-homeserver"
             v-model="homeserver"
@@ -154,7 +156,7 @@ async function onRemoveServer() {
         </div>
 
         <div class="flex flex-col gap-2">
-          <Label for="add-username">Bot Username</Label>
+          <Label for="add-username">{{ $t('serverSelector.botUsername') }}</Label>
           <Input
             id="add-username"
             v-model="username"
@@ -164,7 +166,7 @@ async function onRemoveServer() {
         </div>
 
         <div class="flex flex-col gap-2">
-          <Label for="add-password">Bot Password</Label>
+          <Label for="add-password">{{ $t('serverSelector.botPassword') }}</Label>
           <Input
             id="add-password"
             v-model="password"
@@ -174,7 +176,7 @@ async function onRemoveServer() {
         </div>
 
         <div class="flex flex-col gap-2">
-          <Label for="add-room-id">Admin Room ID</Label>
+          <Label for="add-room-id">{{ $t('serverSelector.adminRoomId') }}</Label>
           <Input
             id="add-room-id"
             v-model="roomId"
@@ -185,7 +187,7 @@ async function onRemoveServer() {
 
         <DialogFooter>
           <Button type="submit" :disabled="connection.loading">
-            {{ connection.loading ? 'Connecting...' : 'Connect' }}
+            {{ connection.loading ? $t('serverSelector.connecting') : $t('serverSelector.connect') }}
           </Button>
         </DialogFooter>
       </form>
@@ -196,18 +198,18 @@ async function onRemoveServer() {
   <AlertDialog v-model:open="removeDialogOpen">
     <AlertDialogContent>
       <AlertDialogHeader>
-        <AlertDialogTitle>Remove Server</AlertDialogTitle>
+        <AlertDialogTitle>{{ $t('serverSelector.removeServer') }}</AlertDialogTitle>
         <AlertDialogDescription>
-          Remove {{ serverToRemove?.homeserver }}? This will disconnect the server.
+          {{ $t('serverSelector.removeDescription', { homeserver: serverToRemove?.homeserver }) }}
         </AlertDialogDescription>
       </AlertDialogHeader>
       <AlertDialogFooter>
-        <AlertDialogCancel>Cancel</AlertDialogCancel>
+        <AlertDialogCancel>{{ $t('common.cancel') }}</AlertDialogCancel>
         <AlertDialogAction
           class="bg-destructive text-white hover:bg-destructive/90"
           @click="onRemoveServer"
         >
-          Remove
+          {{ $t('common.remove') }}
         </AlertDialogAction>
       </AlertDialogFooter>
     </AlertDialogContent>

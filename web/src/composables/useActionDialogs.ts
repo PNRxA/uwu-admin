@@ -1,4 +1,5 @@
 import { ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { api } from '@/lib/api'
 import { useConnectionStore } from '@/stores/connection'
 import { toast } from 'vue-sonner'
@@ -12,6 +13,7 @@ export interface InputField {
 }
 
 export function useActionDialogs(onComplete?: () => void) {
+  const { t } = useI18n()
   const connection = useConnectionStore()
 
   // Alert dialog state (simple confirm actions)
@@ -47,11 +49,11 @@ export function useActionDialogs(onComplete?: () => void) {
     executing.value = true
     try {
       await api.command(connection.activeServerId, alertCommand.value)
-      toast.success(`${alertTitle.value} completed`)
+      toast.success(t('actionDialog.completed', { action: alertTitle.value }))
       alertOpen.value = false
       onComplete?.()
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : `Failed: ${alertTitle.value}`)
+      toast.error(e instanceof Error ? e.message : t('actionDialog.failed', { action: alertTitle.value }))
     } finally {
       executing.value = false
     }
@@ -74,12 +76,12 @@ export function useActionDialogs(onComplete?: () => void) {
     if (connection.activeServerId === null) return
     const missing = inputFields.value.find((f) => f.required && !f.value.trim())
     if (missing) {
-      toast.error(`${missing.label} is required`)
+      toast.error(t('actionDialog.fieldRequired', { field: missing.label }))
       return
     }
     const badField = inputFields.value.find((f) => f.value.trim() && /\s/.test(f.value.trim()))
     if (badField) {
-      toast.error(`${badField.label} must not contain whitespace`)
+      toast.error(t('actionDialog.noWhitespace', { field: badField.label }))
       return
     }
     const args = inputFields.value.map((f) => f.value.trim()).filter(Boolean)
@@ -88,11 +90,11 @@ export function useActionDialogs(onComplete?: () => void) {
     executing.value = true
     try {
       await api.command(connection.activeServerId, command)
-      toast.success(`${inputDialogTitle.value} completed`)
+      toast.success(t('actionDialog.completed', { action: inputDialogTitle.value }))
       inputDialogOpen.value = false
       onComplete?.()
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : `Failed: ${inputDialogTitle.value}`)
+      toast.error(e instanceof Error ? e.message : t('actionDialog.failed', { action: inputDialogTitle.value }))
     } finally {
       executing.value = false
     }
@@ -107,7 +109,7 @@ export function useActionDialogs(onComplete?: () => void) {
       const res = await api.command(connection.activeServerId, command)
       resultResponse.value = res.response
     } catch (e) {
-      resultResponse.value = e instanceof Error ? e.message : 'Failed to execute command'
+      resultResponse.value = e instanceof Error ? e.message : t('actionDialog.executeFailed')
     }
   }
 

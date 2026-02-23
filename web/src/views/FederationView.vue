@@ -39,7 +39,7 @@ const summary = computed(() => {
   if (!federationStatus.value) return null
   const clean = stripHtml(federationStatus.value)
   const m = clean.match(/Handling\s+(\d+)\s+incoming\s+pdus/)
-  return m?.[1] ? `${m[1]} incoming` : null
+  return m?.[1] ?? null
 })
 
 const pdus = computed<PduEntry[]>(() => {
@@ -59,35 +59,35 @@ const pdus = computed<PduEntry[]>(() => {
 <template>
   <div class="flex flex-col gap-6">
     <div class="flex items-center gap-2">
-      <h1 class="text-2xl font-bold">Federation</h1>
+      <h1 class="text-2xl font-bold">{{ $t('federation.title') }}</h1>
       <Button variant="ghost" size="icon-sm" :disabled="isFetching || !serverId" @click="refetch()">
         <RefreshCw class="size-4" :class="{ 'animate-spin': isFetching }" />
-        <span class="sr-only">Refresh</span>
+        <span class="sr-only">{{ $t('common.refresh') }}</span>
       </Button>
     </div>
 
     <div v-if="!serverId" class="text-muted-foreground text-sm">
-      No server selected. Add a server using the selector in the top bar.
+      {{ $t('common.noServerSelected') }}
     </div>
 
     <template v-else>
       <Card v-if="!isPending && summary">
         <CardHeader>
-          <CardTitle>Incoming PDUs</CardTitle>
-          <CardDescription>{{ summary }} PDUs being handled</CardDescription>
+          <CardTitle>{{ $t('federation.incomingPDUs') }}</CardTitle>
+          <CardDescription>{{ $t('federation.pdusBeingHandled', { count: summary }) }}</CardDescription>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Room ID</TableHead>
-                <TableHead>Event ID</TableHead>
-                <TableHead class="w-28 text-right">Elapsed</TableHead>
+                <TableHead>{{ $t('federation.roomId') }}</TableHead>
+                <TableHead>{{ $t('federation.eventId') }}</TableHead>
+                <TableHead class="w-28 text-right">{{ $t('federation.elapsed') }}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               <TableEmpty v-if="pdus.length === 0" :colspan="3">
-                No incoming PDUs.
+                {{ $t('federation.noIncomingPDUs') }}
               </TableEmpty>
               <TableRow v-for="pdu in pdus" :key="pdu.eventId">
                 <TableCell class="font-mono text-sm max-w-64 truncate">{{ pdu.roomId }}</TableCell>
@@ -101,7 +101,7 @@ const pdus = computed<PduEntry[]>(() => {
 
       <Card v-if="isPending">
         <CardHeader>
-          <CardTitle>Incoming PDUs</CardTitle>
+          <CardTitle>{{ $t('federation.incomingPDUs') }}</CardTitle>
         </CardHeader>
         <CardContent>
           <Skeleton class="h-32 w-full" />
@@ -110,8 +110,8 @@ const pdus = computed<PduEntry[]>(() => {
 
       <Card v-if="!isPending && !summary">
         <CardHeader>
-          <CardTitle>Incoming PDUs</CardTitle>
-          <CardDescription>No incoming federation activity</CardDescription>
+          <CardTitle>{{ $t('federation.incomingPDUs') }}</CardTitle>
+          <CardDescription>{{ $t('federation.noFederationActivity') }}</CardDescription>
         </CardHeader>
       </Card>
     </template>

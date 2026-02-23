@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useConnectionStore } from '@/stores/connection'
+import { useI18n } from 'vue-i18n'
 import { useActionDialogs } from '@/composables/useActionDialogs'
 import { Settings2 } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
@@ -37,7 +37,7 @@ import ResponseDisplay from '@/components/ResponseDisplay.vue'
 const props = defineProps<{ roomId: string }>()
 const emit = defineEmits<{ 'action-complete': [] }>()
 
-const connection = useConnectionStore()
+const { t } = useI18n()
 
 const {
   alertOpen,
@@ -64,36 +64,36 @@ const rid = () => props.roomId
 // Read-only actions
 const readOnlyActions = {
   listMembers: () =>
-    executeReadOnly('Joined Members', `rooms info list-joined-members ${rid()}`),
+    executeReadOnly(t('rooms.actions.joinedMembers'), `rooms info list-joined-members ${rid()}`),
   viewTopic: () =>
-    executeReadOnly('Room Topic', `rooms info view-room-topic ${rid()}`),
+    executeReadOnly(t('rooms.actions.roomTopic'), `rooms info view-room-topic ${rid()}`),
   checkExists: () =>
-    executeReadOnly('Room Exists', `rooms exists ${rid()}`),
+    executeReadOnly(t('rooms.actions.roomExists'), `rooms exists ${rid()}`),
   listAliases: () =>
-    executeReadOnly('Room Aliases', `rooms alias list ${rid()}`),
+    executeReadOnly(t('rooms.actions.roomAliases'), `rooms alias list ${rid()}`),
 }
 
 // Confirm actions (only room_id arg)
 const confirmActions = {
   publish: () =>
-    openConfirm('Publish Room', `Publish ${rid()} to the room directory?`, `rooms directory publish ${rid()}`),
+    openConfirm(t('rooms.actions.publish'), t('rooms.actions.publishDescription', { roomId: rid() }), `rooms directory publish ${rid()}`),
   unpublish: () =>
-    openConfirm('Unpublish Room', `Remove ${rid()} from the room directory?`, `rooms directory unpublish ${rid()}`),
+    openConfirm(t('rooms.actions.unpublish'), t('rooms.actions.unpublishDescription', { roomId: rid() }), `rooms directory unpublish ${rid()}`),
   ban: () =>
-    openConfirm('Ban Room', `Ban room ${rid()}? This will prevent users from joining.`, `rooms moderation ban-room ${rid()}`, true),
+    openConfirm(t('rooms.actions.banRoom'), t('rooms.actions.banDescription', { roomId: rid() }), `rooms moderation ban-room ${rid()}`, true),
   unban: () =>
-    openConfirm('Unban Room', `Unban room ${rid()}?`, `rooms moderation unban-room ${rid()}`),
+    openConfirm(t('rooms.actions.unbanRoom'), t('rooms.actions.unbanDescription', { roomId: rid() }), `rooms moderation unban-room ${rid()}`),
 }
 
 // Actions needing extra input
 const inputActions = {
   setAlias: () =>
-    openInputDialog('Set Room Alias', `Set an alias for ${rid()}.`, `rooms alias set ${rid()}`, [
-      { name: 'alias', label: 'Alias Localpart', placeholder: 'e.g. my-room', required: true },
+    openInputDialog(t('rooms.actions.setAlias'), t('rooms.actions.setAliasDescription', { roomId: rid() }), `rooms alias set ${rid()}`, [
+      { name: 'alias', label: t('rooms.actions.aliasLocalpart'), placeholder: t('rooms.actions.aliasPlaceholder'), required: true },
     ]),
   removeAlias: () =>
-    openInputDialog('Remove Room Alias', `Remove an alias from ${rid()}.`, 'rooms alias remove', [
-      { name: 'alias', label: 'Alias Localpart', placeholder: 'e.g. my-room', required: true },
+    openInputDialog(t('rooms.actions.removeAlias'), t('rooms.actions.removeAliasDescription', { roomId: rid() }), 'rooms alias remove', [
+      { name: 'alias', label: t('rooms.actions.aliasLocalpart'), placeholder: t('rooms.actions.aliasPlaceholder'), required: true },
     ]),
 }
 </script>
@@ -103,44 +103,44 @@ const inputActions = {
     <DropdownMenuTrigger as-child>
       <Button variant="ghost" size="icon-sm">
         <Settings2 class="size-4" />
-        <span class="sr-only">Actions</span>
+        <span class="sr-only">{{ $t('common.actions') }}</span>
       </Button>
     </DropdownMenuTrigger>
     <DropdownMenuContent align="start" class="w-52">
-      <DropdownMenuLabel>Room Actions</DropdownMenuLabel>
+      <DropdownMenuLabel>{{ $t('rooms.actions.title') }}</DropdownMenuLabel>
       <DropdownMenuSeparator />
 
       <DropdownMenuGroup>
-        <DropdownMenuLabel class="text-xs text-muted-foreground font-normal">Info</DropdownMenuLabel>
-        <DropdownMenuItem @click="readOnlyActions.listMembers()">List Members</DropdownMenuItem>
-        <DropdownMenuItem @click="readOnlyActions.viewTopic()">View Topic</DropdownMenuItem>
-        <DropdownMenuItem @click="readOnlyActions.checkExists()">Check Exists</DropdownMenuItem>
+        <DropdownMenuLabel class="text-xs text-muted-foreground font-normal">{{ $t('rooms.actions.info') }}</DropdownMenuLabel>
+        <DropdownMenuItem @click="readOnlyActions.listMembers()">{{ $t('rooms.actions.listMembers') }}</DropdownMenuItem>
+        <DropdownMenuItem @click="readOnlyActions.viewTopic()">{{ $t('rooms.actions.viewTopic') }}</DropdownMenuItem>
+        <DropdownMenuItem @click="readOnlyActions.checkExists()">{{ $t('rooms.actions.checkExists') }}</DropdownMenuItem>
       </DropdownMenuGroup>
       <DropdownMenuSeparator />
 
       <DropdownMenuGroup>
-        <DropdownMenuLabel class="text-xs text-muted-foreground font-normal">Aliases</DropdownMenuLabel>
-        <DropdownMenuItem @click="readOnlyActions.listAliases()">List Aliases</DropdownMenuItem>
-        <DropdownMenuItem @click="inputActions.setAlias()">Set Alias</DropdownMenuItem>
-        <DropdownMenuItem @click="inputActions.removeAlias()">Remove Alias</DropdownMenuItem>
+        <DropdownMenuLabel class="text-xs text-muted-foreground font-normal">{{ $t('rooms.actions.aliases') }}</DropdownMenuLabel>
+        <DropdownMenuItem @click="readOnlyActions.listAliases()">{{ $t('rooms.actions.listAliases') }}</DropdownMenuItem>
+        <DropdownMenuItem @click="inputActions.setAlias()">{{ $t('rooms.actions.setAlias') }}</DropdownMenuItem>
+        <DropdownMenuItem @click="inputActions.removeAlias()">{{ $t('rooms.actions.removeAlias') }}</DropdownMenuItem>
       </DropdownMenuGroup>
       <DropdownMenuSeparator />
 
       <DropdownMenuGroup>
-        <DropdownMenuLabel class="text-xs text-muted-foreground font-normal">Directory</DropdownMenuLabel>
-        <DropdownMenuItem @click="confirmActions.publish()">Publish</DropdownMenuItem>
-        <DropdownMenuItem @click="confirmActions.unpublish()">Unpublish</DropdownMenuItem>
+        <DropdownMenuLabel class="text-xs text-muted-foreground font-normal">{{ $t('rooms.actions.directory') }}</DropdownMenuLabel>
+        <DropdownMenuItem @click="confirmActions.publish()">{{ $t('rooms.actions.publish') }}</DropdownMenuItem>
+        <DropdownMenuItem @click="confirmActions.unpublish()">{{ $t('rooms.actions.unpublish') }}</DropdownMenuItem>
       </DropdownMenuGroup>
       <DropdownMenuSeparator />
 
       <DropdownMenuGroup>
-        <DropdownMenuLabel class="text-xs text-muted-foreground font-normal">Moderation</DropdownMenuLabel>
-        <DropdownMenuItem @click="confirmActions.unban()">Unban Room</DropdownMenuItem>
+        <DropdownMenuLabel class="text-xs text-muted-foreground font-normal">{{ $t('rooms.actions.moderation') }}</DropdownMenuLabel>
+        <DropdownMenuItem @click="confirmActions.unban()">{{ $t('rooms.actions.unbanRoom') }}</DropdownMenuItem>
         <DropdownMenuItem
           class="text-destructive focus:text-destructive"
           @click="confirmActions.ban()"
         >
-          Ban Room
+          {{ $t('rooms.actions.banRoom') }}
         </DropdownMenuItem>
       </DropdownMenuGroup>
     </DropdownMenuContent>
@@ -154,13 +154,13 @@ const inputActions = {
         <AlertDialogDescription>{{ alertDescription }}</AlertDialogDescription>
       </AlertDialogHeader>
       <AlertDialogFooter>
-        <AlertDialogCancel :disabled="executing">Cancel</AlertDialogCancel>
+        <AlertDialogCancel :disabled="executing">{{ $t('common.cancel') }}</AlertDialogCancel>
         <AlertDialogAction
           :class="alertDestructive ? 'bg-destructive text-white hover:bg-destructive/90' : ''"
           :disabled="executing"
           @click.prevent="executeConfirm"
         >
-          {{ executing ? 'Executing...' : 'Confirm' }}
+          {{ executing ? $t('common.executing') : $t('common.confirm') }}
         </AlertDialogAction>
       </AlertDialogFooter>
     </AlertDialogContent>
@@ -185,7 +185,7 @@ const inputActions = {
         </div>
         <DialogFooter>
           <Button type="submit" :disabled="executing">
-            {{ executing ? 'Executing...' : 'Execute' }}
+            {{ executing ? $t('common.executing') : $t('common.execute') }}
           </Button>
         </DialogFooter>
       </form>
@@ -197,7 +197,7 @@ const inputActions = {
     <DialogContent class="sm:max-w-4xl">
       <DialogHeader>
         <DialogTitle>{{ resultDialogTitle }}</DialogTitle>
-        <DialogDescription>Results for {{ roomId }}</DialogDescription>
+        <DialogDescription>{{ $t('rooms.actions.resultsFor', { roomId }) }}</DialogDescription>
       </DialogHeader>
       <ResponseDisplay :response="resultResponse" />
     </DialogContent>
