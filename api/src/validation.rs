@@ -68,3 +68,124 @@ pub fn validate_homeserver_url(url: &str) -> Result<(), ApiError> {
 
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // --- validate_username ---
+
+    #[test]
+    fn username_valid() {
+        assert!(validate_username("alice").is_ok());
+    }
+
+    #[test]
+    fn username_empty() {
+        assert!(validate_username("").is_err());
+    }
+
+    #[test]
+    fn username_whitespace() {
+        assert!(validate_username("ali ce").is_err());
+        assert!(validate_username("alice\t").is_err());
+    }
+
+    #[test]
+    fn username_control_chars() {
+        assert!(validate_username("alice\x00").is_err());
+        assert!(validate_username("ali\x07ce").is_err());
+    }
+
+    // --- validate_password ---
+
+    #[test]
+    fn password_valid() {
+        assert!(validate_password("strong password!").is_ok());
+    }
+
+    #[test]
+    fn password_empty() {
+        assert!(validate_password("").is_err());
+    }
+
+    #[test]
+    fn password_too_short() {
+        assert!(validate_password("short").is_err());
+        assert!(validate_password("1234567").is_err());
+    }
+
+    #[test]
+    fn password_exactly_eight() {
+        assert!(validate_password("12345678").is_ok());
+    }
+
+    #[test]
+    fn password_control_chars() {
+        assert!(validate_password("password\x00safe").is_err());
+    }
+
+    // --- validate_command_arg ---
+
+    #[test]
+    fn command_arg_valid() {
+        assert!(validate_command_arg("@user:host", "user").is_ok());
+    }
+
+    #[test]
+    fn command_arg_empty() {
+        assert!(validate_command_arg("", "arg").is_err());
+    }
+
+    #[test]
+    fn command_arg_whitespace() {
+        assert!(validate_command_arg("has space", "arg").is_err());
+    }
+
+    #[test]
+    fn command_arg_control_chars() {
+        assert!(validate_command_arg("val\x00ue", "arg").is_err());
+    }
+
+    // --- validate_homeserver_url ---
+
+    #[test]
+    fn homeserver_url_valid_https() {
+        assert!(validate_homeserver_url("https://matrix.example.com").is_ok());
+    }
+
+    #[test]
+    fn homeserver_url_valid_http() {
+        assert!(validate_homeserver_url("http://localhost:8008").is_ok());
+    }
+
+    #[test]
+    fn homeserver_url_empty() {
+        assert!(validate_homeserver_url("").is_err());
+    }
+
+    #[test]
+    fn homeserver_url_missing_scheme() {
+        assert!(validate_homeserver_url("matrix.example.com").is_err());
+    }
+
+    #[test]
+    fn homeserver_url_scheme_only() {
+        assert!(validate_homeserver_url("https://").is_err());
+    }
+
+    #[test]
+    fn homeserver_url_scheme_with_slash() {
+        assert!(validate_homeserver_url("https:///path").is_err());
+    }
+
+    #[test]
+    fn homeserver_url_whitespace() {
+        assert!(validate_homeserver_url("https://example .com").is_err());
+    }
+
+    #[test]
+    fn homeserver_url_control_chars() {
+        assert!(validate_homeserver_url("https://example\x00.com").is_err());
+    }
+}

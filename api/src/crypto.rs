@@ -71,3 +71,78 @@ fn hex_to_bytes(hex: &str) -> Result<Vec<u8>, String> {
         .map(|i| u8::from_str_radix(&hex[i..i + 2], 16).map_err(|e| e.to_string()))
         .collect()
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const TEST_KEY: [u8; 32] = [0xAA; 32];
+
+    #[test]
+    fn encrypt_decrypt_roundtrip() {
+        let plaintext = "hello world";
+        let encrypted = encrypt(&TEST_KEY, plaintext).unwrap();
+        let decrypted = decrypt(&TEST_KEY, &encrypted).unwrap();
+        assert_eq!(decrypted, plaintext);
+    }
+
+    #[test]
+    fn encrypted_has_enc_prefix() {
+        let encrypted = encrypt(&TEST_KEY, "test").unwrap();
+        assert!(encrypted.starts_with("enc:"));
+    }
+
+    #[test]
+    fn decrypt_without_prefix() {
+        let encrypted = encrypt(&TEST_KEY, "backward compat").unwrap();
+        // Strip the prefix to simulate legacy format
+        let legacy = encrypted.strip_prefix("enc:").unwrap();
+        let decrypted = decrypt(&TEST_KEY, legacy).unwrap();
+        assert_eq!(decrypted, "backward compat");
+    }
+
+    #[test]
+    fn different_nonces_each_time() {
+        let a = encrypt(&TEST_KEY, "same").unwrap();
+        let b = encrypt(&TEST_KEY, "same").unwrap();
+        assert_ne!(a, b);
+    }
+
+    #[test]
+    fn wrong_key_fails() {
+        let encrypted = encrypt(&TEST_KEY, "secret").unwrap();
+        let wrong_key = [0xBB; 32];
+        assert!(decrypt(&wrong_key, &encrypted).is_err());
+    }
+
+    #[test]
+    fn truncated_data_fails() {
+        // 12 bytes nonce = 24 hex chars minimum; provide less
+        assert!(decrypt(&TEST_KEY, "enc:aabb").is_err());
+    }
+
+    #[test]
+    fn corrupted_data_fails() {
+        let encrypted = encrypt(&TEST_KEY, "data").unwrap();
+        let mut chars: Vec<char> = encrypted.chars().collect();
+        // Flip a byte in the ciphertext area (after "enc:" prefix + 24 hex nonce chars)
+        let idx = 30;
+        if idx < chars.len() {
+            chars[idx] = if chars[idx] == 'a' { 'b' } else { 'a' };
+        }
+        let corrupted: String = chars.into_iter().collect();
+        assert!(decrypt(&TEST_KEY, &corrupted).is_err());
+    }
+
+    #[test]
+    fn is_encrypted_and_legacy_checks() {
+        assert!(is_encrypted("enc:deadbeef"));
+        assert!(!is_encrypted("deadbeef"));
+
+        // Legacy: all-hex and >= 58 chars
+        let long_hex = "a".repeat(60);
+        assert!(is_legacy_encrypted(&long_hex));
+        assert!(!is_legacy_encrypted("short"));
+        assert!(!is_legacy_encrypted(&"g".repeat(60))); // non-hex
+    }
+}

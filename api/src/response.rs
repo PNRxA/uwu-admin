@@ -192,3 +192,97 @@ pub fn parse_response(html: &str) -> ParsedResponse {
         text: text.trim().to_string(),
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn strip_html_removes_tags() {
+        assert_eq!(strip_html("<b>bold</b>"), "bold");
+    }
+
+    #[test]
+    fn strip_html_br_to_newline() {
+        assert_eq!(strip_html("a<br>b"), "a\nb");
+        assert_eq!(strip_html("a<br/>b"), "a\nb");
+        assert_eq!(strip_html("a<br />b"), "a\nb");
+    }
+
+    #[test]
+    fn strip_html_decodes_entities() {
+        assert_eq!(strip_html("&amp; &lt; &gt;"), "& < >");
+        assert_eq!(strip_html("&quot;hi&#39;"), "\"hi'");
+    }
+
+    #[test]
+    fn parse_response_empty() {
+        match parse_response("") {
+            ParsedResponse::Text { text } => assert_eq!(text, "(empty response)"),
+            other => panic!("expected Text, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn parse_response_table() {
+        let input = "!room:host Name: General Members: 5\n!room2:host Name: Random Members: 3";
+        match parse_response(input) {
+            ParsedResponse::Table { header, columns, rows } => {
+                assert!(header.is_none());
+                assert_eq!(columns[0], "ID");
+                assert!(columns.contains(&"Name".to_string()));
+                assert_eq!(rows.len(), 2);
+                assert_eq!(rows[0][0], "!room:host");
+            }
+            other => panic!("expected Table, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn parse_response_list() {
+        let input = "@alice:host\n@bob:host";
+        match parse_response(input) {
+            ParsedResponse::List { header, items } => {
+                assert!(header.is_none());
+                assert_eq!(items.len(), 2);
+                assert_eq!(items[0], "@alice:host");
+            }
+            other => panic!("expected List, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn parse_response_kv() {
+        let input = "Server: conduit.example.com\nVersion: 0.6.0";
+        match parse_response(input) {
+            ParsedResponse::Kv { header, entries } => {
+                assert!(header.is_none());
+                assert_eq!(entries.len(), 2);
+                assert_eq!(entries[0].key, "Server");
+                assert_eq!(entries[0].value, "conduit.example.com");
+            }
+            other => panic!("expected Kv, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn parse_response_with_header() {
+        let input = "Rooms (2):\n!room:host Name: General Members: 5\n!room2:host Name: Random Members: 3";
+        match parse_response(input) {
+            ParsedResponse::Table { header, rows, .. } => {
+                assert_eq!(header, Some("Rooms (2)".to_string()));
+                assert_eq!(rows.len(), 2);
+            }
+            other => panic!("expected Table with header, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn parse_response_text_fallback() {
+        let input = "some plain text without structure";
+        match parse_response(input) {
+            ParsedResponse::Text { text } => assert_eq!(text, "some plain text without structure"),
+            other => panic!("expected Text, got {other:?}"),
+        }
+    }
+}

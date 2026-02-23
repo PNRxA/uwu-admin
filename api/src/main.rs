@@ -22,7 +22,7 @@ use tower::ServiceBuilder;
 use tower_http::cors::{AllowOrigin, CorsLayer};
 
 use crate::matrix::MatrixClient;
-use crate::state::AppState;
+use crate::state::{AppState, SharedState};
 
 #[tokio::main]
 async fn main() {
@@ -163,6 +163,23 @@ async fn main() {
         }
     }
 
+    let app = build_router(state);
+
+    let listen_addr =
+        std::env::var("API_LISTEN").unwrap_or_else(|_| "127.0.0.1:3001".into());
+
+    let listener = tokio::net::TcpListener::bind(&listen_addr)
+        .await
+        .unwrap_or_else(|_| panic!("Failed to bind to {listen_addr}"));
+
+    tracing::info!("uwu-admin-api listening on {listen_addr}");
+
+    axum::serve(listener, app)
+        .await
+        .expect("Server error");
+}
+
+pub fn build_router(state: SharedState) -> Router {
     let auth_routes = Router::new()
         .route("/api/auth/status", get(auth::auth_status))
         .route("/api/auth/setup", post(auth::setup))
@@ -179,10 +196,8 @@ async fn main() {
 
     let protected_routes = Router::new()
         .route("/api/auth/logout", post(auth::logout))
-        // Server management
         .route("/api/servers", post(handlers::add_server).get(handlers::list_servers))
         .route("/api/servers/{server_id}", delete(handlers::remove_server))
-        // Server-scoped routes
         .route("/api/servers/{server_id}/command", post(handlers::command))
         .route(
             "/api/servers/{server_id}/users",
@@ -206,7 +221,7 @@ async fn main() {
                 .rate_limit(30, Duration::from_secs(60)),
         );
 
-    let app = Router::new()
+    Router::new()
         .merge(auth_routes)
         .merge(protected_routes)
         .layer(DefaultBodyLimit::max(65_536))
@@ -223,18 +238,8 @@ async fn main() {
                 Err(_) => cors.allow_origin(AllowOrigin::default()),
             }
         })
-        .with_state(state);
-
-    let listen_addr =
-        std::env::var("API_LISTEN").unwrap_or_else(|_| "127.0.0.1:3001".into());
-
-    let listener = tokio::net::TcpListener::bind(&listen_addr)
-        .await
-        .unwrap_or_else(|_| panic!("Failed to bind to {listen_addr}"));
-
-    tracing::info!("uwu-admin-api listening on {listen_addr}");
-
-    axum::serve(listener, app)
-        .await
-        .expect("Server error");
+        .with_state(state)
 }
+
+#[cfg(test)]
+mod integration_tests;

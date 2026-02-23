@@ -65,7 +65,7 @@ fn generate_refresh_token() -> String {
     bytes.iter().map(|b| format!("{b:02x}")).collect()
 }
 
-fn hash_refresh_token(token: &str) -> String {
+pub(crate) fn hash_refresh_token(token: &str) -> String {
     let mut hasher = Sha256::new();
     hasher.update(token.as_bytes());
     format!("{:x}", hasher.finalize())
@@ -245,4 +245,35 @@ pub async fn logout(
     db::delete_refresh_tokens_for_user(&state.db, user.id).await?;
 
     Ok(Json(json!({ "ok": true })))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn hash_verify_password_roundtrip() {
+        let hash = hash_password("testpassword").unwrap();
+        assert!(verify_password("testpassword", &hash).unwrap());
+    }
+
+    #[test]
+    fn verify_wrong_password() {
+        let hash = hash_password("correct").unwrap();
+        assert!(!verify_password("wrong", &hash).unwrap());
+    }
+
+    #[test]
+    fn hash_refresh_token_deterministic() {
+        let a = hash_refresh_token("token123");
+        let b = hash_refresh_token("token123");
+        assert_eq!(a, b);
+    }
+
+    #[test]
+    fn different_inputs_different_hashes() {
+        let a = hash_refresh_token("token_a");
+        let b = hash_refresh_token("token_b");
+        assert_ne!(a, b);
+    }
 }
