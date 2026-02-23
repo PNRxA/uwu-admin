@@ -47,29 +47,29 @@ interface AuthResponse {
   refresh_token: string
 }
 
-let authToken: string | null = localStorage.getItem('uwu-admin-token')
-let refreshToken: string | null = localStorage.getItem('uwu-admin-refresh-token')
+let authToken: string | null = sessionStorage.getItem('uwu-admin-token')
+let refreshToken: string | null = sessionStorage.getItem('uwu-admin-refresh-token')
 
 export function setAuthToken(token: string | null) {
   authToken = token
   if (token) {
-    localStorage.setItem('uwu-admin-token', token)
+    sessionStorage.setItem('uwu-admin-token', token)
   } else {
-    localStorage.removeItem('uwu-admin-token')
+    sessionStorage.removeItem('uwu-admin-token')
   }
 }
 
 export function setRefreshToken(token: string | null) {
   refreshToken = token
   if (token) {
-    localStorage.setItem('uwu-admin-refresh-token', token)
+    sessionStorage.setItem('uwu-admin-refresh-token', token)
   } else {
-    localStorage.removeItem('uwu-admin-refresh-token')
+    sessionStorage.removeItem('uwu-admin-refresh-token')
   }
 }
 
 export function loadAuthToken(): string | null {
-  authToken = localStorage.getItem('uwu-admin-token')
+  authToken = sessionStorage.getItem('uwu-admin-token')
   return authToken
 }
 

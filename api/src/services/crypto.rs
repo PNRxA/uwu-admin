@@ -11,7 +11,7 @@ pub fn encrypt(key: &[u8], plaintext: &str) -> Result<String, String> {
 
     let nonce_bytes: [u8; 12] = {
         use rand::Rng;
-        rand::thread_rng().r#gen()
+        rand::rngs::OsRng.r#gen()
     };
     let nonce = Nonce::from_slice(&nonce_bytes);
 

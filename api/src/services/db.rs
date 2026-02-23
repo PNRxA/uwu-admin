@@ -1,6 +1,6 @@
 use sea_orm::{
     ActiveModelTrait, ConnectionTrait, Database, DatabaseConnection, EntityTrait, IntoActiveModel,
-    Set, Statement,
+    Set, Statement, TransactionTrait,
 };
 
 use crate::entity::{admin_user, refresh_token, server};
@@ -96,15 +96,11 @@ pub fn load_secret_from_env(env_var: &str) -> Vec<u8> {
             bytes
         }
         _ => {
-            use rand::Rng;
-            let secret: Vec<u8> = {
-                let mut rng = rand::thread_rng();
-                (0..32).map(|_| rng.r#gen::<u8>()).collect()
-            };
-            tracing::warn!(
-                "{env_var} not set — generated random secret (sessions will not survive restarts)",
+            panic!(
+                "{env_var} is not set. This is required.\n\
+                 Generate one with: openssl rand -hex 32\n\
+                 Then add it to your .env file."
             );
-            secret
         }
     }
 }
@@ -151,6 +147,57 @@ pub async fn create_admin_user(
         .await
         .map_err(|e| ApiError::DbError(e.to_string()))?
         .ok_or_else(|| ApiError::DbError("Failed to retrieve created user".into()))
+}
+
+/// Atomically check that no admin users exist and create the first one.
+/// Returns `Err(Forbidden)` if an admin already exists (race-safe via transaction).
+pub async fn create_first_admin_user(
+    db: &DatabaseConnection,
+    username: &str,
+    password_hash: &str,
+) -> Result<admin_user::Model, ApiError> {
+    use sea_orm::PaginatorTrait;
+
+    let txn = db
+        .begin()
+        .await
+        .map_err(|e| ApiError::DbError(e.to_string()))?;
+
+    let count = admin_user::Entity::find()
+        .count(&txn)
+        .await
+        .map_err(|e| ApiError::DbError(e.to_string()))?;
+
+    if count > 0 {
+        txn.rollback()
+            .await
+            .map_err(|e| ApiError::DbError(e.to_string()))?;
+        return Err(ApiError::Forbidden("Setup already completed".into()));
+    }
+
+    let model = admin_user::ActiveModel {
+        id: Default::default(),
+        username: Set(username.to_owned()),
+        password_hash: Set(password_hash.to_owned()),
+        created_at: Set(chrono::Utc::now().format("%Y-%m-%d %H:%M:%S").to_string()),
+    };
+
+    let result = admin_user::Entity::insert(model)
+        .exec(&txn)
+        .await
+        .map_err(|e| ApiError::DbError(e.to_string()))?;
+
+    let user = admin_user::Entity::find_by_id(result.last_insert_id)
+        .one(&txn)
+        .await
+        .map_err(|e| ApiError::DbError(e.to_string()))?
+        .ok_or_else(|| ApiError::DbError("Failed to retrieve created user".into()))?;
+
+    txn.commit()
+        .await
+        .map_err(|e| ApiError::DbError(e.to_string()))?;
+
+    Ok(user)
 }
 
 pub async fn find_admin_user_by_username(

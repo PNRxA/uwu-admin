@@ -42,7 +42,7 @@ pub fn verify_password(password: &str, hash: &str) -> Result<bool, ApiError> {
 fn create_token(username: &str, secret: &[u8]) -> Result<String, ApiError> {
     let exp = chrono::Utc::now()
         .checked_add_signed(chrono::Duration::minutes(15))
-        .expect("valid timestamp")
+        .ok_or_else(|| ApiError::BadRequest("Failed to compute token expiry".into()))?
         .timestamp() as usize;
 
     let claims = Claims {
@@ -60,8 +60,7 @@ fn create_token(username: &str, secret: &[u8]) -> Result<String, ApiError> {
 
 fn generate_refresh_token() -> String {
     use rand::Rng;
-    let mut rng = rand::thread_rng();
-    let bytes: Vec<u8> = (0..32).map(|_| rng.r#gen::<u8>()).collect();
+    let bytes: Vec<u8> = (0..32).map(|_| rand::rngs::OsRng.r#gen::<u8>()).collect();
     bytes.iter().map(|b| format!("{b:02x}")).collect()
 }
 
@@ -82,7 +81,7 @@ async fn issue_token_pair(
     let token_hash = hash_refresh_token(&raw_refresh);
     let expires_at = chrono::Utc::now()
         .checked_add_signed(chrono::Duration::days(7))
-        .expect("valid timestamp")
+        .ok_or_else(|| ApiError::BadRequest("Failed to compute refresh token expiry".into()))?
         .format("%Y-%m-%d %H:%M:%S")
         .to_string();
 
@@ -126,11 +125,6 @@ pub async fn setup(
     State(state): State<SharedState>,
     Json(req): Json<SetupRequest>,
 ) -> Result<Json<Value>, ApiError> {
-    let count = db::count_admin_users(&state.db).await?;
-    if count > 0 {
-        return Err(ApiError::Forbidden("Setup already completed".into()));
-    }
-
     if req.username.trim().is_empty() || req.password.trim().is_empty() {
         return Err(ApiError::BadRequest("Username and password are required".into()));
     }
@@ -142,7 +136,7 @@ pub async fn setup(
     }
 
     let password_hash = hash_password(&req.password)?;
-    let user = db::create_admin_user(&state.db, &req.username, &password_hash).await?;
+    let user = db::create_first_admin_user(&state.db, &req.username, &password_hash).await?;
 
     tracing::info!("Admin account setup completed for user '{}'", req.username);
 
@@ -157,13 +151,13 @@ pub async fn login(
     let user = match db::find_admin_user_by_username(&state.db, &req.username).await? {
         Some(user) => user,
         None => {
-            tracing::warn!("Login failed: unknown username '{}'", req.username);
+            tracing::warn!("Login failed: unknown username");
             return Err(ApiError::Unauthorized);
         }
     };
 
     if !verify_password(&req.password, &user.password_hash)? {
-        tracing::warn!("Login failed: incorrect password for user '{}'", req.username);
+        tracing::warn!("Login failed: incorrect password");
         return Err(ApiError::Unauthorized);
     }
 
@@ -192,15 +186,17 @@ pub async fn refresh(
         return Err(ApiError::Unauthorized);
     }
 
-    // Rotation: delete old refresh token (single-use)
-    db::delete_refresh_token(&state.db, stored.id).await?;
-
     // Look up user
     let user = db::find_admin_user_by_id(&state.db, stored.user_id)
         .await?
         .ok_or(ApiError::Unauthorized)?;
 
+    // Issue new token pair BEFORE deleting old (avoids gap where no valid token exists)
     let (token, refresh_token) = issue_token_pair(&state.db, &state.jwt_secret, user.id, &user.username).await?;
+
+    // Rotation: delete old refresh token (single-use)
+    db::delete_refresh_token(&state.db, stored.id).await?;
+
     Ok(Json(json!({ "token": token, "refresh_token": refresh_token })))
 }
 

@@ -2,6 +2,7 @@ use axum::body::Body;
 use axum::http::{Request, StatusCode};
 use axum::Router;
 use http_body_util::BodyExt;
+use serial_test::serial;
 use serde_json::{Value, json};
 use tower::ServiceExt;
 
@@ -69,6 +70,15 @@ fn get_json_auth(uri: &str, token: &str) -> Request<Body> {
         .unwrap()
 }
 
+fn delete_json_auth(uri: &str, token: &str) -> Request<Body> {
+    Request::builder()
+        .method("DELETE")
+        .uri(uri)
+        .header("authorization", format!("Bearer {token}"))
+        .body(Body::empty())
+        .unwrap()
+}
+
 /// Run setup and return (access_token, refresh_token)
 async fn do_setup(app: &Router) -> (String, String) {
     let body = json!({"username": "admin", "password": "supersecret123"});
@@ -88,6 +98,7 @@ async fn do_setup(app: &Router) -> (String, String) {
 // ========== Auth flow ==========
 
 #[tokio::test]
+#[serial]
 async fn auth_status_setup_required() {
     let app = test_app().await;
     let resp = app.oneshot(get_json("/api/auth/status")).await.unwrap();
@@ -97,6 +108,7 @@ async fn auth_status_setup_required() {
 }
 
 #[tokio::test]
+#[serial]
 async fn setup_creates_admin() {
     let app = test_app().await;
     let body = json!({"username": "admin", "password": "supersecret123"});
@@ -111,6 +123,7 @@ async fn setup_creates_admin() {
 }
 
 #[tokio::test]
+#[serial]
 async fn setup_rejects_second_attempt() {
     let state = test_state().await;
     let app = test_app_with_state(state);
@@ -131,6 +144,7 @@ async fn setup_rejects_second_attempt() {
 }
 
 #[tokio::test]
+#[serial]
 async fn setup_rejects_empty_username() {
     let app = test_app().await;
     let body = json!({"username": "", "password": "supersecret123"});
@@ -142,6 +156,7 @@ async fn setup_rejects_empty_username() {
 }
 
 #[tokio::test]
+#[serial]
 async fn setup_rejects_short_password() {
     let app = test_app().await;
     let body = json!({"username": "admin", "password": "short"});
@@ -153,6 +168,7 @@ async fn setup_rejects_short_password() {
 }
 
 #[tokio::test]
+#[serial]
 async fn login_valid_credentials() {
     let state = test_state().await;
     let app = test_app_with_state(state);
@@ -170,6 +186,7 @@ async fn login_valid_credentials() {
 }
 
 #[tokio::test]
+#[serial]
 async fn login_wrong_password() {
     let state = test_state().await;
     let app = test_app_with_state(state);
@@ -184,6 +201,7 @@ async fn login_wrong_password() {
 }
 
 #[tokio::test]
+#[serial]
 async fn login_unknown_user() {
     let state = test_state().await;
     let app = test_app_with_state(state);
@@ -198,6 +216,7 @@ async fn login_unknown_user() {
 }
 
 #[tokio::test]
+#[serial]
 async fn auth_status_after_setup() {
     let state = test_state().await;
     let app = test_app_with_state(state);
@@ -215,6 +234,7 @@ async fn auth_status_after_setup() {
 // ========== Refresh tokens ==========
 
 #[tokio::test]
+#[serial]
 async fn refresh_valid_token() {
     let state = test_state().await;
     let app = test_app_with_state(state);
@@ -232,6 +252,7 @@ async fn refresh_valid_token() {
 }
 
 #[tokio::test]
+#[serial]
 async fn refresh_token_single_use() {
     let state = test_state().await;
     let app = test_app_with_state(state);
@@ -255,6 +276,7 @@ async fn refresh_token_single_use() {
 }
 
 #[tokio::test]
+#[serial]
 async fn expired_refresh_token_rejected() {
     let state = test_state().await;
     let app = test_app_with_state(state.clone());
@@ -284,6 +306,7 @@ async fn expired_refresh_token_rejected() {
 // ========== JWT protection ==========
 
 #[tokio::test]
+#[serial]
 async fn no_jwt_returns_401() {
     let app = test_app().await;
     let resp = app
@@ -294,6 +317,7 @@ async fn no_jwt_returns_401() {
 }
 
 #[tokio::test]
+#[serial]
 async fn invalid_jwt_returns_401() {
     let app = test_app().await;
     let resp = app
@@ -304,6 +328,7 @@ async fn invalid_jwt_returns_401() {
 }
 
 #[tokio::test]
+#[serial]
 async fn expired_jwt_returns_401() {
     use jsonwebtoken::{encode, EncodingKey, Header};
     let state = test_state().await;
@@ -329,6 +354,7 @@ async fn expired_jwt_returns_401() {
 }
 
 #[tokio::test]
+#[serial]
 async fn valid_jwt_succeeds() {
     let state = test_state().await;
     let app = test_app_with_state(state);
@@ -346,6 +372,7 @@ async fn valid_jwt_succeeds() {
 // ========== Logout ==========
 
 #[tokio::test]
+#[serial]
 async fn logout_invalidates_refresh_tokens() {
     let state = test_state().await;
     let app = test_app_with_state(state);
@@ -371,6 +398,7 @@ async fn logout_invalidates_refresh_tokens() {
 // ========== Server-scoped 503s (no MatrixClient) ==========
 
 #[tokio::test]
+#[serial]
 async fn command_no_client_returns_503() {
     let state = test_state().await;
     let app = test_app_with_state(state);
@@ -385,6 +413,7 @@ async fn command_no_client_returns_503() {
 }
 
 #[tokio::test]
+#[serial]
 async fn list_users_no_client_returns_503() {
     let state = test_state().await;
     let app = test_app_with_state(state);
@@ -398,6 +427,7 @@ async fn list_users_no_client_returns_503() {
 }
 
 #[tokio::test]
+#[serial]
 async fn list_rooms_no_client_returns_503() {
     let state = test_state().await;
     let app = test_app_with_state(state);
@@ -411,6 +441,7 @@ async fn list_rooms_no_client_returns_503() {
 }
 
 #[tokio::test]
+#[serial]
 async fn server_status_no_client_returns_503() {
     let state = test_state().await;
     let app = test_app_with_state(state);
@@ -424,6 +455,7 @@ async fn server_status_no_client_returns_503() {
 }
 
 #[tokio::test]
+#[serial]
 async fn server_uptime_no_client_returns_503() {
     let state = test_state().await;
     let app = test_app_with_state(state);
@@ -439,6 +471,7 @@ async fn server_uptime_no_client_returns_503() {
 // ========== Input validation at HTTP layer ==========
 
 #[tokio::test]
+#[serial]
 async fn command_rejects_control_chars() {
     let state = test_state().await;
     let app = test_app_with_state(state);
@@ -453,6 +486,7 @@ async fn command_rejects_control_chars() {
 }
 
 #[tokio::test]
+#[serial]
 async fn command_rejects_invalid_command() {
     let state = test_state().await;
     let app = test_app_with_state(state);
@@ -467,6 +501,7 @@ async fn command_rejects_invalid_command() {
 }
 
 #[tokio::test]
+#[serial]
 async fn create_user_validates_username() {
     let state = test_state().await;
     let app = test_app_with_state(state);
@@ -481,6 +516,7 @@ async fn create_user_validates_username() {
 }
 
 #[tokio::test]
+#[serial]
 async fn create_user_validates_password() {
     let state = test_state().await;
     let app = test_app_with_state(state);
@@ -545,7 +581,7 @@ mod csrf_tests {
 
     #[tokio::test]
     #[serial]
-    async fn csrf_allows_no_origin_header() {
+    async fn csrf_rejects_missing_origin_header() {
         unsafe { std::env::set_var("CORS_ORIGIN", "https://allowed.example.com") };
         let state = test_state().await;
         let app = test_app_with_state(state);
@@ -559,7 +595,7 @@ mod csrf_tests {
             .unwrap();
 
         let resp = app.oneshot(req).await.unwrap();
-        assert_ne!(resp.status(), StatusCode::FORBIDDEN);
+        assert_eq!(resp.status(), StatusCode::FORBIDDEN);
         unsafe { std::env::remove_var("CORS_ORIGIN") };
     }
 
@@ -582,4 +618,234 @@ mod csrf_tests {
         let resp = app.oneshot(req).await.unwrap();
         assert_ne!(resp.status(), StatusCode::FORBIDDEN);
     }
+}
+
+// ========== Server management (require a live homeserver) ==========
+
+/// Read integration-test env vars. Returns `None` if any are missing,
+/// allowing the test to skip gracefully without `#[ignore]`.
+fn test_server_env() -> Option<(String, String, String, String)> {
+    let homeserver = std::env::var("TEST_HOMESERVER").ok()?;
+    let username = std::env::var("TEST_USERNAME").ok()?;
+    let password = std::env::var("TEST_PASSWORD").ok()?;
+    let room_id = std::env::var("TEST_ROOM_ID").ok()?;
+    Some((homeserver, username, password, room_id))
+}
+
+#[tokio::test]
+#[serial]
+async fn server_add_and_list() {
+    let Some((homeserver, username, password, room_id)) = test_server_env() else { return };
+    let state = test_state().await;
+    let app = test_app_with_state(state);
+    let (token, _) = do_setup(&app).await;
+
+    let body = json!({
+        "homeserver": homeserver,
+        "username": username,
+        "password": password,
+        "room_id": room_id,
+    });
+    let resp = app
+        .clone()
+        .oneshot(post_json_auth("/api/servers", &body, &token))
+        .await
+        .unwrap();
+    assert_eq!(resp.status(), StatusCode::OK);
+    let json = body_json(resp).await;
+    assert!(json["id"].is_number());
+
+    let resp = app
+        .oneshot(get_json_auth("/api/servers", &token))
+        .await
+        .unwrap();
+    assert_eq!(resp.status(), StatusCode::OK);
+    let json = body_json(resp).await;
+    let servers = json["servers"].as_array().unwrap();
+    assert!(!servers.is_empty());
+}
+
+#[tokio::test]
+#[serial]
+async fn server_remove() {
+    let Some((homeserver, username, password, room_id)) = test_server_env() else { return };
+    let state = test_state().await;
+    let app = test_app_with_state(state);
+    let (token, _) = do_setup(&app).await;
+
+    let body = json!({
+        "homeserver": homeserver,
+        "username": username,
+        "password": password,
+        "room_id": room_id,
+    });
+    let resp = app
+        .clone()
+        .oneshot(post_json_auth("/api/servers", &body, &token))
+        .await
+        .unwrap();
+    let json = body_json(resp).await;
+    let server_id = json["id"].as_i64().unwrap();
+
+    let resp = app
+        .clone()
+        .oneshot(delete_json_auth(
+            &format!("/api/servers/{server_id}"),
+            &token,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(resp.status(), StatusCode::OK);
+    let json = body_json(resp).await;
+    assert_eq!(json["removed"], true);
+}
+
+#[tokio::test]
+#[serial]
+async fn server_execute_command() {
+    let Some((homeserver, username, password, room_id)) = test_server_env() else { return };
+    let state = test_state().await;
+    let app = test_app_with_state(state);
+    let (token, _) = do_setup(&app).await;
+
+    let body = json!({
+        "homeserver": homeserver,
+        "username": username,
+        "password": password,
+        "room_id": room_id,
+    });
+    let resp = app
+        .clone()
+        .oneshot(post_json_auth("/api/servers", &body, &token))
+        .await
+        .unwrap();
+    let json = body_json(resp).await;
+    let server_id = json["id"].as_i64().unwrap();
+
+    let cmd = json!({"command": "server uptime"});
+    let resp = app
+        .oneshot(post_json_auth(
+            &format!("/api/servers/{server_id}/command"),
+            &cmd,
+            &token,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(resp.status(), StatusCode::OK);
+    let json = body_json(resp).await;
+    assert!(json["response"].is_string());
+}
+
+#[tokio::test]
+#[serial]
+async fn server_list_users() {
+    let Some((homeserver, username, password, room_id)) = test_server_env() else { return };
+    let state = test_state().await;
+    let app = test_app_with_state(state);
+    let (token, _) = do_setup(&app).await;
+
+    let body = json!({
+        "homeserver": homeserver,
+        "username": username,
+        "password": password,
+        "room_id": room_id,
+    });
+    let resp = app
+        .clone()
+        .oneshot(post_json_auth("/api/servers", &body, &token))
+        .await
+        .unwrap();
+    let json = body_json(resp).await;
+    let server_id = json["id"].as_i64().unwrap();
+
+    let resp = app
+        .oneshot(get_json_auth(
+            &format!("/api/servers/{server_id}/users"),
+            &token,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(resp.status(), StatusCode::OK);
+    let json = body_json(resp).await;
+    assert!(json["response"].is_string());
+}
+
+#[tokio::test]
+#[serial]
+async fn server_list_rooms() {
+    let Some((homeserver, username, password, room_id)) = test_server_env() else { return };
+    let state = test_state().await;
+    let app = test_app_with_state(state);
+    let (token, _) = do_setup(&app).await;
+
+    let body = json!({
+        "homeserver": homeserver,
+        "username": username,
+        "password": password,
+        "room_id": room_id,
+    });
+    let resp = app
+        .clone()
+        .oneshot(post_json_auth("/api/servers", &body, &token))
+        .await
+        .unwrap();
+    let json = body_json(resp).await;
+    let server_id = json["id"].as_i64().unwrap();
+
+    let resp = app
+        .oneshot(get_json_auth(
+            &format!("/api/servers/{server_id}/rooms"),
+            &token,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(resp.status(), StatusCode::OK);
+    let json = body_json(resp).await;
+    assert!(json["response"].is_string());
+}
+
+#[tokio::test]
+#[serial]
+async fn server_status_and_uptime() {
+    let Some((homeserver, username, password, room_id)) = test_server_env() else { return };
+    let state = test_state().await;
+    let app = test_app_with_state(state);
+    let (token, _) = do_setup(&app).await;
+
+    let body = json!({
+        "homeserver": homeserver,
+        "username": username,
+        "password": password,
+        "room_id": room_id,
+    });
+    let resp = app
+        .clone()
+        .oneshot(post_json_auth("/api/servers", &body, &token))
+        .await
+        .unwrap();
+    let json = body_json(resp).await;
+    let server_id = json["id"].as_i64().unwrap();
+
+    let resp = app
+        .clone()
+        .oneshot(get_json_auth(
+            &format!("/api/servers/{server_id}/server/status"),
+            &token,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(resp.status(), StatusCode::OK);
+    let json_status = body_json(resp).await;
+    assert!(json_status["response"].is_string());
+
+    let resp = app
+        .oneshot(get_json_auth(
+            &format!("/api/servers/{server_id}/server/uptime"),
+            &token,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(resp.status(), StatusCode::OK);
+    let json_uptime = body_json(resp).await;
+    assert!(json_uptime["response"].is_string());
 }

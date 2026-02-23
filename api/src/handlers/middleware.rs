@@ -11,18 +11,22 @@ use super::auth::{AuthUser, Claims};
 use crate::state::SharedState;
 
 /// Defense-in-depth: on mutating requests (POST/PUT/DELETE), verify that the
-/// `Origin` header (if present) matches the configured `CORS_ORIGIN`.
-/// If `CORS_ORIGIN` is unset (dev mode) or the header is absent, allow through.
+/// `Origin` header matches the configured `CORS_ORIGIN`.
+/// If `CORS_ORIGIN` is unset (dev mode), allow through.
+/// If `CORS_ORIGIN` is set, the `Origin` header is required and must match.
 pub async fn validate_origin(req: Request<Body>, next: Next) -> Result<Response, StatusCode> {
-    let dominated = matches!(req.method(), &Method::POST | &Method::PUT | &Method::DELETE);
+    let mutating = matches!(req.method(), &Method::POST | &Method::PUT | &Method::DELETE);
 
-    if dominated {
+    if mutating {
         if let Ok(allowed) = std::env::var("CORS_ORIGIN") {
-            if let Some(origin) = req.headers().get("origin") {
-                let origin_str = origin.to_str().unwrap_or("");
-                if origin_str != allowed {
-                    return Err(StatusCode::FORBIDDEN);
+            match req.headers().get("origin") {
+                Some(origin) => {
+                    let origin_str = origin.to_str().unwrap_or("");
+                    if origin_str != allowed {
+                        return Err(StatusCode::FORBIDDEN);
+                    }
                 }
+                None => return Err(StatusCode::FORBIDDEN),
             }
         }
     }

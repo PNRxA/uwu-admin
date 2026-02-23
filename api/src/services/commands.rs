@@ -7,15 +7,6 @@ struct CommandNode {
     name: String,
     #[serde(default)]
     children: Vec<CommandNode>,
-    #[allow(dead_code)]
-    #[serde(default)]
-    args: Vec<CommandArg>,
-}
-
-#[derive(Debug, Deserialize)]
-struct CommandArg {
-    #[allow(dead_code)]
-    name: String,
 }
 
 static COMMAND_TREE: LazyLock<Vec<CommandNode>> = LazyLock::new(|| {
