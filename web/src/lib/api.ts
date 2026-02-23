@@ -156,12 +156,6 @@ export const api = {
     return request<CommandResponse>(`/api/servers/${serverId}/rooms`)
   },
 
-  roomInfo(serverId: number, roomId: string) {
-    return request<CommandResponse>(
-      `/api/servers/${serverId}/rooms/${encodeURIComponent(roomId)}`,
-    )
-  },
-
   serverStatus(serverId: number) {
     return request<CommandResponse>(`/api/servers/${serverId}/server/status`)
   },

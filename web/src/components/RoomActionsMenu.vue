@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { api } from '@/lib/api'
 import { useConnectionStore } from '@/stores/connection'
 import { useActionDialogs } from '@/composables/useActionDialogs'
 import { Ellipsis } from 'lucide-vue-next'
@@ -72,18 +71,6 @@ const readOnlyActions = {
     executeReadOnly('Room Exists', `rooms exists ${rid()}`),
   listAliases: () =>
     executeReadOnly('Room Aliases', `rooms alias list ${rid()}`),
-  roomInfo: async () => {
-    if (connection.activeServerId === null) return
-    resultDialogTitle.value = 'Room Info'
-    resultResponse.value = 'Loading...'
-    resultDialogOpen.value = true
-    try {
-      const res = await api.roomInfo(connection.activeServerId, rid())
-      resultResponse.value = res.response
-    } catch (e) {
-      resultResponse.value = e instanceof Error ? e.message : 'Failed to fetch room info'
-    }
-  },
 }
 
 // Confirm actions (only room_id arg)
@@ -125,7 +112,6 @@ const inputActions = {
 
       <DropdownMenuGroup>
         <DropdownMenuLabel class="text-xs text-muted-foreground font-normal">Info</DropdownMenuLabel>
-        <DropdownMenuItem @click="readOnlyActions.roomInfo()">Room Info</DropdownMenuItem>
         <DropdownMenuItem @click="readOnlyActions.listMembers()">List Members</DropdownMenuItem>
         <DropdownMenuItem @click="readOnlyActions.viewTopic()">View Topic</DropdownMenuItem>
         <DropdownMenuItem @click="readOnlyActions.checkExists()">Check Exists</DropdownMenuItem>

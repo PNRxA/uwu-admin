@@ -86,10 +86,6 @@ async fn main() {
         )
         .route("/api/servers/{server_id}/rooms", get(handlers::list_rooms))
         .route(
-            "/api/servers/{server_id}/rooms/{room_id}",
-            get(handlers::room_info),
-        )
-        .route(
             "/api/servers/{server_id}/server/status",
             get(handlers::server_status),
         )

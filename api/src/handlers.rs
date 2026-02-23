@@ -154,22 +154,6 @@ pub async fn list_rooms(
     Ok(Json(json!({ "response": response })))
 }
 
-pub async fn room_info(
-    State(state): State<SharedState>,
-    _user: AuthUser,
-    Path((server_id, room_id)): Path<(i32, String)>,
-) -> Result<Json<Value>, ApiError> {
-    validation::validate_matrix_room_id(&room_id)?;
-
-    let mut lock = state.clients.lock().await;
-    let client = lock.get_mut(&server_id).ok_or(ApiError::NotConnected)?;
-
-    let response = client
-        .execute_command(&format!("rooms info {room_id}"), server_id, &state.db)
-        .await?;
-    Ok(Json(json!({ "response": response })))
-}
-
 pub async fn server_status(
     State(state): State<SharedState>,
     _user: AuthUser,
