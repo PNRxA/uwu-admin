@@ -39,7 +39,7 @@ export const useConnectionStore = defineStore('connection', () => {
       }
       // Auto-select first server if none selected
       if (activeServerId.value === null && servers.value.length > 0) {
-        activeServerId.value = servers.value[0].id
+        activeServerId.value = servers.value[0]?.id ?? null
       }
       loaded.value = true
     } catch (e) {
@@ -82,7 +82,7 @@ export const useConnectionStore = defineStore('connection', () => {
     await api.removeServer(id)
     servers.value = servers.value.filter((s) => s.id !== id)
     if (activeServerId.value === id) {
-      activeServerId.value = servers.value.length > 0 ? servers.value[0].id : null
+      activeServerId.value = servers.value[0]?.id ?? null
       queryClient.clear()
     }
   }

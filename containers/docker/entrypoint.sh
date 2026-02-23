@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 set -e
 
 # Start the API in the background
@@ -13,6 +13,26 @@ cleanup() {
     exit 0
 }
 trap cleanup TERM INT
+
+# Wait for the API to be ready before starting nginx
+API_HOST="${API_LISTEN%%:*}"
+API_PORT="${API_LISTEN##*:}"
+echo "Waiting for API on ${API_HOST}:${API_PORT}..."
+for i in $(seq 1 30); do
+    if ! kill -0 "$API_PID" 2>/dev/null; then
+        echo "ERROR: API process exited unexpectedly"
+        exit 1
+    fi
+    if (echo >/dev/tcp/"$API_HOST"/"$API_PORT") 2>/dev/null; then
+        echo "API is ready"
+        break
+    fi
+    if [ "$i" -eq 30 ]; then
+        echo "ERROR: API did not become ready in 30s"
+        exit 1
+    fi
+    sleep 1
+done
 
 # Start nginx in the foreground
 nginx

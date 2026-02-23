@@ -22,6 +22,19 @@ systemctl --user daemon-reload
 
 For rootful (`/etc/containers/systemd/`), omit `--user` from systemctl commands.
 
+## Configure secrets
+
+Before starting the service, edit `uwu-admin.container` and replace the
+placeholder values for `JWT_SECRET` and `ENCRYPTION_KEY` with real 32-byte hex
+keys:
+
+```sh
+openssl rand -hex 32
+```
+
+Set each generated value in the `Environment=` lines. The service will fail to
+start if these are left as the defaults.
+
 ## Start the service
 
 ```sh
@@ -54,3 +67,21 @@ systemctl --user stop uwu-admin
 ```
 
 The admin panel will be available at `http://localhost:8080`.
+
+## Development script
+
+A helper script at `scripts/quadlet-dev.sh` wraps all of the above for quick
+iteration:
+
+```sh
+./scripts/quadlet-dev.sh start    # build image, install quadlet files, start service
+./scripts/quadlet-dev.sh stop     # stop the service
+./scripts/quadlet-dev.sh restart  # restart the service
+./scripts/quadlet-dev.sh status   # show service status and recent logs
+./scripts/quadlet-dev.sh logs     # follow journal logs
+./scripts/quadlet-dev.sh destroy  # stop service, remove quadlet files, volume, and image
+```
+
+`destroy` tears down everything: stops the service, deletes the quadlet unit
+files from `~/.config/containers/systemd/`, removes the container, volume, and
+image so you can start fresh.

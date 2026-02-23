@@ -37,20 +37,19 @@ export const useCommandStore = defineStore('command', () => {
     if (history.value.length > MAX_HISTORY) {
       history.value = history.value.slice(-MAX_HISTORY)
     }
-    const idx = history.value.length - 1
 
     try {
       const res = await api.command(serverId, command)
-      history.value[idx].response = res.response
-      history.value[idx].success = true
+      entry.response = res.response
+      entry.success = true
     } catch (e) {
-      history.value[idx].response = e instanceof Error ? e.message : 'Command failed'
-      history.value[idx].success = false
+      entry.response = e instanceof Error ? e.message : 'Command failed'
+      entry.success = false
     } finally {
       loading.value = false
     }
 
-    return history.value[idx]
+    return entry
   }
 
   function clear() {

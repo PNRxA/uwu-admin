@@ -8,8 +8,8 @@ Image=localhost/uwu-admin:latest
 PublishPort=8080:8080
 Volume=uwu-data.volume:/data
 # Generate with: openssl rand -hex 32
-Environment=JWT_SECRET=
-Environment=ENCRYPTION_KEY=
+Environment=JWT_SECRET=0000000000000000000000000000000000000000000000000000000000000000
+Environment=ENCRYPTION_KEY=0000000000000000000000000000000000000000000000000000000000000000
 
 [Install]
 WantedBy=default.target

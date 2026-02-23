@@ -23,22 +23,24 @@ export function parseResponse(html: string): ParsedResponse {
   // Detect optional header: "Something (N):" or "Something:" as the first line
   let header: string | null = null
   let dataLines = lines
-  if (lines.length >= 2 && /^.+?(?:\s*\(\d+\))?:\s*$/.test(lines[0])) {
-    header = lines[0].replace(/:\s*$/, '')
+  const firstLine = lines[0]
+  if (lines.length >= 2 && firstLine && /^.+?(?:\s*\(\d+\))?:\s*$/.test(firstLine)) {
+    header = firstLine.replace(/:\s*$/, '')
     dataLines = lines.slice(1)
   }
 
   if (dataLines.length === 0) return { type: 'text', text: text.trim() }
 
   // Table: lines with labeled fields like "!roomid  Members: N  Name: X"
-  if (/^!\S+\s+[A-Z]\w*:/.test(dataLines[0])) {
+  const firstDataLine = dataLines[0]
+  if (firstDataLine && /^!\S+\s+[A-Z]\w*:/.test(firstDataLine)) {
     // Extract column names using "Key: Value" pairs (values end at next "Key: " or EOL)
     const fieldRe = /([A-Z]\w*):\s+(.*?)(?=\s+[A-Z]\w*:\s|$)/g
     const columns: string[] = ['ID']
-    const firstRest = dataLines[0].replace(/^!\S+\s+/, '')
+    const firstRest = firstDataLine.replace(/^!\S+\s+/, '')
     let m: RegExpExecArray | null
     while ((m = fieldRe.exec(firstRest)) !== null) {
-      columns.push(m[1])
+      if (m[1]) columns.push(m[1])
     }
 
     const rows = dataLines
@@ -50,7 +52,7 @@ export function parseResponse(html: string): ParsedResponse {
         const fp = /([A-Z]\w*):\s+(.*?)(?=\s+[A-Z]\w*:\s|$)/g
         let fm: RegExpExecArray | null
         while ((fm = fp.exec(rest)) !== null) {
-          values.push(fm[2].trim())
+          if (fm[2]) values.push(fm[2].trim())
         }
         return values
       })

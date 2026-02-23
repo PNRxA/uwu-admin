@@ -4,12 +4,14 @@ WORKDIR /build/web
 COPY web/package.json web/package-lock.json* ./
 RUN npm ci
 COPY web/ ./
+COPY shared/ /build/shared/
 RUN npm run build
 
 # Stage 2: Build API
 FROM rust:1-slim-bookworm AS backend
 WORKDIR /build/api
 COPY api/ ./
+COPY shared/ /build/shared/
 RUN cargo build --release
 
 # Stage 3: Runtime
