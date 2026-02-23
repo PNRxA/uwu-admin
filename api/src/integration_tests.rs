@@ -20,7 +20,7 @@ async fn test_state() -> SharedState {
 }
 
 fn test_app_with_state(state: SharedState) -> Router {
-    crate::build_router(state)
+    crate::routes::build_router(state)
 }
 
 async fn test_app() -> Router {
