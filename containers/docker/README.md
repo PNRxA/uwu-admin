@@ -15,7 +15,7 @@ docker compose up -d
 
 ```sh
 docker build -f containers/docker/Dockerfile -t uwu-admin .
-docker run -d -p 8080:80 -v uwu-data:/data --name uwu-admin uwu-admin
+docker run -d -p 8080:8080 -v uwu-data:/data --name uwu-admin uwu-admin
 ```
 
 ## Manage
