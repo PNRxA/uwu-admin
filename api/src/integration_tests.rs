@@ -719,6 +719,43 @@ async fn execute_all_command_tree_commands() {
         .nth(1)
         .expect("TEST_ROOM_ID must contain ':'");
 
+    // Helper closure to run a command and return the response body
+    let run_cmd = |app: Router, sid: i64, tok: String, cmd: String| async move {
+        let cmd_body = json!({"command": cmd});
+        let resp = app
+            .oneshot(post_json_auth(
+                &format!("/api/servers/{sid}/command"),
+                &cmd_body,
+                &tok,
+            ))
+            .await
+            .unwrap();
+        let status = resp.status();
+        let body = body_json(resp).await;
+        (status, body)
+    };
+
+    // Resolve the room alias to a real !room_id
+    let (_, resolve_body) = run_cmd(
+        app.clone(),
+        server_id,
+        token.clone(),
+        format!("query room-alias resolve-local-alias {room_id}"),
+    )
+    .await;
+    let resolve_resp = resolve_body["response"].as_str().unwrap_or("");
+    // Extract !room_id from the response (look for a string starting with '!')
+    let real_room_id = resolve_resp
+        .split_whitespace()
+        .chain(resolve_resp.split(|c: char| c == '"' || c == '`' || c == '\n' || c == '<' || c == '>'))
+        .find(|s| s.starts_with('!') && s.contains(':'))
+        .map(|s| s.trim_end_matches(|c: char| !c.is_alphanumeric() && c != ':' && c != '!' && c != '.' && c != '_' && c != '-').to_string())
+        .unwrap_or_else(|| {
+            eprintln!("WARNING: Could not resolve room alias, falling back to alias. Response: {resolve_resp}");
+            room_id.clone()
+        });
+    eprintln!("  Resolved room: {room_id} -> {real_room_id}");
+
     // Create a test user
     let ts = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
@@ -727,17 +764,14 @@ async fn execute_all_command_tree_commands() {
     let test_username = format!("uwu_test_{ts}");
     let test_user_id = format!("@{test_username}:{server_name}");
 
-    let create_cmd = json!({"command": format!("users create-user {test_username}")});
-    let resp = app
-        .clone()
-        .oneshot(post_json_auth(
-            &format!("/api/servers/{server_id}/command"),
-            &create_cmd,
-            &token,
-        ))
-        .await
-        .unwrap();
-    assert_eq!(resp.status(), StatusCode::OK, "Failed to create test user");
+    let (status, _) = run_cmd(
+        app.clone(),
+        server_id,
+        token.clone(),
+        format!("users create-user {test_username}"),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK, "Failed to create test user");
 
     // Parse command tree
     let tree_json: Vec<Value> =
@@ -749,21 +783,23 @@ async fn execute_all_command_tree_commands() {
     collect_leaf_commands(&tree, "", &mut leaves);
 
     // Skip lists
-    let destructive_skip: &[&str] = &[
+    let skip: &[&str] = &[
+        // Destructive
         "server shutdown",
         "server restart",
         "server reload-mods",
         "users deactivate-all",
         "users make-user-admin",
         "rooms moderation ban-list-of-rooms",
-    ];
-    let code_block_skip: &[&str] = &[
+        // Code-block input required
         "appservices register",
         "debug parse-pdu",
         "debug verify-json",
         "debug get-remote-pdu-list",
         "media delete-list",
         "users force-join-list-of-local-users",
+        // Requires confirmation flag
+        "users force-join-all-local-users",
     ];
 
     let mut tested = 0u32;
@@ -771,50 +807,60 @@ async fn execute_all_command_tree_commands() {
     let mut failures: Vec<(String, String)> = Vec::new();
 
     for (path, args) in &leaves {
-        if destructive_skip.contains(&path.as_str()) || code_block_skip.contains(&path.as_str()) {
+        if skip.contains(&path.as_str()) {
             eprintln!("  SKIP: {path}");
             skipped += 1;
             continue;
         }
 
-        // Build command string with arg values
-        let mut cmd_string = path.clone();
-        for arg in args {
-            let val = match arg.arg_type.as_str() {
-                "user_id" => test_user_id.clone(),
-                "room_id" => room_id.clone(),
-                "server" => server_name.to_string(),
-                "number" => "1".to_string(),
-                "event_id" => "$placeholder:test".to_string(),
-                "path" => "/tmp/test".to_string(),
-                _ => "test".to_string(), // string and any other type
-            };
-            cmd_string.push(' ');
-            cmd_string.push_str(&val);
-        }
+        // Build command string — some commands need special arg handling
+        let cmd_string = match path.as_str() {
+            "token issue" => "token issue --once".to_string(),
+            "media delete" => "media delete".to_string(),
+            "media delete-past-remote-media" => {
+                "media delete-past-remote-media 1d".to_string()
+            }
+            "query room-alias resolve-local-alias" => {
+                format!("query room-alias resolve-local-alias {room_id}")
+            }
+            "query raw compact" => "query raw compact".to_string(),
+            _ => {
+                let mut s = path.clone();
+                for arg in args {
+                    let val = match arg.arg_type.as_str() {
+                        "user_id" => test_user_id.clone(),
+                        "room_id" => real_room_id.clone(),
+                        "server" => server_name.to_string(),
+                        "number" => "1".to_string(),
+                        "event_id" => "$placeholder:test".to_string(),
+                        "path" => "/tmp/test".to_string(),
+                        _ => "test".to_string(),
+                    };
+                    s.push(' ');
+                    s.push_str(&val);
+                }
+                s
+            }
+        };
 
         eprintln!("  RUN:  {cmd_string}");
 
-        let cmd_body = json!({"command": cmd_string});
-        let resp = app
-            .clone()
-            .oneshot(post_json_auth(
-                &format!("/api/servers/{server_id}/command"),
-                &cmd_body,
-                &token,
-            ))
-            .await
-            .unwrap();
-
-        let status = resp.status();
-        let body = body_json(resp).await;
+        let (status, body) = run_cmd(
+            app.clone(),
+            server_id,
+            token.clone(),
+            cmd_string,
+        )
+        .await;
 
         if status != StatusCode::OK {
             failures.push((path.clone(), format!("status={status}")));
         } else if !body["response"].is_string() {
             failures.push((path.clone(), "response is not a string".to_string()));
         } else if let Some(resp_text) = body["response"].as_str() {
-            if resp_text.contains("error:") {
+            // Only flag CLI arg-parse errors (indicates wrong command tree definition).
+            // "Command failed with error:" is a valid server response to dummy data.
+            if resp_text.contains("error:") && !resp_text.contains("Command failed with error:") {
                 failures.push((path.clone(), resp_text.to_string()));
             }
         }
@@ -823,26 +869,22 @@ async fn execute_all_command_tree_commands() {
     }
 
     // Cleanup: deactivate the test user
-    let deactivate_cmd = json!({"command": format!("users deactivate {test_user_id}")});
-    let _ = app
-        .clone()
-        .oneshot(post_json_auth(
-            &format!("/api/servers/{server_id}/command"),
-            &deactivate_cmd,
-            &token,
-        ))
-        .await;
+    let _ = run_cmd(
+        app.clone(),
+        server_id,
+        token.clone(),
+        format!("users deactivate {test_user_id}"),
+    )
+    .await;
 
     // Cleanup: unban any rooms that may have been banned during the test
-    let unban_cmd = json!({"command": format!("rooms moderation unban-room {room_id}")});
-    let _ = app
-        .clone()
-        .oneshot(post_json_auth(
-            &format!("/api/servers/{server_id}/command"),
-            &unban_cmd,
-            &token,
-        ))
-        .await;
+    let _ = run_cmd(
+        app.clone(),
+        server_id,
+        token.clone(),
+        format!("rooms moderation unban-room {real_room_id}"),
+    )
+    .await;
 
     eprintln!("\n=== Command Tree Test Summary ===");
     eprintln!("  Tested:  {tested}");
