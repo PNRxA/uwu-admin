@@ -99,6 +99,8 @@ This runs `cargo xtask generate-command-tree` in the sibling `../continuwuity` d
 
 ## Testing
 
+### API
+
 ```sh
 cd api
 cargo test                    # Unit tests (no server needed)
@@ -118,6 +120,21 @@ Integration tests require a running Continuwuity instance. Set the following env
 | `TEST_ROOM_ID` | Admin room ID or alias |
 
 The integration suite includes an exhaustive command tree test that walks every leaf command in `shared/command-tree.json`, sends it to the server with appropriate test arguments (matching each arg's type — user IDs, room IDs, event IDs, numbers, etc.), and verifies the command parses successfully. This catches any drift between the generated command tree and the actual server command definitions.
+
+### Web
+
+```sh
+cd web
+npm test              # Run all tests once
+npm run test:watch    # Run in watch mode during development
+```
+
+Uses [Vitest](https://vitest.dev/) with jsdom. Tests cover:
+
+- **Lib utilities** — response parser (all 4 output branches), HTML sanitization, query key factories, Tailwind class merging
+- **Composables** — command autocomplete suggestions, argument hints, input validation
+- **API layer** — token management, auth header injection, error handling, 401 refresh flow, request timeouts
+- **Pinia stores** — auth (login/register/logout), command execution and history, server connection management
 
 ## Pages
 
