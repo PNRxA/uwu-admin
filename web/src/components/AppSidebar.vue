@@ -62,7 +62,7 @@ async function handleLogout() {
         <SidebarGroupContent>
           <SidebarMenu>
             <SidebarMenuItem v-for="item in navItems" :key="item.title">
-              <SidebarMenuButton as-child :tooltip="item.title">
+              <SidebarMenuButton as-child :tooltip="item.title" :is-active="item.to === '/' ? route.path === '/' : route.path.startsWith(item.to)">
                 <RouterLink :to="item.to">
                   <component :is="item.icon" />
                   <span>{{ item.title }}</span>
