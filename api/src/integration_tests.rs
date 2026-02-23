@@ -620,6 +620,251 @@ mod csrf_tests {
     }
 }
 
+// ========== Exhaustive command-tree integration test ==========
+
+#[derive(Debug)]
+struct TestArg {
+    name: String,
+    arg_type: String,
+    required: bool,
+}
+
+#[derive(Debug)]
+struct TestNode {
+    name: String,
+    children: Vec<TestNode>,
+    args: Vec<TestArg>,
+}
+
+fn parse_command_tree(value: &[Value]) -> Vec<TestNode> {
+    value
+        .iter()
+        .map(|v| {
+            let name = v["name"].as_str().unwrap_or("").to_string();
+            let children = v
+                .get("children")
+                .and_then(|c| c.as_array())
+                .map(|arr| parse_command_tree(arr))
+                .unwrap_or_default();
+            let args = v
+                .get("args")
+                .and_then(|a| a.as_array())
+                .map(|arr| {
+                    arr.iter()
+                        .map(|a| TestArg {
+                            name: a["name"].as_str().unwrap_or("").to_string(),
+                            arg_type: a["type"].as_str().unwrap_or("string").to_string(),
+                            required: a["required"].as_bool().unwrap_or(false),
+                        })
+                        .collect()
+                })
+                .unwrap_or_default();
+            TestNode { name, children, args }
+        })
+        .collect()
+}
+
+fn collect_leaf_commands<'a>(
+    nodes: &'a [TestNode],
+    prefix: &str,
+    out: &mut Vec<(String, Vec<&'a TestArg>)>,
+) {
+    for node in nodes {
+        let path = if prefix.is_empty() {
+            node.name.clone()
+        } else {
+            format!("{prefix} {}", node.name)
+        };
+        if node.children.is_empty() {
+            let args: Vec<&TestArg> = node.args.iter().collect();
+            out.push((path, args));
+        } else {
+            collect_leaf_commands(&node.children, &path, out);
+        }
+    }
+}
+
+#[tokio::test]
+#[serial]
+async fn execute_all_command_tree_commands() {
+    let _ = dotenvy::dotenv();
+    let Some((homeserver, username, password, room_id)) = test_server_env() else {
+        eprintln!("Skipping execute_all_command_tree_commands: env vars not set");
+        return;
+    };
+
+    let state = test_state().await;
+    let app = test_app_with_state(state);
+    let (token, _) = do_setup(&app).await;
+
+    // Add server
+    let body = json!({
+        "homeserver": homeserver,
+        "username": username,
+        "password": password,
+        "room_id": room_id,
+    });
+    let resp = app
+        .clone()
+        .oneshot(post_json_auth("/api/servers", &body, &token))
+        .await
+        .unwrap();
+    assert_eq!(resp.status(), StatusCode::OK);
+    let json = body_json(resp).await;
+    let server_id = json["id"].as_i64().unwrap();
+
+    // Extract server name from room_id (part after ':')
+    let server_name = room_id
+        .split(':')
+        .nth(1)
+        .expect("TEST_ROOM_ID must contain ':'");
+
+    // Create a test user
+    let ts = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap()
+        .as_secs();
+    let test_username = format!("uwu_test_{ts}");
+    let test_user_id = format!("@{test_username}:{server_name}");
+
+    let create_cmd = json!({"command": format!("users create-user {test_username}")});
+    let resp = app
+        .clone()
+        .oneshot(post_json_auth(
+            &format!("/api/servers/{server_id}/command"),
+            &create_cmd,
+            &token,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(resp.status(), StatusCode::OK, "Failed to create test user");
+
+    // Parse command tree
+    let tree_json: Vec<Value> =
+        serde_json::from_str(include_str!("../../shared/command-tree.json"))
+            .expect("Failed to parse command-tree.json");
+    let tree = parse_command_tree(&tree_json);
+
+    let mut leaves = Vec::new();
+    collect_leaf_commands(&tree, "", &mut leaves);
+
+    // Skip lists
+    let destructive_skip: &[&str] = &[
+        "server shutdown",
+        "server restart",
+        "server reload-mods",
+        "users deactivate-all",
+        "users make-user-admin",
+        "rooms moderation ban-list-of-rooms",
+    ];
+    let code_block_skip: &[&str] = &[
+        "appservices register",
+        "debug parse-pdu",
+        "debug verify-json",
+        "debug get-remote-pdu-list",
+        "media delete-list",
+        "users force-join-list-of-local-users",
+    ];
+
+    let mut tested = 0u32;
+    let mut skipped = 0u32;
+    let mut failures: Vec<(String, String)> = Vec::new();
+
+    for (path, args) in &leaves {
+        if destructive_skip.contains(&path.as_str()) || code_block_skip.contains(&path.as_str()) {
+            eprintln!("  SKIP: {path}");
+            skipped += 1;
+            continue;
+        }
+
+        // Build command string with arg values
+        let mut cmd_string = path.clone();
+        for arg in args {
+            let val = match arg.arg_type.as_str() {
+                "user_id" => test_user_id.clone(),
+                "room_id" => room_id.clone(),
+                "server" => server_name.to_string(),
+                "number" => "1".to_string(),
+                "event_id" => "$placeholder:test".to_string(),
+                "path" => "/tmp/test".to_string(),
+                _ => "test".to_string(), // string and any other type
+            };
+            cmd_string.push(' ');
+            cmd_string.push_str(&val);
+        }
+
+        eprintln!("  RUN:  {cmd_string}");
+
+        let cmd_body = json!({"command": cmd_string});
+        let resp = app
+            .clone()
+            .oneshot(post_json_auth(
+                &format!("/api/servers/{server_id}/command"),
+                &cmd_body,
+                &token,
+            ))
+            .await
+            .unwrap();
+
+        let status = resp.status();
+        let body = body_json(resp).await;
+
+        if status != StatusCode::OK {
+            failures.push((path.clone(), format!("status={status}")));
+        } else if !body["response"].is_string() {
+            failures.push((path.clone(), "response is not a string".to_string()));
+        } else if let Some(resp_text) = body["response"].as_str() {
+            if resp_text.contains("error:") {
+                failures.push((path.clone(), resp_text.to_string()));
+            }
+        }
+
+        tested += 1;
+    }
+
+    // Cleanup: deactivate the test user
+    let deactivate_cmd = json!({"command": format!("users deactivate {test_user_id}")});
+    let _ = app
+        .clone()
+        .oneshot(post_json_auth(
+            &format!("/api/servers/{server_id}/command"),
+            &deactivate_cmd,
+            &token,
+        ))
+        .await;
+
+    // Cleanup: unban any rooms that may have been banned during the test
+    let unban_cmd = json!({"command": format!("rooms moderation unban-room {room_id}")});
+    let _ = app
+        .clone()
+        .oneshot(post_json_auth(
+            &format!("/api/servers/{server_id}/command"),
+            &unban_cmd,
+            &token,
+        ))
+        .await;
+
+    eprintln!("\n=== Command Tree Test Summary ===");
+    eprintln!("  Tested:  {tested}");
+    eprintln!("  Skipped: {skipped}");
+    eprintln!("  Failed:  {}", failures.len());
+
+    if !failures.is_empty() {
+        for (path, reason) in &failures {
+            eprintln!("  FAIL: {path} — {reason}");
+        }
+        panic!(
+            "{} command(s) failed: {}",
+            failures.len(),
+            failures
+                .iter()
+                .map(|(p, r)| format!("{p} ({r})"))
+                .collect::<Vec<_>>()
+                .join(", ")
+        );
+    }
+}
+
 // ========== Server management (require a live homeserver) ==========
 
 /// Read integration-test env vars. Returns `None` if any are missing,

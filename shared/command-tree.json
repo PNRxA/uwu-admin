@@ -408,7 +408,7 @@
         ]
       },
       {
-        "name": "list-tokens",
+        "name": "list",
         "description": "List all registration tokens"
       }
     ]
