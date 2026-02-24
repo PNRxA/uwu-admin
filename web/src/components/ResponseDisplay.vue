@@ -2,7 +2,6 @@
 import { computed, ref } from 'vue'
 import { useVirtualizer } from '@tanstack/vue-virtual'
 import { parseResponse, type ParsedResponse } from '@/lib/response-parser'
-import type { ParsedResponse as ApiParsedResponse } from '@/lib/api'
 import { Table, TableBody, TableCell, TableRow } from '@/components/ui/table'
 
 function showTitleIfTruncated(e: MouseEvent) {
@@ -10,11 +9,9 @@ function showTitleIfTruncated(e: MouseEvent) {
   el.title = el.scrollWidth > el.clientWidth ? el.textContent ?? '' : ''
 }
 
-const props = defineProps<{ response: string; parsed?: ApiParsedResponse }>()
+const props = defineProps<{ response: string }>()
 
-const resolvedParsed = computed<ParsedResponse>(() =>
-  props.parsed ?? parseResponse(props.response),
-)
+const resolvedParsed = computed<ParsedResponse>(() => parseResponse(props.response))
 
 const tableScrollRef = ref<HTMLElement | null>(null)
 

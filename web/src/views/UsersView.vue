@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n'
 import { useQuery, useQueryClient } from '@tanstack/vue-query'
 import { useConnectionStore } from '@/stores/connection'
 import { useCommandStore } from '@/stores/command'
+import { parseResponse } from '@/lib/response-parser'
 import { queryKeys } from '@/lib/query-keys'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -52,7 +53,8 @@ const creating = ref(false)
 
 const users = computed(() => {
   if (!usersResponse.value) return []
-  const { parsed, response } = usersResponse.value
+  const { response } = usersResponse.value
+  const parsed = parseResponse(response)
   if (parsed.type === 'list') {
     return parsed.items
   }

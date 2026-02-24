@@ -37,7 +37,6 @@ describe('useCommandStore', () => {
     it('calls api.command and records success in history', async () => {
       vi.mocked(api.command).mockResolvedValue({
         response: 'OK',
-        parsed: { type: 'text', text: 'OK' },
       })
       selectServer(1)
       const store = useCommandStore()
@@ -71,7 +70,7 @@ describe('useCommandStore', () => {
       const store = useCommandStore()
       const p = store.execute('cmd')
       expect(store.loading).toBe(true)
-      resolve!({ response: 'OK', parsed: { type: 'text', text: 'OK' } })
+      resolve!({ response: 'OK' })
       await p
       expect(store.loading).toBe(false)
     })
@@ -81,7 +80,6 @@ describe('useCommandStore', () => {
     it('caps history at 500 entries', async () => {
       vi.mocked(api.command).mockResolvedValue({
         response: 'OK',
-        parsed: { type: 'text', text: 'OK' },
       })
       selectServer(1)
       const store = useCommandStore()
@@ -97,7 +95,6 @@ describe('useCommandStore', () => {
     it('empties history', async () => {
       vi.mocked(api.command).mockResolvedValue({
         response: 'OK',
-        parsed: { type: 'text', text: 'OK' },
       })
       selectServer(1)
       const store = useCommandStore()

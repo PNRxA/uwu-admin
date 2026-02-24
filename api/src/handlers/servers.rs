@@ -117,7 +117,6 @@ pub async fn command(
     if plain.to_lowercase().contains("error:") {
         return Err(ApiError::CommandFailed(plain.trim().to_string()));
     }
-    let parsed = response::parse_response(&raw);
-    Ok(Json(json!({ "response": raw, "parsed": parsed })))
+    Ok(Json(json!({ "response": raw })))
 }
 
