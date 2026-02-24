@@ -95,7 +95,7 @@ To regenerate it after continuwuity's admin commands change:
 ./scripts/update-command-tree.sh
 ```
 
-This runs `cargo xtask generate-command-tree` in the sibling `../continuwuity` directory and writes the output to `shared/command-tree.json`. Build prerequisites for the xtask are the same as for continuwuity itself (Rust, C/C++ compiler, libclang, liburing, make).
+This runs `cargo xtask generate-command-tree` in the sibling `../continuwuity` uwu-admin specific fork directory (it will clone the repo if it doesn't exist) and writes the output to `shared/command-tree.json`. Build prerequisites for the xtask are the same as for continuwuity itself (Rust, C/C++ compiler, libclang, liburing, make).
 
 ## Testing
 
