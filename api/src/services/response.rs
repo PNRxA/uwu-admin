@@ -115,7 +115,7 @@ pub fn parse_response(html: &str) -> ParsedResponse {
     let lines: Vec<&str> = text
         .lines()
         .map(|l| l.trim())
-        .filter(|l| !l.is_empty())
+        .filter(|l| !l.is_empty() && !l.starts_with("```"))
         .collect();
 
     if lines.is_empty() {
@@ -174,6 +174,21 @@ pub fn parse_response(html: &str) -> ParsedResponse {
                 rows,
             };
         }
+    }
+
+    // Pipe-delimited table: all lines contain " | "
+    if data_lines.iter().all(|l| l.contains(" | ")) {
+        let rows: Vec<Vec<String>> = data_lines
+            .iter()
+            .map(|l| l.split(" | ").map(|s| s.trim().to_string()).collect())
+            .collect();
+        let col_count = rows.first().map_or(0, |r| r.len());
+        let columns = vec![String::new(); col_count];
+        return ParsedResponse::Table {
+            header,
+            columns,
+            rows,
+        };
     }
 
     // List: all lines are identifiers

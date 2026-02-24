@@ -246,12 +246,24 @@ impl MatrixClient {
                     let sender = event["sender"].as_str().unwrap_or_default();
                     let msg_type = event["type"].as_str().unwrap_or_default();
                     if sender != self.user_id && msg_type == "m.room.message" {
-                        let body = event["content"]["body"]
+                        let content = &event["content"];
+                        let msgtype = content["msgtype"].as_str().unwrap_or_default();
+
+                        // If the bot sent a file (output too large for text),
+                        // download the file content via the media API.
+                        if msgtype == "m.file" {
+                            if let Some(mxc_url) = content["url"].as_str() {
+                                return self.download_mxc(mxc_url).await;
+                            }
+                            tracing::warn!("m.file event missing url field");
+                        }
+
+                        let body = content["body"]
                             .as_str()
                             .unwrap_or_default()
                             .to_string();
                         // Also check formatted_body for HTML responses
-                        let formatted = event["content"]["formatted_body"]
+                        let formatted = content["formatted_body"]
                             .as_str()
                             .map(|s| s.to_string());
                         return Ok(formatted.unwrap_or(body));
@@ -261,6 +273,59 @@ impl MatrixClient {
         }
 
         Err(ApiError::Timeout)
+    }
+
+    /// Download a file from a Matrix `mxc://` URL and return its contents as a
+    /// UTF-8 string.
+    async fn download_mxc(&self, mxc_url: &str) -> Result<String, ApiError> {
+        // mxc://server_name/media_id -> /_matrix/media/v3/download/server_name/media_id
+        let path = mxc_url
+            .strip_prefix("mxc://")
+            .ok_or_else(|| ApiError::MatrixError(format!("Invalid mxc URL: {mxc_url}")))?;
+
+        let url = format!(
+            "{}/_matrix/media/{MATRIX_API_VERSION}/download/{path}",
+            self.homeserver
+        );
+
+        let resp = self
+            .http
+            .get(&url)
+            .bearer_auth(&self.access_token)
+            .send()
+            .await
+            .map_err(|e| ApiError::MatrixError(e.to_string()))?;
+
+        if !resp.status().is_success() {
+            let text = resp.text().await.unwrap_or_default();
+            return Err(ApiError::MatrixError(format!(
+                "Failed to download media: {text}"
+            )));
+        }
+
+        const MAX_MEDIA_SIZE: u64 = 10 * 1024 * 1024; // 10 MiB
+        if let Some(len) = resp.content_length() {
+            if len > MAX_MEDIA_SIZE {
+                return Err(ApiError::MatrixError(format!(
+                    "Media too large ({len} bytes, max {MAX_MEDIA_SIZE})"
+                )));
+            }
+        }
+
+        let bytes = resp
+            .bytes()
+            .await
+            .map_err(|e| ApiError::MatrixError(e.to_string()))?;
+
+        if bytes.len() as u64 > MAX_MEDIA_SIZE {
+            return Err(ApiError::MatrixError(format!(
+                "Media too large ({} bytes, max {MAX_MEDIA_SIZE})",
+                bytes.len()
+            )));
+        }
+
+        String::from_utf8(bytes.to_vec())
+            .map_err(|e| ApiError::MatrixError(format!("Media is not valid UTF-8: {e}")))
     }
 
     /// Non-blocking sync that advances the `since` token to the present moment,

@@ -16,7 +16,7 @@ const IDENTIFIER_RE = /^[@!#]\S+:\S+$/
 export function parseResponse(html: string): ParsedResponse {
   const text = stripHtml(html)
   const rawLines = text.split(/\r?\n/)
-  const lines = rawLines.map((l) => l.trim()).filter(Boolean)
+  const lines = rawLines.map((l) => l.trim()).filter((l) => l && !l.startsWith('```'))
 
   if (lines.length === 0) return { type: 'text', text: text.trim() || '(empty response)' }
 
@@ -59,6 +59,13 @@ export function parseResponse(html: string): ParsedResponse {
       .filter((r): r is string[] => r !== null)
 
     if (rows.length > 0) return { type: 'table', header, columns, rows }
+  }
+
+  // Pipe-delimited table: all lines contain " | "
+  if (dataLines.every((l) => l.includes(' | '))) {
+    const rows = dataLines.map((l) => l.split(' | ').map((s) => s.trim()))
+    const columns = Array.from<string>({ length: rows[0]?.length ?? 0 }).fill('')
+    return { type: 'table', header, columns, rows }
   }
 
   // List: all lines are identifiers (@user:server, !room:server, #alias:server)
