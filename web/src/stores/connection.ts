@@ -90,6 +90,15 @@ export const useConnectionStore = defineStore('connection', () => {
     }
   }
 
+  function reset() {
+    servers.value = []
+    activeServerId.value = null
+    loading.value = false
+    error.value = ''
+    loaded.value = false
+    queryClient.clear()
+  }
+
   return {
     servers,
     activeServerId,
@@ -104,5 +113,6 @@ export const useConnectionStore = defineStore('connection', () => {
     setActiveServer,
     addServer,
     removeServer,
+    reset,
   }
 })

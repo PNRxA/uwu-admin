@@ -3,6 +3,10 @@ import { createTestingPinia } from '@pinia/testing'
 import { useAuthStore } from '../auth'
 import { api } from '@/lib/api'
 
+vi.mock('@tanstack/vue-query', () => ({
+  useQueryClient: () => ({ clear: vi.fn() }),
+}))
+
 vi.mock('@/lib/api', () => ({
   api: {
     authStatus: vi.fn(),
@@ -96,9 +100,11 @@ describe('useAuthStore', () => {
       const store = useAuthStore()
       store.token = 'tk'
       store.authenticated = true
+      store.initialized = true
       await store.logout()
       expect(store.token).toBeNull()
       expect(store.authenticated).toBe(false)
+      expect(store.initialized).toBe(false)
     })
 
     it('clears state even when API call fails', async () => {
@@ -106,9 +112,11 @@ describe('useAuthStore', () => {
       const store = useAuthStore()
       store.token = 'tk'
       store.authenticated = true
+      store.initialized = true
       await store.logout()
       expect(store.token).toBeNull()
       expect(store.authenticated).toBe(false)
+      expect(store.initialized).toBe(false)
     })
   })
 })

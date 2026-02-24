@@ -1,6 +1,8 @@
 import { ref } from 'vue'
 import { defineStore } from 'pinia'
 import { api, setAuthToken, setRefreshToken, loadAuthToken, clearAllTokens } from '@/lib/api'
+import { useConnectionStore } from '@/stores/connection'
+import { useCommandStore } from '@/stores/command'
 import i18n from '@/i18n'
 
 const t = i18n.global.t
@@ -73,6 +75,9 @@ export const useAuthStore = defineStore('auth', () => {
     token.value = null
     clearAllTokens()
     authenticated.value = false
+    initialized.value = false
+    useConnectionStore().reset()
+    useCommandStore().clear()
   }
 
   return {
