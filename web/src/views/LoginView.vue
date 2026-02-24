@@ -40,33 +40,39 @@ async function onSubmit() {
       </CardHeader>
       <CardContent>
         <form class="flex flex-col gap-4" @submit.prevent="onSubmit">
-          <Alert v-if="auth.error" variant="destructive">
-            <AlertDescription>{{ auth.error }}</AlertDescription>
+          <Alert v-if="auth.apiUnavailable" variant="destructive">
+            <AlertDescription>{{ $t('login.apiUnavailable') }}</AlertDescription>
           </Alert>
 
-          <div class="flex flex-col gap-2">
-            <Label for="username">{{ $t('login.username') }}</Label>
-            <Input
-              id="username"
-              v-model="username"
-              placeholder="admin"
-              required
-            />
-          </div>
+          <template v-else>
+            <Alert v-if="auth.error" variant="destructive">
+              <AlertDescription>{{ auth.error }}</AlertDescription>
+            </Alert>
 
-          <div class="flex flex-col gap-2">
-            <Label for="password">{{ $t('login.password') }}</Label>
-            <Input
-              id="password"
-              v-model="password"
-              type="password"
-              required
-            />
-          </div>
+            <div class="flex flex-col gap-2">
+              <Label for="username">{{ $t('login.username') }}</Label>
+              <Input
+                id="username"
+                v-model="username"
+                placeholder="admin"
+                required
+              />
+            </div>
 
-          <Button type="submit" class="w-full" :disabled="auth.loading">
-            {{ auth.loading ? $t('login.signingIn') : $t('login.signIn') }}
-          </Button>
+            <div class="flex flex-col gap-2">
+              <Label for="password">{{ $t('login.password') }}</Label>
+              <Input
+                id="password"
+                v-model="password"
+                type="password"
+                required
+              />
+            </div>
+
+            <Button type="submit" class="w-full" :disabled="auth.loading">
+              {{ auth.loading ? $t('login.signingIn') : $t('login.signIn') }}
+            </Button>
+          </template>
         </form>
       </CardContent>
     </Card>

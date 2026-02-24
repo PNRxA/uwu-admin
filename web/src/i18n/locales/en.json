@@ -26,7 +26,8 @@
     "username": "Username",
     "password": "Password",
     "signIn": "Sign In",
-    "signingIn": "Signing in..."
+    "signingIn": "Signing in...",
+    "apiUnavailable": "Unable to reach the API server. Please check that it is running and accessible."
   },
   "setup": {
     "description": "Create your admin account to get started",

@@ -12,15 +12,18 @@ export const useAuthStore = defineStore('auth', () => {
   const initialized = ref(false)
   const loading = ref(false)
   const error = ref('')
+  const apiUnavailable = ref(false)
 
   async function checkAuthStatus() {
     try {
       const res = await api.authStatus()
       setupRequired.value = res.setup_required
+      apiUnavailable.value = false
       // If we have a token, we're authenticated
       authenticated.value = !!token.value
     } catch {
       authenticated.value = false
+      apiUnavailable.value = true
     } finally {
       initialized.value = true
     }
@@ -79,6 +82,7 @@ export const useAuthStore = defineStore('auth', () => {
     initialized,
     loading,
     error,
+    apiUnavailable,
     checkAuthStatus,
     login,
     register,
