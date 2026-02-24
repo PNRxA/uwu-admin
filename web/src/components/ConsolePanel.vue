@@ -33,10 +33,10 @@ watch(() => commandStore.panelOpen, (open) => {
 </script>
 
 <template>
-  <Collapsible v-model:open="commandStore.panelOpen" class="shrink-0 border-t bg-background">
+  <Collapsible v-model:open="commandStore.panelOpen" class="shrink-0 border-t bg-card">
     <CollapsibleTrigger as-child>
       <button
-        class="flex w-full items-center gap-2 px-4 py-2 text-sm hover:bg-muted/50 transition-colors cursor-pointer"
+        class="flex w-full items-center gap-2 px-4 py-2 text-sm bg-sidebar hover:bg-sidebar-accent transition-colors cursor-pointer"
       >
         <Terminal class="size-4 text-muted-foreground" />
         <span class="font-medium">Console</span>
