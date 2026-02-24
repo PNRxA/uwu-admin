@@ -26,7 +26,7 @@ jobs:
       - run: npm test
 
   backend:
-    runs-on: self-hosted
+    runs-on: ${{ github.event_name == 'push' && 'self-hosted' || 'ubuntu-latest' }}
     defaults:
       run:
         working-directory: api/
