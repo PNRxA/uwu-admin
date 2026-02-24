@@ -2,7 +2,7 @@
 import { computed } from 'vue'
 import { useQuery, useQueryClient } from '@tanstack/vue-query'
 import { useConnectionStore } from '@/stores/connection'
-import { api } from '@/lib/api'
+import { useCommandStore } from '@/stores/command'
 import { stripHtml } from '@/lib/response-parser'
 import { queryKeys } from '@/lib/query-keys'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -22,6 +22,7 @@ import RoomActionsMenu from '@/components/RoomActionsMenu.vue'
 
 const queryClient = useQueryClient()
 const connection = useConnectionStore()
+const commandStore = useCommandStore()
 const serverId = computed(() => connection.activeServerId)
 
 interface Room {
@@ -32,7 +33,7 @@ interface Room {
 
 const { data: roomsResponse, isPending, isFetching, refetch } = useQuery({
   queryKey: computed(() => queryKeys.rooms(serverId.value!)),
-  queryFn: () => api.command(serverId.value!, 'rooms list-rooms'),
+  queryFn: () => commandStore.query('rooms list-rooms'),
   staleTime: 30_000,
   enabled: computed(() => serverId.value !== null),
 })

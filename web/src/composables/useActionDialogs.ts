@@ -1,7 +1,7 @@
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { api } from '@/lib/api'
 import { useConnectionStore } from '@/stores/connection'
+import { useCommandStore } from '@/stores/command'
 import { toast } from 'vue-sonner'
 
 export interface InputField {
@@ -15,6 +15,7 @@ export interface InputField {
 export function useActionDialogs(onComplete?: () => void) {
   const { t } = useI18n()
   const connection = useConnectionStore()
+  const commandStore = useCommandStore()
 
   // Alert dialog state (simple confirm actions)
   const alertOpen = ref(false)
@@ -48,12 +49,14 @@ export function useActionDialogs(onComplete?: () => void) {
     if (connection.activeServerId === null) return
     executing.value = true
     try {
-      await api.command(connection.activeServerId, alertCommand.value)
-      toast.success(t('actionDialog.completed', { action: alertTitle.value }))
-      alertOpen.value = false
-      onComplete?.()
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : t('actionDialog.failed', { action: alertTitle.value }))
+      const entry = await commandStore.execute(alertCommand.value)
+      if (entry.success) {
+        toast.success(t('actionDialog.completed', { action: alertTitle.value }))
+        alertOpen.value = false
+        onComplete?.()
+      } else {
+        toast.error(entry.response || t('actionDialog.failed', { action: alertTitle.value }))
+      }
     } finally {
       executing.value = false
     }
@@ -89,12 +92,14 @@ export function useActionDialogs(onComplete?: () => void) {
 
     executing.value = true
     try {
-      await api.command(connection.activeServerId, command)
-      toast.success(t('actionDialog.completed', { action: inputDialogTitle.value }))
-      inputDialogOpen.value = false
-      onComplete?.()
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : t('actionDialog.failed', { action: inputDialogTitle.value }))
+      const entry = await commandStore.execute(command)
+      if (entry.success) {
+        toast.success(t('actionDialog.completed', { action: inputDialogTitle.value }))
+        inputDialogOpen.value = false
+        onComplete?.()
+      } else {
+        toast.error(entry.response || t('actionDialog.failed', { action: inputDialogTitle.value }))
+      }
     } finally {
       executing.value = false
     }
@@ -106,7 +111,7 @@ export function useActionDialogs(onComplete?: () => void) {
     resultResponse.value = 'Loading...'
     resultDialogOpen.value = true
     try {
-      const res = await api.command(connection.activeServerId, command)
+      const res = await commandStore.query(command)
       resultResponse.value = res.response
     } catch (e) {
       resultResponse.value = e instanceof Error ? e.message : t('actionDialog.executeFailed')

@@ -2,7 +2,7 @@
 import { computed } from 'vue'
 import { useQuery } from '@tanstack/vue-query'
 import { useConnectionStore } from '@/stores/connection'
-import { api } from '@/lib/api'
+import { useCommandStore } from '@/stores/command'
 import { stripHtml } from '@/lib/response-parser'
 import { queryKeys } from '@/lib/query-keys'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -19,6 +19,7 @@ import {
 import { RefreshCw } from 'lucide-vue-next'
 
 const connection = useConnectionStore()
+const commandStore = useCommandStore()
 const serverId = computed(() => connection.activeServerId)
 
 const {
@@ -28,7 +29,7 @@ const {
   refetch: refetchUptime,
 } = useQuery({
   queryKey: computed(() => queryKeys.serverUptime(serverId.value!)),
-  queryFn: async () => (await api.command(serverId.value!, 'server uptime')).response,
+  queryFn: async () => (await commandStore.query('server uptime')).response,
   staleTime: 15_000,
   enabled: computed(() => serverId.value !== null),
 })
@@ -40,7 +41,7 @@ const {
   refetch: refetchStats,
 } = useQuery({
   queryKey: computed(() => queryKeys.serverStatus(serverId.value!)),
-  queryFn: async () => (await api.command(serverId.value!, 'server memory-usage')).response,
+  queryFn: async () => (await commandStore.query('server memory-usage')).response,
   staleTime: 15_000,
   enabled: computed(() => serverId.value !== null),
 })

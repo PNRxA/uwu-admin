@@ -3,7 +3,7 @@ import { ref, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useQuery, useQueryClient } from '@tanstack/vue-query'
 import { useConnectionStore } from '@/stores/connection'
-import { api } from '@/lib/api'
+import { useCommandStore } from '@/stores/command'
 import { queryKeys } from '@/lib/query-keys'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -35,11 +35,12 @@ import UserActionsMenu from '@/components/UserActionsMenu.vue'
 const { t } = useI18n()
 const queryClient = useQueryClient()
 const connection = useConnectionStore()
+const commandStore = useCommandStore()
 const serverId = computed(() => connection.activeServerId)
 
 const { data: usersResponse, isPending, isFetching, refetch } = useQuery({
   queryKey: computed(() => queryKeys.users(serverId.value!)),
-  queryFn: () => api.command(serverId.value!, 'users list-users'),
+  queryFn: () => commandStore.query('users list-users'),
   staleTime: 30_000,
   enabled: computed(() => serverId.value !== null),
 })
@@ -64,10 +65,16 @@ async function createUser() {
   if (serverId.value === null) return
   creating.value = true
   try {
-    const cmd = newPassword.value
-      ? `users create-user ${newUsername.value} ${newPassword.value}`
-      : `users create-user ${newUsername.value}`
-    await api.command(serverId.value, cmd)
+    const username = newUsername.value.trim()
+    const password = newPassword.value.trim()
+    if (!username || /\s/.test(username) || /\s/.test(password)) {
+      toast.error(t('users.invalidInput'))
+      return
+    }
+    const cmd = password
+      ? `users create-user ${username} ${password}`
+      : `users create-user ${username}`
+    await commandStore.query(cmd)
     toast.success(t('users.createdSuccess'))
     createDialogOpen.value = false
     newUsername.value = ''

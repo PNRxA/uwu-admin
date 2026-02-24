@@ -62,6 +62,7 @@
     "create": "Create",
     "createdSuccess": "User created successfully",
     "createFailed": "Failed to create user",
+    "invalidInput": "Username and password must not contain whitespace",
     "noUsersFound": "No users found.",
     "actions": {
       "title": "User Actions",

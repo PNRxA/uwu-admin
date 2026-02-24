@@ -1,6 +1,6 @@
 import { ref } from 'vue'
 import { defineStore } from 'pinia'
-import { api } from '@/lib/api'
+import { api, type CommandResponse } from '@/lib/api'
 import { useConnectionStore } from '@/stores/connection'
 import i18n from '@/i18n'
 
@@ -19,16 +19,10 @@ const MAX_HISTORY = 500
 export const useCommandStore = defineStore('command', () => {
   const history = ref<CommandEntry[]>([])
   const loading = ref(false)
+  const unreadCount = ref(0)
   let nextId = 1
 
-  async function execute(command: string) {
-    const connection = useConnectionStore()
-    const serverId = connection.activeServerId
-    if (serverId === null) {
-      throw new Error(t('command.noServerSelected'))
-    }
-
-    loading.value = true
+  function addEntry(command: string): CommandEntry {
     const entryId = nextId++
     history.value.push({
       id: entryId,
@@ -40,9 +34,19 @@ export const useCommandStore = defineStore('command', () => {
     if (history.value.length > MAX_HISTORY) {
       history.value = history.value.slice(-MAX_HISTORY)
     }
+    if (!panelOpen.value) unreadCount.value++
+    return history.value[history.value.length - 1]
+  }
 
-    // Access through the reactive array so mutations trigger reactivity
-    const entry = history.value.find(e => e.id === entryId)!
+  async function execute(command: string) {
+    const connection = useConnectionStore()
+    const serverId = connection.activeServerId
+    if (serverId === null) {
+      throw new Error(t('command.noServerSelected'))
+    }
+
+    loading.value = true
+    const entry = addEntry(command)
 
     try {
       const res = await api.command(serverId, command)
@@ -58,8 +62,30 @@ export const useCommandStore = defineStore('command', () => {
     return entry
   }
 
+  async function query(command: string): Promise<CommandResponse> {
+    const connection = useConnectionStore()
+    const serverId = connection.activeServerId
+    if (serverId === null) {
+      throw new Error(t('command.noServerSelected'))
+    }
+
+    const entry = addEntry(command)
+
+    try {
+      const res = await api.command(serverId, command)
+      entry.response = res.response
+      entry.success = true
+      return res
+    } catch (e) {
+      entry.response = e instanceof Error ? e.message : t('command.commandFailed')
+      entry.success = false
+      throw e
+    }
+  }
+
   function clear() {
     history.value = []
+    unreadCount.value = 0
   }
 
   const panelOpen = ref(false)
@@ -68,5 +94,5 @@ export const useCommandStore = defineStore('command', () => {
     panelOpen.value = !panelOpen.value
   }
 
-  return { history, loading, execute, clear, panelOpen, togglePanel }
+  return { history, loading, unreadCount, execute, query, clear, panelOpen, togglePanel }
 })

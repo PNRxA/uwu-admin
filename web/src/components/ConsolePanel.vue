@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { watch, nextTick } from 'vue'
+import { watch } from 'vue'
 import { useConsole, sanitizeHtml } from '@/composables/useConsole'
 import CommandAutocomplete from '@/components/CommandAutocomplete.vue'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
@@ -18,16 +18,17 @@ const {
   commandInput,
   submittedError,
   autocompleteRef,
+  scrollToBottom,
   sendCommand,
   formatTime,
-} = useConsole('console-panel-bottom')
+} = useConsole('console-panel-bottom', {
+  autoScrollEnabled: () => commandStore.panelOpen,
+})
 
 watch(() => commandStore.panelOpen, (open) => {
   if (open) {
-    nextTick(() => {
-      const el = document.getElementById('console-panel-bottom')
-      el?.scrollIntoView({ behavior: 'instant' })
-    })
+    commandStore.unreadCount = 0
+    scrollToBottom('instant')
   }
 })
 </script>
@@ -40,8 +41,8 @@ watch(() => commandStore.panelOpen, (open) => {
       >
         <Terminal class="size-4 text-muted-foreground" />
         <span class="font-medium">Console</span>
-        <Badge v-if="commandStore.history.length > 0" variant="secondary" class="text-xs">
-          {{ commandStore.history.length }}
+        <Badge v-if="commandStore.unreadCount > 0" variant="secondary" class="text-xs">
+          {{ commandStore.unreadCount }}
         </Badge>
         <Button variant="ghost" size="sm" class="ml-auto h-7 px-2" @click.stop="router.push({ name: 'console' })">
           <Maximize2 class="size-3.5" />
@@ -57,7 +58,7 @@ watch(() => commandStore.panelOpen, (open) => {
     </CollapsibleTrigger>
 
     <CollapsibleContent>
-      <div class="flex flex-col border-t" style="height: 288px">
+      <div class="flex flex-col border-t" style="height: 384px">
         <ScrollArea class="flex-1 min-h-0 px-4">
           <div class="flex flex-col gap-3 pb-3">
             <div
