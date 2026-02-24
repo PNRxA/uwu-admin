@@ -35,7 +35,7 @@ export const useCommandStore = defineStore('command', () => {
       history.value = history.value.slice(-MAX_HISTORY)
     }
     if (!panelOpen.value) unreadCount.value++
-    return history.value[history.value.length - 1]
+    return history.value[history.value.length - 1]!
   }
 
   async function execute(command: string) {
