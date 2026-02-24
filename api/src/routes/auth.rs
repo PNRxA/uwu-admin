@@ -18,8 +18,8 @@ pub fn auth_routes() -> Router<SharedState> {
 
         let governor_conf = Arc::new(
             GovernorConfigBuilder::default()
-                .per_second(12)
-                .burst_size(5)
+                .per_second(8)
+                .burst_size(10)
                 .finish()
                 .unwrap(),
         );
