@@ -4,6 +4,16 @@ Web admin dashboard for [Continuwuity](https://continuwuity.org) Matrix homeserv
 
 Continuwuity only supports admin commands via messages in a special admin room. uwu-admin provides a proper web UI by connecting to the homeserver as a bot account, sending admin commands to the admin room, and displaying the results.
 
+## Table of Contents
+
+- [Architecture](#architecture)
+- [Setup](#setup)
+- [Session Persistence](#session-persistence)
+- [Container Deployment](#container-deployment)
+- [Scripts](#scripts)
+- [Command Tree](#command-tree)
+- [Testing](#testing)
+
 ## Architecture
 
 ```
@@ -85,17 +95,41 @@ See [containers/](containers/) for Docker and Podman Quadlet deployment options.
 
 Both require `JWT_SECRET` and `ENCRYPTION_KEY` to be set as environment variables — see the example compose file and quadlet config.
 
-## Command Tree
+## Scripts
 
-The file `shared/command-tree.json` describes every admin command (names, descriptions, argument types) and powers the console's autocomplete. It is auto-generated from the continuwuity source code via a custom xtask.
+Helper scripts live in the `scripts/` directory.
 
-To regenerate it after continuwuity's admin commands change:
+### `update-command-tree.sh`
+
+Regenerates `shared/command-tree.json` from the continuwuity source. Clones the uwu-admin fork of continuwuity into `../continuwuity` if it doesn't already exist, rebases on upstream, and runs `cargo xtask generate-command-tree`. Build prerequisites are the same as for continuwuity itself (Rust, C/C++ compiler, libclang, liburing, make).
 
 ```sh
 ./scripts/update-command-tree.sh
 ```
 
-This runs `cargo xtask generate-command-tree` in the sibling `../continuwuity` uwu-admin specific fork directory (it will clone the repo if it doesn't exist) and writes the output to `shared/command-tree.json`. Build prerequisites for the xtask are the same as for continuwuity itself (Rust, C/C++ compiler, libclang, liburing, make).
+### `quadlet-dev.sh`
+
+Development helper for managing the uwu-admin Podman Quadlet. Builds the container image, installs quadlet unit files to `~/.config/containers/systemd/`, and manages the systemd user service.
+
+```sh
+./scripts/quadlet-dev.sh <command>
+```
+
+| Command | Description |
+|---------|-------------|
+| `build` | Build the container image |
+| `install` | Copy quadlet files and reload systemd |
+| `start` | Build image (if needed), install quadlets (if needed), and start the service |
+| `stop` | Stop the service |
+| `rebuild` | Stop, rebuild image, and restart |
+| `restart` | Restart the service without rebuilding |
+| `status` | Show service status and recent logs |
+| `logs` | Follow the service journal logs |
+| `destroy` | Stop service, remove quadlet files, volume, and image |
+
+## Command Tree
+
+The file `shared/command-tree.json` describes every admin command (names, descriptions, argument types) and powers the console's autocomplete. It is auto-generated from the continuwuity source code via [`update-command-tree.sh`](#update-command-treesh).
 
 ## Testing
 
