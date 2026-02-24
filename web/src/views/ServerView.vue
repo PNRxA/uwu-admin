@@ -158,7 +158,7 @@ const totalDbMemory = computed(() => {
           </CardHeader>
           <CardContent>
             <Skeleton v-if="loading" class="h-12 w-full" />
-            <div v-else class="flex items-baseline gap-3">
+            <div v-else class="flex flex-wrap items-baseline gap-3">
               <template v-for="(part, i) in uptimeFormatted.parts" :key="i">
                 <div class="flex items-baseline gap-1">
                   <span class="text-3xl font-bold tabular-nums">{{ part.value }}</span>
