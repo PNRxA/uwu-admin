@@ -41,6 +41,7 @@ jobs:
 
       - run: cargo test
         env:
+          AWS_LC_SYS_CMAKE_BUILDER: 1
           TEST_HOMESERVER: ${{ secrets.TEST_HOMESERVER }}
           TEST_USERNAME: ${{ secrets.TEST_USERNAME }}
           TEST_PASSWORD: ${{ secrets.TEST_PASSWORD }}
@@ -62,6 +63,8 @@ jobs:
       - name: Build backend
         run: cargo build --release
         working-directory: api/
+        env:
+          AWS_LC_SYS_CMAKE_BUILDER: 1
 
       - name: Start backend
         run: ./api/target/release/uwu-admin &
