@@ -117,6 +117,14 @@ Regenerates `shared/command-tree.json` from the [uwu-admin fork of continuwuity]
 ./scripts/update-command-tree.sh
 ```
 
+### `test.sh`
+
+Runs the full test suite against a fresh Quadlet build. Rebuilds the container image, wipes the database, then runs frontend unit tests, backend tests (unit + integration), and E2E tests against the container.
+
+```sh
+./scripts/test.sh
+```
+
 ### `quadlet-dev.sh`
 
 Development helper for managing the uwu-admin Podman Quadlet. Builds the container image, installs quadlet unit files to `~/.config/containers/systemd/`, and manages the systemd user service.
