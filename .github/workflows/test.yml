@@ -102,9 +102,12 @@ jobs:
           TEST_PASSWORD: ${{ secrets.TEST_PASSWORD }}
           TEST_ROOM_ID: ${{ secrets.TEST_ROOM_ID }}
 
-      - name: Stop backend
+      - name: Cleanup
         if: always()
-        run: kill $(lsof -ti:3001) 2>/dev/null || true
+        run: |
+          kill $(lsof -ti:3001) 2>/dev/null || true
+          rm -f uwu-admin.db uwu-admin.db-shm uwu-admin.db-wal
+          rm -rf web/e2e/.auth web/test-results
 
       - uses: actions/upload-artifact@v4
         if: ${{ !cancelled() }}
