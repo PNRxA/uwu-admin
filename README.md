@@ -115,10 +115,24 @@ Helper scripts live in the `scripts/` directory.
 
 ### `update-command-tree.sh`
 
-Regenerates `shared/command-tree.json` from the [uwu-admin fork of continuwuity](https://github.com/PNRxA/continuwuity). Clones the fork into `../continuwuity` if it doesn't already exist, rebases on upstream, and runs `cargo xtask generate-command-tree`. Build prerequisites are the same as for continuwuity itself (Rust, C/C++ compiler, libclang, liburing, make).
+Regenerates `shared/command-tree.json` from the [uwu-admin fork of continuwuity](https://github.com/PNRxA/continuwuity). Clones the fork into `../continuwuity` if it doesn't already exist, fetches upstream (including tags), rebases on `upstream/main`, and runs `cargo xtask generate-command-tree`. When a tag is specified, the script checks out that tag for generation then returns to `main` — the repo always ends up on `main`. Build prerequisites are the same as for continuwuity itself (Rust, C/C++ compiler, libclang, liburing, make).
 
 ```sh
-./scripts/update-command-tree.sh
+./scripts/update-command-tree.sh [-w] [tag]
+```
+
+| Option | Description |
+|--------|-------------|
+| `tag` | Generate from a specific upstream version tag (e.g. `v0.5.0`). Omit to use `main` |
+| `-w` | Push tags and commits to the fork (for maintainers). Without this flag, nothing is pushed |
+
+Examples:
+
+```sh
+./scripts/update-command-tree.sh              # Fetch + rebase on upstream main, generate command tree
+./scripts/update-command-tree.sh v0.5.0       # Fetch + rebase, generate from a specific tag, return to main
+./scripts/update-command-tree.sh -w           # Same as above + push tags and main to fork
+./scripts/update-command-tree.sh -w v0.5.0    # Same as above with a specific tag
 ```
 
 ### `test.sh`
