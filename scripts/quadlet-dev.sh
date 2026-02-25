@@ -25,6 +25,7 @@ Commands:
   rebuild    Stop, rebuild image, and restart the service
   restart    Restart the service (no rebuild)
   reset-db   Stop, wipe the database volume, and restart
+  test       Rebuild image, wipe DB, and start (fresh environment for E2E tests)
   status     Show service status and logs
   logs       Follow the service journal logs
   destroy    Stop service, remove quadlet files, volume, and image
@@ -103,6 +104,19 @@ reset_db() {
     systemctl --user status "${SERVICE_NAME}" --no-pager || true
 }
 
+test_env() {
+    echo "==> Preparing fresh test environment"
+    stop
+    build
+    install_quadlet
+    echo "  -> Removing volume ${VOLUME_NAME}"
+    podman volume rm -f "${VOLUME_NAME}" 2>/dev/null || true
+    echo "==> Starting ${SERVICE_NAME}"
+    systemctl --user start "${SERVICE_NAME}"
+    echo "==> Fresh build with clean database — listening on http://localhost:8080"
+    systemctl --user status "${SERVICE_NAME}" --no-pager || true
+}
+
 destroy() {
     echo "==> Tearing down everything"
 
@@ -141,6 +155,7 @@ case "$1" in
     status)      status ;;
     logs)        logs ;;
     reset-db)    reset_db ;;
+    test)        test_env ;;
     destroy)     destroy ;;
     *)
         echo "Unknown command: $1" >&2
