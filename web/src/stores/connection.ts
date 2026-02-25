@@ -86,7 +86,7 @@ export const useConnectionStore = defineStore('connection', () => {
       activeServerId.value = servers.value[0]?.id ?? null
     }
     queryClient.removeQueries({
-      predicate: (query) => query.queryKey.at(-1) === id,
+      predicate: (query) => query.queryKey[query.queryKey.length - 1] === id,
     })
     useCommandStore().clearServer(id)
   }
