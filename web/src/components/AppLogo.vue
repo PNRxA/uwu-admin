@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { RouterLink } from 'vue-router'
+
 withDefaults(defineProps<{
   size?: 'sm' | 'lg'
 }>(), {
@@ -7,7 +9,7 @@ withDefaults(defineProps<{
 </script>
 
 <template>
-  <div class="uwu-logo flex items-center gap-1.5 overflow-visible whitespace-nowrap">
+  <RouterLink to="/" class="uwu-logo flex items-center gap-1.5 overflow-visible whitespace-nowrap no-underline">
     <span
       class="uwu-text relative font-extrabold tracking-tight bg-gradient-to-r from-primary to-pink-400 dark:from-primary dark:to-pink-300 bg-clip-text text-transparent group-data-[collapsible=icon]:text-sm"
       :class="size === 'lg' ? 'text-3xl' : 'text-xl'"
@@ -16,7 +18,7 @@ withDefaults(defineProps<{
       class="font-light tracking-wide text-muted-foreground group-data-[collapsible=icon]:hidden"
       :class="size === 'lg' ? 'text-3xl' : 'text-xl'"
     >admin</span>
-  </div>
+  </RouterLink>
 </template>
 
 <style scoped>
