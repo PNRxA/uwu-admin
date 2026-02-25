@@ -80,7 +80,7 @@ jobs:
           ENCRYPTION_KEY: ${{ secrets.ENCRYPTION_KEY || '0000000000000000000000000000000000000000000000000000000000000000' }}
 
       - name: Wait for backend to be ready
-        run: timeout 30 bash -c 'until curl -sf http://127.0.0.1:3001/api/health 2>/dev/null; do sleep 1; done'
+        run: timeout 30 bash -c 'until curl -so /dev/null http://127.0.0.1:3001/ 2>/dev/null; do sleep 1; done'
 
       - uses: actions/setup-node@v4
         with:
