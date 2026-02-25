@@ -50,12 +50,12 @@ Generate values for `JWT_SECRET` and `ENCRYPTION_KEY`:
 openssl rand -hex 32
 ```
 
-Paste a unique value into each field in `api/.env`. If left unset the API will generate random secrets on startup, but sessions and encrypted tokens won't survive restarts.
+Paste a unique value into each field in `api/.env`. Both `JWT_SECRET` and `ENCRYPTION_KEY` are **required** — the server will refuse to start without them.
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `JWT_SECRET` | 32-byte hex key for signing auth tokens | random (ephemeral) |
-| `ENCRYPTION_KEY` | 32-byte hex key for encrypting access tokens at rest | random (ephemeral) |
+| `JWT_SECRET` | 32-byte hex key for signing auth tokens | **required** |
+| `ENCRYPTION_KEY` | 32-byte hex key for encrypting access tokens at rest | **required** |
 | `ADMIN_USERNAME` | Seed an admin account on first start (skips setup screen) | none |
 | `ADMIN_PASSWORD` | Password for the seeded admin account | none |
 | `DATABASE_URL` | SQLite connection string | `sqlite:uwu-admin.db?mode=rwc` |
