@@ -33,6 +33,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Install cmake
+        if: github.event_name == 'push'
+        run: sudo apt-get update && sudo apt-get install -y cmake
+
       - uses: dtolnay/rust-toolchain@stable
 
       - uses: Swatinem/rust-cache@v2
@@ -53,6 +57,9 @@ jobs:
     needs: [frontend, backend]
     steps:
       - uses: actions/checkout@v4
+
+      - name: Install cmake
+        run: sudo apt-get update && sudo apt-get install -y cmake
 
       - uses: dtolnay/rust-toolchain@stable
 
