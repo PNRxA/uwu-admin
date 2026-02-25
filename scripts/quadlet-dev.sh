@@ -24,6 +24,7 @@ Commands:
   stop       Stop the service
   rebuild    Stop, rebuild image, and restart the service
   restart    Restart the service (no rebuild)
+  reset-db   Stop, wipe the database volume, and restart
   status     Show service status and logs
   logs       Follow the service journal logs
   destroy    Stop service, remove quadlet files, volume, and image
@@ -91,6 +92,17 @@ logs() {
     journalctl --user -u "${SERVICE_NAME}" -f
 }
 
+reset_db() {
+    echo "==> Resetting database"
+    stop
+    echo "  -> Removing volume ${VOLUME_NAME}"
+    podman volume rm -f "${VOLUME_NAME}" 2>/dev/null || true
+    echo "==> Starting ${SERVICE_NAME}"
+    systemctl --user start "${SERVICE_NAME}"
+    echo "==> Restarted with fresh database — listening on http://localhost:8080"
+    systemctl --user status "${SERVICE_NAME}" --no-pager || true
+}
+
 destroy() {
     echo "==> Tearing down everything"
 
@@ -128,6 +140,7 @@ case "$1" in
     restart)     restart ;;
     status)      status ;;
     logs)        logs ;;
+    reset-db)    reset_db ;;
     destroy)     destroy ;;
     *)
         echo "Unknown command: $1" >&2

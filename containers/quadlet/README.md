@@ -77,10 +77,15 @@ iteration:
 ./scripts/quadlet-dev.sh start    # build image, install quadlet files, start service
 ./scripts/quadlet-dev.sh stop     # stop the service
 ./scripts/quadlet-dev.sh restart  # restart the service
+./scripts/quadlet-dev.sh reset-db # stop, wipe the database volume, and restart
 ./scripts/quadlet-dev.sh status   # show service status and recent logs
 ./scripts/quadlet-dev.sh logs     # follow journal logs
 ./scripts/quadlet-dev.sh destroy  # stop service, remove quadlet files, volume, and image
 ```
+
+`reset-db` wipes the database volume and restarts the service with a fresh
+SQLite database, without rebuilding the image. Useful for E2E test runs that
+need a clean slate.
 
 `destroy` tears down everything: stops the service, deletes the quadlet unit
 files from `~/.config/containers/systemd/`, removes the container, volume, and

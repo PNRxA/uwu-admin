@@ -122,6 +122,7 @@ Development helper for managing the uwu-admin Podman Quadlet. Builds the contain
 | `stop` | Stop the service |
 | `rebuild` | Stop, rebuild image, and restart |
 | `restart` | Restart the service without rebuilding |
+| `reset-db` | Stop, wipe the database volume, and restart with a fresh DB |
 | `status` | Show service status and recent logs |
 | `logs` | Follow the service journal logs |
 | `destroy` | Stop service, remove quadlet files, volume, and image |
