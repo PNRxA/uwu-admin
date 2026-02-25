@@ -52,8 +52,6 @@ export const useConnectionStore = defineStore('connection', () => {
 
   function setActiveServer(id: number) {
     activeServerId.value = id
-    queryClient.clear()
-    useCommandStore().clear()
   }
 
   async function addServer(params: {
@@ -86,8 +84,11 @@ export const useConnectionStore = defineStore('connection', () => {
     servers.value = servers.value.filter((s) => s.id !== id)
     if (activeServerId.value === id) {
       activeServerId.value = servers.value[0]?.id ?? null
-      queryClient.clear()
     }
+    queryClient.removeQueries({
+      predicate: (query) => query.queryKey.at(-1) === id,
+    })
+    useCommandStore().clearServer(id)
   }
 
   function reset() {

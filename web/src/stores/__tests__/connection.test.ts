@@ -18,7 +18,7 @@ vi.mock('@/lib/api', () => ({
 }))
 
 vi.mock('@tanstack/vue-query', () => ({
-  useQueryClient: () => ({ clear: vi.fn() }),
+  useQueryClient: () => ({ clear: vi.fn(), removeQueries: vi.fn() }),
 }))
 
 beforeEach(() => {
@@ -71,13 +71,20 @@ describe('useConnectionStore', () => {
       expect(store.activeServerId).toBe(2)
     })
 
-    it('clears command history when switching', () => {
+    it('preserves command history when switching servers', async () => {
+      vi.mocked(api.command).mockResolvedValue({ response: 'OK' })
       const store = useConnectionStore()
-      const cmdStore = useCommandStore()
       store.servers = [SERVER_A, SERVER_B]
-      cmdStore.history = [{ id: 1, command: 'test', response: 'ok', timestamp: new Date(), success: true }]
+      store.activeServerId = 1
+      const cmdStore = useCommandStore()
+      await cmdStore.execute('test')
+      expect(cmdStore.history).toHaveLength(1)
       store.setActiveServer(2)
+      // Server 2 has no history yet
       expect(cmdStore.history).toHaveLength(0)
+      // Switch back — server 1 history is retained
+      store.setActiveServer(1)
+      expect(cmdStore.history).toHaveLength(1)
     })
   })
 

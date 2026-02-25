@@ -77,7 +77,7 @@ export const useAuthStore = defineStore('auth', () => {
     authenticated.value = false
     initialized.value = false
     useConnectionStore().reset()
-    useCommandStore().clear()
+    useCommandStore().clearAll()
   }
 
   return {

@@ -18,7 +18,7 @@ vi.mock('@/lib/api', () => ({
 }))
 
 vi.mock('@tanstack/vue-query', () => ({
-  useQueryClient: () => ({ clear: vi.fn() }),
+  useQueryClient: () => ({ clear: vi.fn(), removeQueries: vi.fn() }),
 }))
 
 beforeEach(() => {
@@ -74,6 +74,58 @@ describe('useCommandStore', () => {
       await p
       expect(store.loading).toBe(false)
     })
+
+    it('loading is per-server', async () => {
+      let resolve: (v: unknown) => void
+      vi.mocked(api.command).mockReturnValue(new Promise((r) => { resolve = r }))
+      const conn = useConnectionStore()
+      conn.servers = [
+        { id: 1, homeserver: 'a.example.com', user_id: '@bot:a', connected: true },
+        { id: 2, homeserver: 'b.example.com', user_id: '@bot:b', connected: true },
+      ]
+      conn.activeServerId = 1
+      const store = useCommandStore()
+      const p = store.execute('cmd')
+      expect(store.loading).toBe(true)
+
+      // Switch server — loading should not bleed
+      conn.activeServerId = 2
+      expect(store.loading).toBe(false)
+
+      // Switch back — still loading
+      conn.activeServerId = 1
+      expect(store.loading).toBe(true)
+
+      resolve!({ response: 'OK' })
+      await p
+      expect(store.loading).toBe(false)
+    })
+  })
+
+  describe('per-server history', () => {
+    it('keeps separate history per server', async () => {
+      vi.mocked(api.command).mockResolvedValue({ response: 'OK' })
+      const conn = useConnectionStore()
+      conn.servers = [
+        { id: 1, homeserver: 'a.example.com', user_id: '@bot:a', connected: true },
+        { id: 2, homeserver: 'b.example.com', user_id: '@bot:b', connected: true },
+      ]
+      conn.activeServerId = 1
+      const store = useCommandStore()
+
+      await store.execute('cmd-a')
+      expect(store.history).toHaveLength(1)
+
+      conn.activeServerId = 2
+      expect(store.history).toHaveLength(0)
+      await store.execute('cmd-b')
+      expect(store.history).toHaveLength(1)
+
+      // Switch back — server 1 history is retained
+      conn.activeServerId = 1
+      expect(store.history).toHaveLength(1)
+      expect(store.history[0]!.command).toBe('cmd-a')
+    })
   })
 
   describe('history cap', () => {
@@ -92,15 +144,72 @@ describe('useCommandStore', () => {
   })
 
   describe('clear', () => {
-    it('empties history', async () => {
-      vi.mocked(api.command).mockResolvedValue({
-        response: 'OK',
-      })
-      selectServer(1)
+    it('empties history for the active server only', async () => {
+      vi.mocked(api.command).mockResolvedValue({ response: 'OK' })
+      const conn = useConnectionStore()
+      conn.servers = [
+        { id: 1, homeserver: 'a.example.com', user_id: '@bot:a', connected: true },
+        { id: 2, homeserver: 'b.example.com', user_id: '@bot:b', connected: true },
+      ]
+      conn.activeServerId = 1
       const store = useCommandStore()
-      await store.execute('cmd')
-      expect(store.history).toHaveLength(1)
+      await store.execute('cmd-a')
+
+      conn.activeServerId = 2
+      await store.execute('cmd-b')
+
+      // Clear server 2
       store.clear()
+      expect(store.history).toHaveLength(0)
+
+      // Server 1 still has its history
+      conn.activeServerId = 1
+      expect(store.history).toHaveLength(1)
+    })
+  })
+
+  describe('clearServer', () => {
+    it('removes history for a specific server', async () => {
+      vi.mocked(api.command).mockResolvedValue({ response: 'OK' })
+      const conn = useConnectionStore()
+      conn.servers = [
+        { id: 1, homeserver: 'a.example.com', user_id: '@bot:a', connected: true },
+        { id: 2, homeserver: 'b.example.com', user_id: '@bot:b', connected: true },
+      ]
+      conn.activeServerId = 1
+      const store = useCommandStore()
+      await store.execute('cmd-a')
+
+      conn.activeServerId = 2
+      await store.execute('cmd-b')
+
+      // Clear server 1 by ID (not active)
+      store.clearServer(1)
+      expect(store.history).toHaveLength(1) // server 2 still has history
+
+      conn.activeServerId = 1
+      expect(store.history).toHaveLength(0) // server 1 was cleared
+    })
+  })
+
+  describe('clearAll', () => {
+    it('empties history for all servers', async () => {
+      vi.mocked(api.command).mockResolvedValue({ response: 'OK' })
+      const conn = useConnectionStore()
+      conn.servers = [
+        { id: 1, homeserver: 'a.example.com', user_id: '@bot:a', connected: true },
+        { id: 2, homeserver: 'b.example.com', user_id: '@bot:b', connected: true },
+      ]
+      conn.activeServerId = 1
+      const store = useCommandStore()
+      await store.execute('cmd-a')
+
+      conn.activeServerId = 2
+      await store.execute('cmd-b')
+
+      store.clearAll()
+      expect(store.history).toHaveLength(0)
+      conn.activeServerId = 1
       expect(store.history).toHaveLength(0)
     })
   })
