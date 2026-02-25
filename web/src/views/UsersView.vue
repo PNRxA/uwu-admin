@@ -32,6 +32,7 @@ import {
 import { toast } from 'vue-sonner'
 import { Plus, RefreshCw } from 'lucide-vue-next'
 import UserActionsMenu from '@/components/UserActionsMenu.vue'
+import CopyableCell from '@/components/CopyableCell.vue'
 
 const { t } = useI18n()
 const queryClient = useQueryClient()
@@ -162,7 +163,7 @@ function onActionComplete() {
               <TableCell>
                 <UserActionsMenu :user-id="user" @action-complete="onActionComplete" />
               </TableCell>
-              <TableCell class="font-mono text-sm">{{ user }}</TableCell>
+              <TableCell class="font-mono text-sm"><CopyableCell :value="user" /></TableCell>
             </TableRow>
           </TableBody>
         </Table>

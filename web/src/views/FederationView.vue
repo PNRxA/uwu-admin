@@ -18,6 +18,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { RefreshCw } from 'lucide-vue-next'
+import CopyableCell from '@/components/CopyableCell.vue'
 
 const connection = useConnectionStore()
 const commandStore = useCommandStore()
@@ -91,9 +92,9 @@ const pdus = computed<PduEntry[]>(() => {
                 {{ $t('federation.noIncomingPDUs') }}
               </TableEmpty>
               <TableRow v-for="pdu in pdus" :key="pdu.eventId">
-                <TableCell class="font-mono text-sm max-w-64 truncate">{{ pdu.roomId }}</TableCell>
-                <TableCell class="font-mono text-sm max-w-64 truncate">{{ pdu.eventId }}</TableCell>
-                <TableCell class="text-right tabular-nums">{{ pdu.elapsed }}</TableCell>
+                <TableCell class="font-mono text-sm max-w-64"><CopyableCell :value="pdu.roomId" /></TableCell>
+                <TableCell class="font-mono text-sm max-w-64"><CopyableCell :value="pdu.eventId" /></TableCell>
+                <TableCell class="tabular-nums"><CopyableCell :value="pdu.elapsed" align="right" /></TableCell>
               </TableRow>
             </TableBody>
           </Table>

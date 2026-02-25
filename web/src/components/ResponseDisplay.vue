@@ -3,11 +3,7 @@ import { computed, ref } from 'vue'
 import { useVirtualizer } from '@tanstack/vue-virtual'
 import { parseResponse, type ParsedResponse } from '@/lib/response-parser'
 import { Table, TableBody, TableCell, TableRow } from '@/components/ui/table'
-
-function showTitleIfTruncated(e: MouseEvent) {
-  const el = e.currentTarget as HTMLElement
-  el.title = el.scrollWidth > el.clientWidth ? el.textContent ?? '' : ''
-}
+import CopyableCell from '@/components/CopyableCell.vue'
 
 const props = defineProps<{ response: string }>()
 
@@ -59,7 +55,7 @@ const totalSize = computed(() => virtualizer.value.getTotalSize())
                   j === 0 ? 'font-mono text-sm max-w-64' : 'max-w-64',
                 ]"
               >
-                <span class="block truncate" @mouseenter="showTitleIfTruncated">{{ cell }}</span>
+                <CopyableCell :value="cell" />
               </td>
             </tr>
           </tbody>
@@ -72,7 +68,7 @@ const totalSize = computed(() => virtualizer.value.getTotalSize())
       <Table>
         <TableBody>
           <TableRow v-for="item in resolvedParsed.items" :key="item">
-            <TableCell class="font-mono text-sm">{{ item }}</TableCell>
+            <TableCell class="font-mono text-sm"><CopyableCell :value="item" /></TableCell>
           </TableRow>
         </TableBody>
       </Table>
@@ -83,7 +79,7 @@ const totalSize = computed(() => virtualizer.value.getTotalSize())
       <dl class="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
         <template v-for="entry in resolvedParsed.entries" :key="entry.key">
           <dt class="text-muted-foreground font-medium">{{ entry.key }}</dt>
-          <dd class="font-mono truncate" @mouseenter="showTitleIfTruncated">{{ entry.value }}</dd>
+          <dd class="font-mono"><CopyableCell :value="entry.value" /></dd>
         </template>
       </dl>
     </template>

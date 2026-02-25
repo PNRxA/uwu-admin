@@ -19,6 +19,7 @@ import {
 } from '@/components/ui/table'
 import { RefreshCw } from 'lucide-vue-next'
 import RoomActionsMenu from '@/components/RoomActionsMenu.vue'
+import CopyableCell from '@/components/CopyableCell.vue'
 
 const queryClient = useQueryClient()
 const connection = useConnectionStore()
@@ -109,9 +110,9 @@ function onActionComplete() {
               <TableCell>
                 <RoomActionsMenu :room-id="room.id" @action-complete="onActionComplete" />
               </TableCell>
-              <TableCell class="font-mono text-sm max-w-64 truncate">{{ room.id }}</TableCell>
-              <TableCell class="text-right tabular-nums">{{ room.members.toLocaleString() }}</TableCell>
-              <TableCell>{{ room.name }}</TableCell>
+              <TableCell class="font-mono text-sm max-w-64"><CopyableCell :value="room.id" /></TableCell>
+              <TableCell class="tabular-nums"><CopyableCell :value="room.members.toLocaleString()" align="right" /></TableCell>
+              <TableCell><CopyableCell :value="room.name" /></TableCell>
             </TableRow>
           </TableBody>
         </Table>

@@ -17,6 +17,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { RefreshCw } from 'lucide-vue-next'
+import CopyableCell from '@/components/CopyableCell.vue'
 
 const connection = useConnectionStore()
 const commandStore = useCommandStore()
@@ -201,9 +202,9 @@ const totalDbMemory = computed(() => {
             </TableHeader>
             <TableBody>
               <TableRow v-for="service in services" :key="service.name">
-                <TableCell class="font-mono text-sm">{{ service.name }}</TableCell>
-                <TableCell class="text-right tabular-nums">{{ service.value }}</TableCell>
-                <TableCell class="text-right tabular-nums text-muted-foreground">{{ service.size || '\u2014' }}</TableCell>
+                <TableCell class="font-mono text-sm"><CopyableCell :value="service.name" /></TableCell>
+                <TableCell class="tabular-nums"><CopyableCell :value="service.value" align="right" /></TableCell>
+                <TableCell class="tabular-nums text-muted-foreground"><CopyableCell :value="service.size || '\u2014'" align="right" /></TableCell>
               </TableRow>
             </TableBody>
           </Table>
@@ -225,8 +226,8 @@ const totalDbMemory = computed(() => {
             </TableHeader>
             <TableBody>
               <TableRow v-for="entry in database" :key="entry.name">
-                <TableCell class="font-mono text-sm">{{ entry.name }}</TableCell>
-                <TableCell class="text-right tabular-nums">{{ entry.size }}</TableCell>
+                <TableCell class="font-mono text-sm"><CopyableCell :value="entry.name" /></TableCell>
+                <TableCell class="tabular-nums"><CopyableCell :value="entry.size" align="right" /></TableCell>
               </TableRow>
             </TableBody>
           </Table>
