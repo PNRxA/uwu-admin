@@ -128,6 +128,11 @@ async function request<T>(url: string, options?: RequestInit): Promise<T> {
     clearTimeout(timeout)
   }
 
+  if (res.status === 429) {
+    const retryAfter = Math.min(parseInt(res.headers.get('retry-after') ?? '60', 10) || 60, 120)
+    throw new Error(`Too many attempts. Try again in ${retryAfter}s.`)
+  }
+
   if (res.status === 401) {
     const refreshed = await attemptRefresh()
     if (refreshed) {
