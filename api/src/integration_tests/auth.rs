@@ -21,9 +21,14 @@ async fn setup_creates_admin() {
         .await
         .unwrap();
     assert_eq!(resp.status(), StatusCode::OK);
+
+    // Refresh token should be in Set-Cookie, not in JSON body
+    let cookie = extract_refresh_cookie(&resp);
+    assert!(cookie.is_some(), "refresh token should be in Set-Cookie header");
+
     let json = body_json(resp).await;
     assert!(json["token"].is_string());
-    assert!(json["refresh_token"].is_string());
+    assert!(json.get("refresh_token").is_none(), "refresh_token should not be in JSON body");
 }
 
 #[tokio::test]
@@ -84,9 +89,14 @@ async fn login_valid_credentials() {
         .await
         .unwrap();
     assert_eq!(resp.status(), StatusCode::OK);
+
+    // Refresh token should be in Set-Cookie, not in JSON body
+    let cookie = extract_refresh_cookie(&resp);
+    assert!(cookie.is_some(), "refresh token should be in Set-Cookie header");
+
     let json = body_json(resp).await;
     assert!(json["token"].is_string());
-    assert!(json["refresh_token"].is_string());
+    assert!(json.get("refresh_token").is_none(), "refresh_token should not be in JSON body");
 }
 
 #[tokio::test]

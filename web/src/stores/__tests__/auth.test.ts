@@ -15,7 +15,6 @@ vi.mock('@/lib/api', () => ({
     logout: vi.fn(),
   },
   setAuthToken: vi.fn(),
-  setRefreshToken: vi.fn(),
   loadAuthToken: vi.fn().mockReturnValue(null),
   clearAllTokens: vi.fn(),
 }))
@@ -46,7 +45,7 @@ describe('useAuthStore', () => {
 
   describe('login', () => {
     it('sets token and authenticated on success', async () => {
-      vi.mocked(api.login).mockResolvedValue({ token: 'tk', refresh_token: 'rt' })
+      vi.mocked(api.login).mockResolvedValue({ token: 'tk' })
       const store = useAuthStore()
       await store.login('user', 'pass')
       expect(store.token).toBe('tk')
@@ -64,12 +63,12 @@ describe('useAuthStore', () => {
     })
 
     it('sets loading flag during request', async () => {
-      let resolve: (v: { token: string; refresh_token: string }) => void
+      let resolve: (v: { token: string }) => void
       vi.mocked(api.login).mockReturnValue(new Promise((r) => { resolve = r }))
       const store = useAuthStore()
       const p = store.login('user', 'pass')
       expect(store.loading).toBe(true)
-      resolve!({ token: 'tk', refresh_token: 'rt' })
+      resolve!({ token: 'tk' })
       await p
       expect(store.loading).toBe(false)
     })
@@ -77,7 +76,7 @@ describe('useAuthStore', () => {
 
   describe('register', () => {
     it('sets token, authenticated, and clears setupRequired', async () => {
-      vi.mocked(api.register).mockResolvedValue({ token: 'tk', refresh_token: 'rt' })
+      vi.mocked(api.register).mockResolvedValue({ token: 'tk' })
       const store = useAuthStore()
       store.setupRequired = true
       await store.register('admin', 'pass')

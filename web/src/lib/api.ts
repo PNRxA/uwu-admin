@@ -32,11 +32,9 @@ interface AddServerResponse {
 
 interface AuthResponse {
   token: string
-  refresh_token: string
 }
 
 let authToken: string | null = sessionStorage.getItem('uwu-admin-token')
-let refreshToken: string | null = sessionStorage.getItem('uwu-admin-refresh-token')
 
 export function setAuthToken(token: string | null) {
   authToken = token
@@ -47,15 +45,6 @@ export function setAuthToken(token: string | null) {
   }
 }
 
-export function setRefreshToken(token: string | null) {
-  refreshToken = token
-  if (token) {
-    sessionStorage.setItem('uwu-admin-refresh-token', token)
-  } else {
-    sessionStorage.removeItem('uwu-admin-refresh-token')
-  }
-}
-
 export function loadAuthToken(): string | null {
   authToken = sessionStorage.getItem('uwu-admin-token')
   return authToken
@@ -63,7 +52,6 @@ export function loadAuthToken(): string | null {
 
 export function clearAllTokens() {
   setAuthToken(null)
-  setRefreshToken(null)
 }
 
 let refreshPromise: Promise<boolean> | null = null
@@ -72,13 +60,10 @@ async function attemptRefresh(): Promise<boolean> {
   if (refreshPromise) return refreshPromise
 
   refreshPromise = (async () => {
-    if (!refreshToken) return false
-
     try {
       const res = await fetch('/api/auth/refresh', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ refresh_token: refreshToken }),
+        credentials: 'include',
       })
 
       if (!res.ok) {
@@ -88,7 +73,6 @@ async function attemptRefresh(): Promise<boolean> {
 
       const data: AuthResponse = await res.json()
       setAuthToken(data.token)
-      setRefreshToken(data.refresh_token)
       return true
     } catch {
       clearAllTokens()
@@ -117,6 +101,7 @@ async function request<T>(url: string, options?: RequestInit): Promise<T> {
     res = await fetch(url, {
       headers,
       signal: controller.signal,
+      credentials: 'include',
       ...options,
     })
   } catch (e) {
@@ -153,6 +138,7 @@ async function request<T>(url: string, options?: RequestInit): Promise<T> {
           ...options,
           headers: retryHeaders,
           signal: retryController.signal,
+          credentials: 'include',
         })
       } catch (e) {
         if (e instanceof DOMException && e.name === 'AbortError') {

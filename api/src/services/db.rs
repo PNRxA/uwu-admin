@@ -216,7 +216,7 @@ pub async fn find_admin_user_by_username(
 }
 
 pub async fn find_admin_user_by_id(
-    db: &DatabaseConnection,
+    db: &impl ConnectionTrait,
     id: i32,
 ) -> Result<Option<admin_user::Model>, ApiError> {
     admin_user::Entity::find_by_id(id)
@@ -228,7 +228,7 @@ pub async fn find_admin_user_by_id(
 // --- Refresh token CRUD ---
 
 pub async fn create_refresh_token(
-    db: &DatabaseConnection,
+    db: &impl ConnectionTrait,
     user_id: i32,
     token_hash: &str,
     expires_at: &str,
@@ -254,7 +254,7 @@ pub async fn create_refresh_token(
 }
 
 pub async fn find_refresh_token_by_hash(
-    db: &DatabaseConnection,
+    db: &impl ConnectionTrait,
     token_hash: &str,
 ) -> Result<Option<refresh_token::Model>, ApiError> {
     use sea_orm::ColumnTrait;
@@ -266,7 +266,7 @@ pub async fn find_refresh_token_by_hash(
         .map_err(|e| ApiError::DbError(e.to_string()))
 }
 
-pub async fn delete_refresh_token(db: &DatabaseConnection, id: i32) -> Result<(), ApiError> {
+pub async fn delete_refresh_token(db: &impl ConnectionTrait, id: i32) -> Result<(), ApiError> {
     refresh_token::Entity::delete_by_id(id)
         .exec(db)
         .await

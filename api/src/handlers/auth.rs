@@ -1,17 +1,20 @@
 use axum::Json;
 use axum::Extension;
 use axum::extract::State;
-use jsonwebtoken::{encode, EncodingKey, Header};
+use axum::http::{HeaderMap, HeaderValue, header};
+use jsonwebtoken::{encode, EncodingKey, Header as JwtHeader};
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 use sha2::{Sha256, Digest};
 
 use crate::services::db;
+use crate::services::validation;
 use crate::error::ApiError;
 use crate::state::SharedState;
 
 const ACCESS_TOKEN_EXPIRY_MINUTES: i64 = 15;
 const REFRESH_TOKEN_EXPIRY_DAYS: i64 = 7;
+const REFRESH_TOKEN_MAX_AGE_SECS: i64 = REFRESH_TOKEN_EXPIRY_DAYS * 24 * 60 * 60;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Claims {
@@ -28,7 +31,10 @@ pub fn hash_password(password: &str) -> Result<String, ApiError> {
     argon2
         .hash_password(password.as_bytes(), &salt)
         .map(|h| h.to_string())
-        .map_err(|e| ApiError::BadRequest(format!("Failed to hash password: {e}")))
+        .map_err(|e| {
+            tracing::error!("Failed to hash password: {e}");
+            ApiError::BadRequest("Account operation failed".into())
+        })
 }
 
 pub fn verify_password(password: &str, hash: &str) -> Result<bool, ApiError> {
@@ -36,7 +42,10 @@ pub fn verify_password(password: &str, hash: &str) -> Result<bool, ApiError> {
     use argon2::Argon2;
 
     let parsed = PasswordHash::new(hash)
-        .map_err(|e| ApiError::BadRequest(format!("Invalid password hash: {e}")))?;
+        .map_err(|e| {
+            tracing::error!("Invalid password hash in database: {e}");
+            ApiError::BadRequest("Authentication failed".into())
+        })?;
     Ok(Argon2::default()
         .verify_password(password.as_bytes(), &parsed)
         .is_ok())
@@ -54,11 +63,14 @@ fn create_token(username: &str, secret: &[u8]) -> Result<String, ApiError> {
     };
 
     encode(
-        &Header::default(),
+        &JwtHeader::default(),
         &claims,
         &EncodingKey::from_secret(secret),
     )
-    .map_err(|e| ApiError::BadRequest(format!("Failed to create token: {e}")))
+    .map_err(|e| {
+        tracing::error!("Failed to create JWT: {e}");
+        ApiError::BadRequest("Authentication failed".into())
+    })
 }
 
 fn generate_refresh_token() -> String {
@@ -74,7 +86,7 @@ pub(crate) fn hash_refresh_token(token: &str) -> String {
 }
 
 async fn issue_token_pair(
-    db: &sea_orm::DatabaseConnection,
+    db: &impl sea_orm::ConnectionTrait,
     jwt_secret: &[u8],
     user_id: i32,
     username: &str,
@@ -112,9 +124,26 @@ pub struct LoginRequest {
     password: String,
 }
 
-#[derive(Deserialize)]
-pub struct RefreshRequest {
-    refresh_token: String,
+fn refresh_cookie(token: &str, max_age_secs: i64, secure: bool) -> String {
+    let mut cookie = format!(
+        "refresh_token={token}; HttpOnly; SameSite=Strict; Path=/api/auth/refresh; Max-Age={max_age_secs}"
+    );
+    if secure {
+        cookie.push_str("; Secure");
+    }
+    cookie
+}
+
+fn extract_refresh_token_from_cookies(headers: &HeaderMap) -> Option<String> {
+    headers
+        .get(header::COOKIE)?
+        .to_str()
+        .ok()?
+        .split(';')
+        .find_map(|c| {
+            let c = c.trim();
+            c.strip_prefix("refresh_token=").map(|v| v.to_string())
+        })
 }
 
 pub async fn auth_status(
@@ -127,30 +156,31 @@ pub async fn auth_status(
 pub async fn setup(
     State(state): State<SharedState>,
     Json(req): Json<SetupRequest>,
-) -> Result<Json<Value>, ApiError> {
-    if req.username.trim().is_empty() || req.password.trim().is_empty() {
-        return Err(ApiError::BadRequest("Username and password are required".into()));
-    }
-
-    if req.password.len() < 8 {
-        return Err(ApiError::BadRequest(
-            "Password must be at least 8 characters".into(),
-        ));
-    }
+) -> Result<(HeaderMap, Json<Value>), ApiError> {
+    validation::validate_username(&req.username)?;
+    validation::validate_password(&req.password)?;
 
     let password_hash = hash_password(&req.password)?;
     let user = db::create_first_admin_user(&state.db, &req.username, &password_hash).await?;
 
     tracing::info!("Admin account setup completed for user '{}'", req.username);
 
-    let (token, refresh_token) = issue_token_pair(&state.db, &state.jwt_secret, user.id, &user.username).await?;
-    Ok(Json(json!({ "token": token, "refresh_token": refresh_token })))
+    let (token, raw_refresh) = issue_token_pair(&state.db, &state.jwt_secret, user.id, &user.username).await?;
+
+    let mut headers = HeaderMap::new();
+    headers.insert(
+        header::SET_COOKIE,
+        HeaderValue::from_str(&refresh_cookie(&raw_refresh, REFRESH_TOKEN_MAX_AGE_SECS, state.secure_cookies))
+            .expect("valid cookie"),
+    );
+
+    Ok((headers, Json(json!({ "token": token }))))
 }
 
 pub async fn login(
     State(state): State<SharedState>,
     Json(req): Json<LoginRequest>,
-) -> Result<Json<Value>, ApiError> {
+) -> Result<(HeaderMap, Json<Value>), ApiError> {
     let user = match db::find_admin_user_by_username(&state.db, &req.username).await? {
         Some(user) => user,
         None => {
@@ -166,17 +196,32 @@ pub async fn login(
 
     tracing::info!("Admin login successful for user '{}'", req.username);
 
-    let (token, refresh_token) = issue_token_pair(&state.db, &state.jwt_secret, user.id, &user.username).await?;
-    Ok(Json(json!({ "token": token, "refresh_token": refresh_token })))
+    let (token, raw_refresh) = issue_token_pair(&state.db, &state.jwt_secret, user.id, &user.username).await?;
+
+    let mut headers = HeaderMap::new();
+    headers.insert(
+        header::SET_COOKIE,
+        HeaderValue::from_str(&refresh_cookie(&raw_refresh, REFRESH_TOKEN_MAX_AGE_SECS, state.secure_cookies))
+            .expect("valid cookie"),
+    );
+
+    Ok((headers, Json(json!({ "token": token }))))
 }
 
 pub async fn refresh(
     State(state): State<SharedState>,
-    Json(req): Json<RefreshRequest>,
-) -> Result<Json<Value>, ApiError> {
-    let token_hash = hash_refresh_token(&req.refresh_token);
+    req_headers: HeaderMap,
+) -> Result<(HeaderMap, Json<Value>), ApiError> {
+    use sea_orm::TransactionTrait;
 
-    let stored = db::find_refresh_token_by_hash(&state.db, &token_hash)
+    let raw_token = extract_refresh_token_from_cookies(&req_headers)
+        .ok_or(ApiError::Unauthorized)?;
+
+    let txn = state.db.begin().await.map_err(|e| ApiError::DbError(e.to_string()))?;
+
+    let token_hash = hash_refresh_token(&raw_token);
+
+    let stored = db::find_refresh_token_by_hash(&txn, &token_hash)
         .await?
         .ok_or(ApiError::Unauthorized)?;
 
@@ -185,35 +230,52 @@ pub async fn refresh(
         .map_err(|e| ApiError::DbError(format!("Invalid expiry format: {e}")))?;
     let expires_at_utc = expires_at.and_utc();
     if expires_at_utc < chrono::Utc::now() {
-        db::delete_refresh_token(&state.db, stored.id).await?;
+        db::delete_refresh_token(&txn, stored.id).await?;
+        txn.commit().await.map_err(|e| ApiError::DbError(e.to_string()))?;
         return Err(ApiError::Unauthorized);
     }
 
     // Look up user
-    let user = db::find_admin_user_by_id(&state.db, stored.user_id)
+    let user = db::find_admin_user_by_id(&txn, stored.user_id)
         .await?
         .ok_or(ApiError::Unauthorized)?;
 
     // Issue new token pair BEFORE deleting old (avoids gap where no valid token exists)
-    let (token, refresh_token) = issue_token_pair(&state.db, &state.jwt_secret, user.id, &user.username).await?;
+    let (token, raw_refresh) = issue_token_pair(&txn, &state.jwt_secret, user.id, &user.username).await?;
 
     // Rotation: delete old refresh token (single-use)
-    db::delete_refresh_token(&state.db, stored.id).await?;
+    db::delete_refresh_token(&txn, stored.id).await?;
 
-    Ok(Json(json!({ "token": token, "refresh_token": refresh_token })))
+    txn.commit().await.map_err(|e| ApiError::DbError(e.to_string()))?;
+
+    let mut headers = HeaderMap::new();
+    headers.insert(
+        header::SET_COOKIE,
+        HeaderValue::from_str(&refresh_cookie(&raw_refresh, REFRESH_TOKEN_MAX_AGE_SECS, state.secure_cookies))
+            .expect("valid cookie"),
+    );
+
+    Ok((headers, Json(json!({ "token": token }))))
 }
 
 pub async fn logout(
     State(state): State<SharedState>,
     Extension(auth_user): Extension<AuthUser>,
-) -> Result<Json<Value>, ApiError> {
+) -> Result<(HeaderMap, Json<Value>), ApiError> {
     let user = db::find_admin_user_by_username(&state.db, &auth_user.username)
         .await?
         .ok_or(ApiError::Unauthorized)?;
 
     db::delete_refresh_tokens_for_user(&state.db, user.id).await?;
 
-    Ok(Json(json!({ "ok": true })))
+    let mut headers = HeaderMap::new();
+    headers.insert(
+        header::SET_COOKIE,
+        HeaderValue::from_str(&refresh_cookie("", 0, state.secure_cookies))
+            .expect("valid cookie"),
+    );
+
+    Ok((headers, Json(json!({ "ok": true }))))
 }
 
 #[cfg(test)]

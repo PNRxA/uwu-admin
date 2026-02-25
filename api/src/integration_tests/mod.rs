@@ -26,7 +26,7 @@ async fn test_state() -> SharedState {
         .expect("in-memory DB");
     let jwt_secret = Zeroizing::new(vec![0xAA; 32]);
     let encryption_key = Zeroizing::new(vec![0xBB; 32]);
-    AppState::new(db, jwt_secret, encryption_key)
+    AppState::new(db, jwt_secret, encryption_key, false)
 }
 
 fn test_app_with_state(state: SharedState) -> Router {
@@ -88,6 +88,29 @@ fn delete_json_auth(uri: &str, token: &str) -> Request<Body> {
         .unwrap()
 }
 
+/// Extract the refresh_token value from a Set-Cookie header
+fn extract_refresh_cookie(response: &axum::response::Response) -> Option<String> {
+    response
+        .headers()
+        .get("set-cookie")?
+        .to_str()
+        .ok()?
+        .split(';')
+        .next()?
+        .strip_prefix("refresh_token=")
+        .map(|s| s.to_string())
+}
+
+fn post_with_cookie(uri: &str, body: &Value, refresh_token: &str) -> Request<Body> {
+    Request::builder()
+        .method("POST")
+        .uri(uri)
+        .header("content-type", "application/json")
+        .header("cookie", format!("refresh_token={refresh_token}"))
+        .body(Body::from(serde_json::to_vec(body).unwrap()))
+        .unwrap()
+}
+
 /// Run setup and return (access_token, refresh_token)
 async fn do_setup(app: &Router) -> (String, String) {
     let body = json!({"username": "admin", "password": "supersecret123"});
@@ -97,10 +120,12 @@ async fn do_setup(app: &Router) -> (String, String) {
         .await
         .unwrap();
     assert_eq!(resp.status(), StatusCode::OK);
+    let refresh_token = extract_refresh_cookie(&resp)
+        .expect("setup response should include Set-Cookie with refresh_token");
     let json = body_json(resp).await;
     (
         json["token"].as_str().unwrap().to_string(),
-        json["refresh_token"].as_str().unwrap().to_string(),
+        refresh_token,
     )
 }
 

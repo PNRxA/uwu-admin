@@ -69,14 +69,10 @@ test.describe('Logout', () => {
     // Should redirect to login page
     await page.waitForURL('**/login', { timeout: 10000 })
 
-    // Verify sessionStorage is cleared
+    // Verify sessionStorage is cleared (refresh token is now HttpOnly cookie)
     const tokenAfter = await page.evaluate(() =>
       sessionStorage.getItem('uwu-admin-token'),
     )
-    const refreshAfter = await page.evaluate(() =>
-      sessionStorage.getItem('uwu-admin-refresh-token'),
-    )
     expect(tokenAfter).toBeNull()
-    expect(refreshAfter).toBeNull()
   })
 })

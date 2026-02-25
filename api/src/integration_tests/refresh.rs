@@ -8,15 +8,19 @@ async fn refresh_valid_token() {
     let app = test_app_with_state(state);
     let (_, refresh) = do_setup(&app).await;
 
-    let body = json!({"refresh_token": refresh});
     let resp = app
-        .oneshot(post_json("/api/auth/refresh", &body))
+        .oneshot(post_with_cookie("/api/auth/refresh", &json!({}), &refresh))
         .await
         .unwrap();
     assert_eq!(resp.status(), StatusCode::OK);
+
+    // New refresh token should be in Set-Cookie
+    let new_cookie = extract_refresh_cookie(&resp);
+    assert!(new_cookie.is_some(), "refresh response should set new cookie");
+
     let json = body_json(resp).await;
     assert!(json["token"].is_string());
-    assert!(json["refresh_token"].is_string());
+    assert!(json.get("refresh_token").is_none(), "refresh_token should not be in JSON body");
 }
 
 #[tokio::test]
@@ -26,18 +30,17 @@ async fn refresh_token_single_use() {
     let app = test_app_with_state(state);
     let (_, refresh) = do_setup(&app).await;
 
-    let body = json!({"refresh_token": refresh});
     // First use should succeed
     let resp = app
         .clone()
-        .oneshot(post_json("/api/auth/refresh", &body))
+        .oneshot(post_with_cookie("/api/auth/refresh", &json!({}), &refresh))
         .await
         .unwrap();
     assert_eq!(resp.status(), StatusCode::OK);
 
     // Second use should fail (single-use rotation)
     let resp = app
-        .oneshot(post_json("/api/auth/refresh", &body))
+        .oneshot(post_with_cookie("/api/auth/refresh", &json!({}), &refresh))
         .await
         .unwrap();
     assert_eq!(resp.status(), StatusCode::UNAUTHORIZED);
@@ -63,9 +66,8 @@ async fn expired_refresh_token_rejected() {
         .await
         .unwrap();
 
-    let body = json!({"refresh_token": raw_token});
     let resp = app
-        .oneshot(post_json("/api/auth/refresh", &body))
+        .oneshot(post_with_cookie("/api/auth/refresh", &json!({}), raw_token))
         .await
         .unwrap();
     assert_eq!(resp.status(), StatusCode::UNAUTHORIZED);

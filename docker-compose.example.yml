@@ -12,6 +12,15 @@ services:
       # Optional: seed an admin account on first start (skips the setup screen)
       # ADMIN_USERNAME: "admin"
       # ADMIN_PASSWORD: "changeme123"
+      # Allow homeservers on private/loopback IPs (e.g. same Docker network)
+      # ALLOW_PRIVATE_HOMESERVERS: "true"
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    read_only: true
+    tmpfs:
+      - /tmp
     volumes:
       - uwu-data:/data
     restart: unless-stopped

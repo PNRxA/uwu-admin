@@ -12,7 +12,6 @@ vi.mock('@/lib/api', () => ({
     command: vi.fn(),
   },
   setAuthToken: vi.fn(),
-  setRefreshToken: vi.fn(),
   loadAuthToken: vi.fn().mockReturnValue(null),
   clearAllTokens: vi.fn(),
 }))

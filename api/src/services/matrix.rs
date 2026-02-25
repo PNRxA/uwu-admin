@@ -1,3 +1,4 @@
+use percent_encoding::{utf8_percent_encode, NON_ALPHANUMERIC};
 use sea_orm::DatabaseConnection;
 use serde_json::{Value, json};
 use uuid::Uuid;
@@ -209,7 +210,8 @@ impl MatrixClient {
                 self.homeserver
             );
             if let Some(since) = &self.since {
-                url.push_str(&format!("&since={since}"));
+                url.push_str("&since=");
+                url.push_str(&utf8_percent_encode(since, NON_ALPHANUMERIC).to_string());
             }
 
             let resp = self
@@ -278,14 +280,10 @@ impl MatrixClient {
     /// Download a file from a Matrix `mxc://` URL and return its contents as a
     /// UTF-8 string.
     async fn download_mxc(&self, mxc_url: &str) -> Result<String, ApiError> {
-        // mxc://server_name/media_id -> /_matrix/media/v3/download/server_name/media_id
-        let path = mxc_url
-            .strip_prefix("mxc://")
-            .ok_or_else(|| ApiError::MatrixError(format!("Invalid mxc URL: {mxc_url}")))?;
-
+        let (server_name, media_id) = parse_mxc_url(mxc_url)?;
         let url = format!(
-            "{}/_matrix/media/{MATRIX_API_VERSION}/download/{path}",
-            self.homeserver
+            "{}/_matrix/media/{MATRIX_API_VERSION}/download/{}/{}",
+            self.homeserver, urlencoded(server_name), urlencoded(media_id),
         );
 
         let resp = self
@@ -341,7 +339,8 @@ impl MatrixClient {
             self.homeserver
         );
         if let Some(since) = &self.since {
-            url.push_str(&format!("&since={since}"));
+            url.push_str("&since=");
+            url.push_str(&utf8_percent_encode(since, NON_ALPHANUMERIC).to_string());
         }
 
         let resp = self
@@ -422,7 +421,56 @@ async fn resolve_alias(
         .ok_or_else(|| ApiError::MatrixError("No room_id in alias response".into()))
 }
 
+fn parse_mxc_url(mxc_url: &str) -> Result<(&str, &str), ApiError> {
+    let path = mxc_url
+        .strip_prefix("mxc://")
+        .ok_or_else(|| ApiError::MatrixError("Invalid mxc URL: missing mxc:// prefix".into()))?;
+    let (server_name, media_id) = path
+        .split_once('/')
+        .ok_or_else(|| ApiError::MatrixError("Invalid mxc URL: missing media_id".into()))?;
+    if server_name.is_empty() || media_id.is_empty() {
+        return Err(ApiError::MatrixError("Invalid mxc URL: empty component".into()));
+    }
+    if server_name.contains("..") || media_id.contains("..") || media_id.contains('/') {
+        return Err(ApiError::MatrixError("Invalid mxc URL: path traversal".into()));
+    }
+    Ok((server_name, media_id))
+}
+
 fn urlencoded(s: &str) -> String {
-    s.replace('#', "%23")
-        .replace(':', "%3A")
+    utf8_percent_encode(s, NON_ALPHANUMERIC).to_string()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn parse_mxc_url_valid() {
+        let (server, media) = parse_mxc_url("mxc://matrix.org/abc123").unwrap();
+        assert_eq!(server, "matrix.org");
+        assert_eq!(media, "abc123");
+    }
+
+    #[test]
+    fn parse_mxc_url_rejects_wrong_prefix() {
+        assert!(parse_mxc_url("https://matrix.org/abc123").is_err());
+    }
+
+    #[test]
+    fn parse_mxc_url_rejects_missing_media_id() {
+        assert!(parse_mxc_url("mxc://matrix.org").is_err());
+    }
+
+    #[test]
+    fn parse_mxc_url_rejects_empty_components() {
+        assert!(parse_mxc_url("mxc:///abc123").is_err());
+        assert!(parse_mxc_url("mxc://matrix.org/").is_err());
+    }
+
+    #[test]
+    fn parse_mxc_url_rejects_path_traversal() {
+        assert!(parse_mxc_url("mxc://matrix.org/../etc/passwd").is_err());
+        assert!(parse_mxc_url("mxc://..evil.com/media").is_err());
+    }
 }

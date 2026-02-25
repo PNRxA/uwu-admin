@@ -13,15 +13,22 @@ pub struct AppState {
     pub db: DatabaseConnection,
     pub jwt_secret: Zeroizing<Vec<u8>>,
     pub encryption_key: Zeroizing<Vec<u8>>,
+    pub secure_cookies: bool,
 }
 
 impl AppState {
-    pub fn new(db: DatabaseConnection, jwt_secret: Zeroizing<Vec<u8>>, encryption_key: Zeroizing<Vec<u8>>) -> SharedState {
+    pub fn new(
+        db: DatabaseConnection,
+        jwt_secret: Zeroizing<Vec<u8>>,
+        encryption_key: Zeroizing<Vec<u8>>,
+        secure_cookies: bool,
+    ) -> SharedState {
         Arc::new(AppState {
             clients: Mutex::new(HashMap::new()),
             db,
             jwt_secret,
             encryption_key,
+            secure_cookies,
         })
     }
 }

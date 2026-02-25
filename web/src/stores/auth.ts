@@ -1,6 +1,6 @@
 import { ref } from 'vue'
 import { defineStore } from 'pinia'
-import { api, setAuthToken, setRefreshToken, loadAuthToken, clearAllTokens } from '@/lib/api'
+import { api, setAuthToken, loadAuthToken, clearAllTokens } from '@/lib/api'
 import { useConnectionStore } from '@/stores/connection'
 import { useCommandStore } from '@/stores/command'
 import i18n from '@/i18n'
@@ -38,7 +38,6 @@ export const useAuthStore = defineStore('auth', () => {
       const res = await api.login(username, password)
       token.value = res.token
       setAuthToken(res.token)
-      setRefreshToken(res.refresh_token)
       authenticated.value = true
     } catch (e) {
       error.value = e instanceof Error ? e.message : t('auth.loginFailed')
@@ -55,7 +54,6 @@ export const useAuthStore = defineStore('auth', () => {
       const res = await api.register(username, password)
       token.value = res.token
       setAuthToken(res.token)
-      setRefreshToken(res.refresh_token)
       authenticated.value = true
       setupRequired.value = false
     } catch (e) {

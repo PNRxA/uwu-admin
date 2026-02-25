@@ -52,7 +52,7 @@ pub async fn require_auth(
     let token_data = decode::<Claims>(
         token,
         &DecodingKey::from_secret(&state.jwt_secret),
-        &Validation::default(),
+        &Validation::new(jsonwebtoken::Algorithm::HS256),
     )
     .map_err(|_| StatusCode::UNAUTHORIZED)?;
 

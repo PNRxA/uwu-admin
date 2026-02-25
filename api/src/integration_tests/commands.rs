@@ -149,7 +149,7 @@ async fn execute_all_command_tree_commands() {
         app.clone(),
         server_id,
         token.clone(),
-        format!("users create-user {test_username}"),
+        format!("users create-user {test_user_id}"),
     )
     .await;
     assert_eq!(status, StatusCode::OK, "Failed to create test user");

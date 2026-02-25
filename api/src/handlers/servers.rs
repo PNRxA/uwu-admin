@@ -31,7 +31,7 @@ pub async fn add_server(
     State(state): State<SharedState>,
     Json(req): Json<AddServerRequest>,
 ) -> Result<Json<Value>, ApiError> {
-    validation::validate_homeserver_url(&req.homeserver)?;
+    validation::validate_homeserver_url_resolved(&req.homeserver).await?;
 
     let client = MatrixClient::login(&req.homeserver, &req.username, &req.password, &req.room_id)
         .await?;

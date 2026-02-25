@@ -1,4 +1,4 @@
-import { setAuthToken, setRefreshToken, loadAuthToken, clearAllTokens, api } from '../api'
+import { setAuthToken, loadAuthToken, clearAllTokens, api } from '../api'
 
 // Prevent actual navigation
 const locationMock = { href: '' }
@@ -32,22 +32,15 @@ describe('token management', () => {
     expect(sessionStorage.getItem('uwu-admin-token')).toBeNull()
   })
 
-  it('setRefreshToken stores refresh token', () => {
-    setRefreshToken('refresh123')
-    expect(sessionStorage.getItem('uwu-admin-refresh-token')).toBe('refresh123')
-  })
-
   it('loadAuthToken reads from sessionStorage', () => {
     sessionStorage.setItem('uwu-admin-token', 'stored-token')
     expect(loadAuthToken()).toBe('stored-token')
   })
 
-  it('clearAllTokens removes both tokens', () => {
+  it('clearAllTokens removes auth token', () => {
     setAuthToken('a')
-    setRefreshToken('b')
     clearAllTokens()
     expect(sessionStorage.getItem('uwu-admin-token')).toBeNull()
-    expect(sessionStorage.getItem('uwu-admin-refresh-token')).toBeNull()
   })
 })
 
@@ -60,20 +53,22 @@ describe('api.authStatus', () => {
     expect(res).toEqual({ setup_required: false })
     expect(fetchMock).toHaveBeenCalledWith('/api/auth/status', expect.objectContaining({
       headers: expect.objectContaining({ 'Content-Type': 'application/json' }),
+      credentials: 'include',
     }))
   })
 })
 
 describe('api.login', () => {
   it('sends credentials and returns token', async () => {
-    const fetchMock = mockFetch({ token: 'tk', refresh_token: 'rt' })
+    const fetchMock = mockFetch({ token: 'tk' })
     vi.stubGlobal('fetch', fetchMock)
 
     const res = await api.login('user', 'pass')
-    expect(res).toEqual({ token: 'tk', refresh_token: 'rt' })
+    expect(res).toEqual({ token: 'tk' })
     expect(fetchMock).toHaveBeenCalledWith('/api/auth/login', expect.objectContaining({
       method: 'POST',
       body: JSON.stringify({ username: 'user', password: 'pass' }),
+      credentials: 'include',
     }))
   })
 })
@@ -121,7 +116,6 @@ describe('auth header injection', () => {
 describe('401 refresh flow', () => {
   it('attempts token refresh on 401 and retries', async () => {
     setAuthToken('expired')
-    setRefreshToken('valid-refresh')
 
     let callCount = 0
     vi.stubGlobal('fetch', vi.fn().mockImplementation((url: string) => {
@@ -130,7 +124,7 @@ describe('401 refresh flow', () => {
         return Promise.resolve({
           ok: true,
           status: 200,
-          json: () => Promise.resolve({ token: 'new-token', refresh_token: 'new-refresh' }),
+          json: () => Promise.resolve({ token: 'new-token' }),
         })
       }
       if (callCount === 1) {
@@ -148,7 +142,6 @@ describe('401 refresh flow', () => {
 
   it('redirects to /login when refresh fails', async () => {
     setAuthToken('expired')
-    setRefreshToken('bad-refresh')
 
     vi.stubGlobal('fetch', vi.fn().mockImplementation((url: string) => {
       if (url === '/api/auth/refresh') {
@@ -161,9 +154,8 @@ describe('401 refresh flow', () => {
     expect(locationMock.href).toBe('/login')
   })
 
-  it('redirects to /login when no refresh token exists', async () => {
+  it('redirects to /login when refresh call fails', async () => {
     setAuthToken('expired')
-    // No refresh token
 
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
       ok: false,

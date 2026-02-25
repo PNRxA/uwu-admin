@@ -69,13 +69,10 @@ setup('authenticate and add server', async ({ page }) => {
     page.locator('[data-sonner-toast][data-type="success"]'),
   ).toBeVisible({ timeout: 30000 })
 
-  // Extract sessionStorage tokens and save them
+  // Extract sessionStorage token and save it (refresh token is now HttpOnly cookie)
   const session = await page.evaluate(() => {
     return {
       'uwu-admin-token': sessionStorage.getItem('uwu-admin-token'),
-      'uwu-admin-refresh-token': sessionStorage.getItem(
-        'uwu-admin-refresh-token',
-      ),
     }
   })
   fs.writeFileSync(SESSION_PATH, JSON.stringify(session, null, 2))

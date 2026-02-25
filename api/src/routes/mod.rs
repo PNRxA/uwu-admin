@@ -28,11 +28,13 @@ pub fn build_router(state: SharedState) -> Router {
                     HeaderName::from_static("authorization"),
                 ]);
             match std::env::var("CORS_ORIGIN") {
-                Ok(origin) => cors.allow_origin(
-                    origin
-                        .parse::<axum::http::HeaderValue>()
-                        .expect("Invalid CORS_ORIGIN"),
-                ),
+                Ok(origin) => cors
+                    .allow_origin(
+                        origin
+                            .parse::<axum::http::HeaderValue>()
+                            .expect("Invalid CORS_ORIGIN"),
+                    )
+                    .allow_credentials(true),
                 Err(_) => cors.allow_origin(AllowOrigin::default()),
             }
         })

@@ -3418,6 +3418,7 @@ dependencies = [
  "dotenvy",
  "http-body-util",
  "jsonwebtoken",
+ "percent-encoding",
  "rand 0.8.5",
  "regex",
  "reqwest",

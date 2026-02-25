@@ -24,6 +24,13 @@ async fn main() {
     // Load .env file if present (useful for development)
     dotenvy::dotenv().ok();
 
+    if std::env::var("CORS_ORIGIN").is_err() {
+        tracing::warn!(
+            "CORS_ORIGIN is not set — CSRF protection is disabled. \
+             Set CORS_ORIGIN to your frontend URL in production."
+        );
+    }
+
     services::commands::init();
 
     let database_url =
@@ -122,7 +129,11 @@ async fn main() {
         _ => {}
     }
 
-    let state = AppState::new(db, jwt_secret, encryption_key);
+    let secure_cookies = std::env::var("COOKIE_SECURE")
+        .map(|v| v != "0" && v.to_lowercase() != "false")
+        .unwrap_or(true);
+
+    let state = AppState::new(db, jwt_secret, encryption_key, secure_cookies);
 
     // Restore all saved servers
     match services::db::load_all_servers(&state.db, &state.encryption_key).await {

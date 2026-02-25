@@ -1,5 +1,7 @@
 # uwu-admin
 
+https://github.com/user-attachments/assets/36a10541-87f8-4490-a093-9c431be29436
+
 Web admin dashboard for [Continuwuity](https://continuwuity.org) Matrix homeservers.
 
 Continuwuity only supports admin commands via messages in a special admin room. uwu-admin provides a proper web UI by connecting to the homeserver as a bot account, sending admin commands to the admin room, and displaying the results.
@@ -58,7 +60,9 @@ Paste a unique value into each field in `api/.env`. If left unset the API will g
 | `ADMIN_PASSWORD` | Password for the seeded admin account | none |
 | `DATABASE_URL` | SQLite connection string | `sqlite:uwu-admin.db?mode=rwc` |
 | `API_LISTEN` | API bind address | `127.0.0.1:3001` |
-| `CORS_ORIGIN` | Allowed CORS origin | none |
+| `CORS_ORIGIN` | Allowed CORS origin (enables CSRF protection and credentialed cookies) | none |
+| `COOKIE_SECURE` | Set the `Secure` flag on refresh token cookies | `true` |
+| `ALLOW_PRIVATE_HOMESERVERS` | Allow adding homeservers that resolve to private/loopback IPs (needed when the homeserver is on the same host or network) | `false` |
 
 ## Development
 

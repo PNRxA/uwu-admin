@@ -10,6 +10,8 @@ Volume=uwu-data.volume:/data
 # Generate with: openssl rand -hex 32
 Environment=JWT_SECRET=0000000000000000000000000000000000000000000000000000000000000000
 Environment=ENCRYPTION_KEY=0000000000000000000000000000000000000000000000000000000000000000
+# Allow homeservers on private/loopback IPs (e.g. same Podman network)
+# Environment=ALLOW_PRIVATE_HOMESERVERS=true
 
 [Install]
 WantedBy=default.target
