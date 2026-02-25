@@ -11,7 +11,6 @@ Continuwuity only supports admin commands via messages in a special admin room. 
 - [Session Persistence](#session-persistence)
 - [Container Deployment](#container-deployment)
 - [Scripts](#scripts)
-- [Command Tree](#command-tree)
 - [Testing](#testing)
 
 ## Architecture
@@ -101,7 +100,7 @@ Helper scripts live in the `scripts/` directory.
 
 ### `update-command-tree.sh`
 
-Regenerates `shared/command-tree.json` from the continuwuity source. Clones the uwu-admin fork of continuwuity into `../continuwuity` if it doesn't already exist, rebases on upstream, and runs `cargo xtask generate-command-tree`. Build prerequisites are the same as for continuwuity itself (Rust, C/C++ compiler, libclang, liburing, make).
+Regenerates `shared/command-tree.json` from the [uwu-admin fork of continuwuity](https://github.com/PNRxA/continuwuity). Clones the fork into `../continuwuity` if it doesn't already exist, rebases on upstream, and runs `cargo xtask generate-command-tree`. Build prerequisites are the same as for continuwuity itself (Rust, C/C++ compiler, libclang, liburing, make).
 
 ```sh
 ./scripts/update-command-tree.sh
@@ -127,9 +126,9 @@ Development helper for managing the uwu-admin Podman Quadlet. Builds the contain
 | `logs` | Follow the service journal logs |
 | `destroy` | Stop service, remove quadlet files, volume, and image |
 
-## Command Tree
+### Command Tree
 
-The file `shared/command-tree.json` describes every admin command (names, descriptions, argument types) and powers the console's autocomplete. It is auto-generated from the continuwuity source code via [`update-command-tree.sh`](#update-command-treesh).
+The file `shared/command-tree.json` describes every admin command (names, descriptions, argument types) and powers the console's autocomplete. It is auto-generated from the [continuwuity fork](https://github.com/PNRxA/continuwuity) source code via [`update-command-tree.sh`](#update-command-treesh).
 
 ## Testing
 
