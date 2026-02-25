@@ -51,7 +51,7 @@ describe('getSuggestions', () => {
     expect(suggestions[0].name).toBe('admin')
   })
 
-  it('returns all top-level items for a single space', () => {
+  it('filters top-level commands by partial input', () => {
     // Trailing space after nothing meaningful — parseTokens returns completed=[], partial=''
     // But actually with leading space stripped, '' → no suggestions
     const { suggestions } = getSuggestions('a')

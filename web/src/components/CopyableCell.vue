@@ -30,7 +30,7 @@ async function copyValue() {
 
 <template>
   <div :class="['group/copy flex items-center gap-1 min-w-0', align === 'right' && 'justify-end']">
-    <span class="min-w-0 truncate cursor-pointer" @mouseenter="showTitleIfTruncated" @click.stop="copyValue">{{ value }}</span>
+    <span data-testid="copyable-cell" class="min-w-0 truncate cursor-pointer" @mouseenter="showTitleIfTruncated" @click.stop="copyValue">{{ value }}</span>
     <button
       type="button"
       aria-label="Copy"

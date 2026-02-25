@@ -138,6 +138,7 @@ function onBlur() {
         <button
           v-for="(suggestion, i) in suggestions"
           :key="suggestion.name"
+          data-testid="autocomplete-suggestion"
           :data-autocomplete-selected="i === selectedIndex"
           class="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none cursor-pointer"
           :class="i === selectedIndex ? 'bg-accent text-accent-foreground' : 'hover:bg-accent/50'"

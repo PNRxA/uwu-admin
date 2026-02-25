@@ -16,7 +16,7 @@ test.describe('Copy to clipboard', () => {
       .nth(1)
       .locator('td')
       .nth(1)
-      .locator('span.cursor-pointer')
+      .locator('[data-testid="copyable-cell"]')
     await expect(firstUserCell).toBeVisible({ timeout: 15000 })
 
     const cellText = (await firstUserCell.innerText()).trim()
@@ -39,7 +39,7 @@ test.describe('Copy to clipboard', () => {
       .nth(1)
       .locator('td')
       .nth(1)
-      .locator('span.cursor-pointer')
+      .locator('[data-testid="copyable-cell"]')
     await expect(firstRoomIdCell).toBeVisible({ timeout: 15000 })
 
     const cellText = (await firstRoomIdCell.innerText()).trim()

@@ -100,6 +100,7 @@ test.describe('User actions', () => {
   test('reset password', async ({ page }) => {
     await page.goto('/users')
     await openActionsMenu(page, testUserId)
+    // No input fields — the server generates a random password automatically
     await executeInputAction(page, 'Reset Password', {})
   })
 

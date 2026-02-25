@@ -13,7 +13,7 @@ async function clickAutocomplete(
   for (const token of tokens) {
     // The dropdown renders above the input — find the exact match
     const btn = page
-      .locator('button.flex.w-full.items-center.gap-2')
+      .locator('[data-testid="autocomplete-suggestion"]')
       .filter({ has: page.locator('code', { hasText: new RegExp(`^${token}$`) }) })
     await expect(btn.first()).toBeVisible({ timeout: 5000 })
     await btn.first().click()
@@ -31,7 +31,7 @@ async function expectConsoleResponse(
   const okBadge = container.locator('code', { hasText: '!admin users list-users' })
   await expect(okBadge).toBeVisible({ timeout: 15000 })
   // Response area should have content
-  const response = container.locator('.console-response').last()
+  const response = container.locator('[data-testid="console-response"]').last()
   await expect(response).toBeVisible()
   // Should not be "Waiting for response..."
   await expect(response).not.toHaveText(/Waiting for response/, { timeout: 15000 })

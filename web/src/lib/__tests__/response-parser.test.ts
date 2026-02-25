@@ -1,4 +1,12 @@
 import { stripHtml, parseResponse } from '../response-parser'
+import type { ParsedResponse } from '../response-parser'
+
+function assertType<T extends ParsedResponse['type']>(
+  r: ParsedResponse,
+  type: T,
+): asserts r is Extract<ParsedResponse, { type: T }> {
+  expect(r.type).toBe(type)
+}
 
 describe('stripHtml', () => {
   it('strips HTML tags and returns text content', () => {
@@ -39,26 +47,20 @@ describe('parseResponse', () => {
   describe('header detection', () => {
     it('detects "Something:" header', () => {
       const r = parseResponse('Users:\n@alice:example.com\n@bob:example.com')
-      expect(r.type).toBe('list')
-      if (r.type === 'list') {
-        expect(r.header).toBe('Users')
-      }
+      assertType(r, 'list')
+      expect(r.header).toBe('Users')
     })
 
     it('detects "Something (N):" header', () => {
       const r = parseResponse('Users (2):\n@alice:example.com\n@bob:example.com')
-      expect(r.type).toBe('list')
-      if (r.type === 'list') {
-        expect(r.header).toBe('Users (2)')
-      }
+      assertType(r, 'list')
+      expect(r.header).toBe('Users (2)')
     })
 
     it('does not treat single line as header', () => {
       const r = parseResponse('@alice:example.com')
-      expect(r.type).toBe('list')
-      if (r.type === 'list') {
-        expect(r.header).toBeNull()
-      }
+      assertType(r, 'list')
+      expect(r.header).toBeNull()
     })
   })
 
@@ -70,62 +72,52 @@ describe('parseResponse', () => {
         '!def:example.com Members: 3 Name: Random',
       ].join('\n')
       const r = parseResponse(input)
-      expect(r.type).toBe('table')
-      if (r.type === 'table') {
-        expect(r.header).toBe('Rooms (2)')
-        expect(r.columns).toEqual(['ID', 'Members', 'Name'])
-        expect(r.rows).toHaveLength(2)
-        expect(r.rows[0]).toEqual(['!abc:example.com', '5', 'General'])
-        expect(r.rows[1]).toEqual(['!def:example.com', '3', 'Random'])
-      }
+      assertType(r, 'table')
+      expect(r.header).toBe('Rooms (2)')
+      expect(r.columns).toEqual(['ID', 'Members', 'Name'])
+      expect(r.rows).toHaveLength(2)
+      expect(r.rows[0]).toEqual(['!abc:example.com', '5', 'General'])
+      expect(r.rows[1]).toEqual(['!def:example.com', '3', 'Random'])
     })
   })
 
   describe('list branch', () => {
     it('parses identifier-only lines as a list', () => {
       const r = parseResponse('@alice:example.com\n@bob:example.com\n#room:example.com')
-      expect(r.type).toBe('list')
-      if (r.type === 'list') {
-        expect(r.items).toEqual([
-          '@alice:example.com',
-          '@bob:example.com',
-          '#room:example.com',
-        ])
-      }
+      assertType(r, 'list')
+      expect(r.items).toEqual([
+        '@alice:example.com',
+        '@bob:example.com',
+        '#room:example.com',
+      ])
     })
 
     it('recognises room IDs as identifiers', () => {
       const r = parseResponse('!room123:example.com')
-      expect(r.type).toBe('list')
-      if (r.type === 'list') {
-        expect(r.items).toEqual(['!room123:example.com'])
-      }
+      assertType(r, 'list')
+      expect(r.items).toEqual(['!room123:example.com'])
     })
   })
 
   describe('kv branch', () => {
     it('parses "key: value" lines as kv entries', () => {
       const r = parseResponse('Name: General\nMembers: 42\nTopic: Welcome')
-      expect(r.type).toBe('kv')
-      if (r.type === 'kv') {
-        expect(r.entries).toEqual([
-          { key: 'Name', value: 'General' },
-          { key: 'Members', value: '42' },
-          { key: 'Topic', value: 'Welcome' },
-        ])
-      }
+      assertType(r, 'kv')
+      expect(r.entries).toEqual([
+        { key: 'Name', value: 'General' },
+        { key: 'Members', value: '42' },
+        { key: 'Topic', value: 'Welcome' },
+      ])
     })
 
     it('detects kv with a header', () => {
       const r = parseResponse('Server Info:\nVersion: 1.0\nUptime: 3d')
-      expect(r.type).toBe('kv')
-      if (r.type === 'kv') {
-        expect(r.header).toBe('Server Info')
-        expect(r.entries).toEqual([
-          { key: 'Version', value: '1.0' },
-          { key: 'Uptime', value: '3d' },
-        ])
-      }
+      assertType(r, 'kv')
+      expect(r.header).toBe('Server Info')
+      expect(r.entries).toEqual([
+        { key: 'Version', value: '1.0' },
+        { key: 'Uptime', value: '3d' },
+      ])
     })
   })
 })

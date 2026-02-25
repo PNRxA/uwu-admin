@@ -53,7 +53,7 @@ const {
                 <code class="text-sm font-medium">!admin {{ entry.command }}</code>
                 <span class="ml-auto text-xs text-muted-foreground">{{ formatTime(entry.timestamp) }}</span>
               </div>
-              <div class="console-response text-sm rounded-md bg-muted p-3 max-h-64 overflow-auto" v-html="sanitizeHtml(entry.response || $t('console.waitingForResponse'))" />
+              <div data-testid="console-response" class="console-response text-sm rounded-md bg-muted p-3 max-h-64 overflow-auto" v-html="sanitizeHtml(entry.response || $t('console.waitingForResponse'))" />
               <Separator />
             </div>
             <div v-if="commandStore.history.length === 0" class="text-center text-muted-foreground py-8">

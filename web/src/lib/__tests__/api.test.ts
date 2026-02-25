@@ -15,6 +15,8 @@ function mockFetch(response: unknown, options: { status?: number; ok?: boolean }
 }
 
 beforeEach(() => {
+  vi.unstubAllGlobals()
+  vi.stubGlobal('location', locationMock)
   sessionStorage.clear()
   clearAllTokens()
   locationMock.href = ''

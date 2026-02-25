@@ -30,4 +30,12 @@ describe('sanitizeHtml', () => {
     expect(sanitizeHtml('<script>alert(1)</script>')).toBe('')
     expect(sanitizeHtml('<b onmouseover="alert(1)">hover</b>')).toBe('<b>hover</b>')
   })
+
+  it('strips javascript: URIs from href', () => {
+    expect(sanitizeHtml('<a href="javascript:alert(1)">click</a>')).toBe('<a>click</a>')
+  })
+
+  it('strips data: URIs from href', () => {
+    expect(sanitizeHtml('<a href="data:text/html,<script>alert(1)</script>">click</a>')).toBe('<a>click</a>')
+  })
 })

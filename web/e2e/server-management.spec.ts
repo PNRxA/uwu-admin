@@ -39,7 +39,25 @@ test.describe('Server management', () => {
     const allItems = page.getByRole('menuitem')
     const count = await allItems.count()
     expect(count, 'expected at least 3 menu items (2 servers + Add Server)').toBeGreaterThanOrEqual(3)
+
+    // Intercept the next server-scoped API request to verify which server is active
+    const requestPromise = page.waitForRequest((req) =>
+      /\/api\/servers\/\d+\//.test(req.url()) && req.method() === 'POST'
+    )
     await allItems.nth(1).click()
+
+    // Execute a console command to trigger a server-scoped request
+    const consoleTrigger = page.locator('button', { hasText: 'Console' }).last()
+    await consoleTrigger.click()
+    const consolePanel = page.locator('form', { hasText: '!admin' }).first()
+    const input = consolePanel.locator('input[data-slot="input"]')
+    await input.fill('server uptime')
+    await input.press('Escape')
+    await consolePanel.locator('button[type="submit"]').click()
+
+    const request = await requestPromise
+    // The second server added gets id=2
+    expect(request.url()).toContain('/api/servers/2/')
   })
 
   test('remove the second server', async ({ page }) => {

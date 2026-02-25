@@ -76,7 +76,7 @@ watch(() => commandStore.panelOpen, (open) => {
                 <code class="text-xs font-medium">!admin {{ entry.command }}</code>
                 <span class="ml-auto text-xs text-muted-foreground">{{ formatTime(entry.timestamp) }}</span>
               </div>
-              <div class="console-response text-xs rounded-md bg-muted p-2 max-h-40 overflow-auto" v-html="sanitizeHtml(entry.response || 'Waiting for response...')" />
+              <div data-testid="console-response" class="console-response text-xs rounded-md bg-muted p-2 max-h-40 overflow-auto" v-html="sanitizeHtml(entry.response || 'Waiting for response...')" />
               <Separator />
             </div>
             <div v-if="commandStore.history.length === 0" class="text-center text-muted-foreground py-4 text-sm">

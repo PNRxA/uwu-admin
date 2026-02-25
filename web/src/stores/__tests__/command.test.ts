@@ -136,9 +136,11 @@ describe('useCommandStore', () => {
       selectServer(1)
       const store = useCommandStore()
 
-      for (let i = 0; i < 502; i++) {
-        await store.execute(`cmd-${i}`)
+      const promises = []
+      for (let i = 0; i < 501; i++) {
+        promises.push(store.execute(`cmd-${i}`))
       }
+      await Promise.all(promises)
       expect(store.history.length).toBeLessThanOrEqual(500)
     })
   })
