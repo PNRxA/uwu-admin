@@ -7,6 +7,8 @@ https://github.com/user-attachments/assets/36a10541-87f8-4490-a093-9c431be29436
 
 Web admin dashboard for [Continuwuity](https://continuwuity.org) Matrix homeservers.
 
+[GitHub](https://github.com/PNRxA/uwu-admin) · [GitHub Container Registry](https://ghcr.io/PNRxA/uwu-admin) · [Docker Hub](https://hub.docker.com/r/pnrxa/uwu-admin)
+
 Continuwuity only supports admin commands via messages in a special admin room. uwu-admin provides a proper web UI by connecting to the homeserver as a bot account, sending admin commands to the admin room, and displaying the results.
 
 > [!CAUTION]
@@ -18,8 +20,8 @@ Continuwuity only supports admin commands via messages in a special admin room. 
 - [Setup](#setup)
 - [Development](#development)
 - [Production Deployment](#production-deployment)
-- [Session Persistence](#session-persistence)
 - [Container Deployment](#container-deployment)
+- [Session Persistence](#session-persistence)
 - [Shared](#shared)
 - [Scripts](#scripts)
 - [Testing](#testing)
@@ -107,7 +109,7 @@ npm run build          # Output in dist/
 
 ### Production Deployment
 
-#### Internal (local network)
+#### Internal without TLS
 
 If uwu-admin is only accessible on a trusted local network (e.g. LAN, tailnet,
 Docker bridge), the defaults work as-is. Recommended settings:
@@ -116,6 +118,16 @@ Docker bridge), the defaults work as-is. Recommended settings:
 |----------|----------------|
 | `CORS_ORIGIN` | Can be left unset. All access is same-origin and the network is trusted. |
 | `COOKIE_SECURE` | Set to `false` — you are likely serving over plain HTTP. |
+| `ALLOW_PRIVATE_HOMESERVERS` | Set to `true` if the homeserver is on the same host or network. |
+
+#### Internal with TLS
+
+If you're serving uwu-admin over HTTPS on a local network (e.g. using a self-signed certificate or a private CA), keep `COOKIE_SECURE` at the default (`true`) since cookies will be sent over TLS.
+
+| Variable | Recommendation |
+|----------|----------------|
+| `CORS_ORIGIN` | Set to your internal URL (e.g. `https://admin.local:8080`) if accessing from a different origin. Can be left unset for same-origin access. |
+| `COOKIE_SECURE` | Leave at the default (`true`). |
 | `ALLOW_PRIVATE_HOMESERVERS` | Set to `true` if the homeserver is on the same host or network. |
 
 #### Public (behind access controls)
@@ -131,17 +143,19 @@ tokens, and cookies are sent in plaintext.
 | `CORS_ORIGIN` | Set to your external URL (e.g. `https://admin.example.com`). Enables server-side CSRF protection as a defense-in-depth layer on top of `SameSite=Strict` cookies. |
 | `COOKIE_SECURE` | Leave at the default (`true`) when behind TLS. |
 
+## Container Deployment
+
+Container images are available on [GitHub Container Registry](https://ghcr.io/PNRxA/uwu-admin) and [Docker Hub](https://hub.docker.com/r/pnrxa/uwu-admin).
+
+See [containers/](containers/) for Docker and Podman Quadlet deployment options.
+
+Both require `JWT_SECRET` and `ENCRYPTION_KEY` to be set as environment variables — see the example compose file and quadlet config.
+
 ## Session Persistence
 
 The API stores server connections in a local SQLite database (`uwu-admin.db` by default). Access tokens are encrypted at rest using ChaCha20-Poly1305.
 
 On startup the API restores saved connections, validates each token against its homeserver, and removes any stale sessions automatically.
-
-## Container Deployment
-
-See [containers/](containers/) for Docker and Podman Quadlet deployment options.
-
-Both require `JWT_SECRET` and `ENCRYPTION_KEY` to be set as environment variables — see the example compose file and quadlet config.
 
 ## Scripts
 
