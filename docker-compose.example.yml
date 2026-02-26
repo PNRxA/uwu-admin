@@ -12,6 +12,11 @@ services:
       # Optional: seed an admin account on first start (skips the setup screen)
       # ADMIN_USERNAME: "admin"
       # ADMIN_PASSWORD: "changeme123"
+      # Recommended for public deployments: enables server-side CSRF protection
+      # Set to your external URL (e.g. https://admin.example.com)
+      # CORS_ORIGIN: "https://admin.example.com"
+      # Set to false when running behind plain HTTP (no TLS reverse proxy)
+      # COOKIE_SECURE: "false"
       # Allow homeservers on private/loopback IPs (e.g. same Docker network)
       # ALLOW_PRIVATE_HOMESERVERS: "true"
     security_opt:

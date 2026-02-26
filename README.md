@@ -6,11 +6,14 @@ Web admin dashboard for [Continuwuity](https://continuwuity.org) Matrix homeserv
 
 Continuwuity only supports admin commands via messages in a special admin room. uwu-admin provides a proper web UI by connecting to the homeserver as a bot account, sending admin commands to the admin room, and displaying the results.
 
+> **Warning:** uwu-admin has full admin control over your homeserver. It is intended for private or internal use and should not be exposed to the public internet. If you do need remote access, place it behind a TLS-terminating reverse proxy with additional access controls (e.g. VPN, IP allowlist, HTTP basic auth). See [Production Deployment](#production-deployment) for more details.
+
 ## Table of Contents
 
 - [Architecture](#architecture)
 - [Setup](#setup)
 - [Development](#development)
+- [Production Deployment](#production-deployment)
 - [Session Persistence](#session-persistence)
 - [Container Deployment](#container-deployment)
 - [Shared](#shared)
@@ -96,6 +99,32 @@ cargo build --release
 cd web
 npm run build          # Output in dist/
 ```
+
+### Production Deployment
+
+#### Internal (local network)
+
+If uwu-admin is only accessible on a trusted local network (e.g. LAN, tailnet,
+Docker bridge), the defaults work as-is. Recommended settings:
+
+| Variable | Recommendation |
+|----------|----------------|
+| `CORS_ORIGIN` | Can be left unset. All access is same-origin and the network is trusted. |
+| `COOKIE_SECURE` | Set to `false` — you are likely serving over plain HTTP. |
+| `ALLOW_PRIVATE_HOMESERVERS` | Set to `true` if the homeserver is on the same host or network. |
+
+#### Public (behind access controls)
+
+If you need remote access, place uwu-admin behind a **TLS-terminating reverse
+proxy** (e.g. Caddy, nginx, Traefik) with additional access controls such as a
+VPN, IP allowlist, or HTTP basic auth. The application serves plain HTTP and
+should not be exposed directly to the internet — without TLS, credentials,
+tokens, and cookies are sent in plaintext.
+
+| Variable | Recommendation |
+|----------|----------------|
+| `CORS_ORIGIN` | Set to your external URL (e.g. `https://admin.example.com`). Enables server-side CSRF protection as a defense-in-depth layer on top of `SameSite=Strict` cookies. |
+| `COOKIE_SECURE` | Leave at the default (`true`) when behind TLS. |
 
 ## Session Persistence
 

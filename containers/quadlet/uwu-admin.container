@@ -10,6 +10,14 @@ Volume=uwu-data.volume:/data
 # Generate with: openssl rand -hex 32
 Environment=JWT_SECRET=0000000000000000000000000000000000000000000000000000000000000000
 Environment=ENCRYPTION_KEY=0000000000000000000000000000000000000000000000000000000000000000
+# Optional: seed an admin account on first start (skips the setup screen)
+# Environment=ADMIN_USERNAME=admin
+# Environment=ADMIN_PASSWORD=changeme123
+# Recommended for public deployments: enables server-side CSRF protection
+# Set to your external URL (e.g. https://admin.example.com)
+# Environment=CORS_ORIGIN=https://admin.example.com
+# Set to false when running behind plain HTTP (no TLS reverse proxy)
+# Environment=COOKIE_SECURE=false
 # Allow homeservers on private/loopback IPs (e.g. same Podman network)
 # Environment=ALLOW_PRIVATE_HOMESERVERS=true
 
