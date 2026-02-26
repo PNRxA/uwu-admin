@@ -4,10 +4,6 @@ on:
   push:
     tags: ['v*']
   workflow_dispatch:
-    inputs:
-      tag:
-        description: 'Existing tag to build and push (e.g. v0.5.5)'
-        required: true
 
 permissions:
   contents: write
@@ -18,8 +14,6 @@ jobs:
     runs-on: self-hosted
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: ${{ inputs.tag || github.ref }}
 
       - uses: docker/setup-buildx-action@v3
 
@@ -34,12 +28,6 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Resolve tag
-        id: tag
-        run: |
-          TAG="${{ inputs.tag || github.ref_name }}"
-          echo "version=${TAG}" >> "$GITHUB_OUTPUT"
-
       - name: Extract metadata
         id: meta
         uses: docker/metadata-action@v5
@@ -48,8 +36,8 @@ jobs:
             ghcr.io/${{ github.repository }}
             docker.io/${{ secrets.DOCKERHUB_USERNAME }}/uwu-admin
           tags: |
-            type=semver,pattern={{version}},value=${{ steps.tag.outputs.version }}
-            type=semver,pattern=v{{version}},value=${{ steps.tag.outputs.version }}
+            type=semver,pattern={{version}}
+            type=semver,pattern=v{{version}}
             type=raw,value=latest
 
       - name: Build and push
@@ -64,5 +52,4 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ steps.tag.outputs.version }}
           generate_release_notes: true
