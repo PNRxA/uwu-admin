@@ -181,13 +181,14 @@ Helper scripts live in the `scripts/` directory.
 Regenerates `shared/command-tree.json` from the [uwu-admin fork of continuwuity](https://github.com/PNRxA/continuwuity). Clones the fork into `../continuwuity` if it doesn't already exist, fetches upstream (including tags), rebases on `upstream/main`, and runs `cargo xtask generate-command-tree`. When a tag is specified, the script checks out that tag for generation then returns to `main` — the repo always ends up on `main`. Build prerequisites are the same as for continuwuity itself (Rust, C/C++ compiler, libclang, liburing, make).
 
 ```sh
-./scripts/update-command-tree.sh [-w] [tag]
+./scripts/update-command-tree.sh [-w] [-p] [tag]
 ```
 
 | Option | Description |
 |--------|-------------|
 | `tag` | Generate from a specific upstream version tag (e.g. `v0.5.0`). Omit to use `main` |
 | `-w` | Push tags and commits to the fork (for maintainers). Without this flag, nothing is pushed |
+| `-p` | Create a PR with the updated command tree (requires a version tag). Uses `gh` CLI |
 
 Examples:
 
@@ -196,6 +197,8 @@ Examples:
 ./scripts/update-command-tree.sh v0.5.0       # Fetch + rebase, generate from a specific tag, return to main
 ./scripts/update-command-tree.sh -w           # Same as above + push tags and main to fork
 ./scripts/update-command-tree.sh -w v0.5.0    # Same as above with a specific tag
+./scripts/update-command-tree.sh -p v0.5.6    # Generate from a specific tag + open a PR with the changes
+./scripts/update-command-tree.sh -w -p v0.5.6 # Same as above + push tags and main to fork
 ```
 
 ### `test.sh`
@@ -328,8 +331,11 @@ A GitHub Actions workflow (`.github/workflows/test.yml`) runs on every push to `
 | **frontend** | `ubuntu-latest` | push + PR | `npm ci`, type-check, Vitest unit tests |
 | **backend** | self-hosted (push) / `ubuntu-latest` (PR) | push + PR | `cargo test` — unit tests always, integration tests on push (secrets available) |
 | **e2e** | self-hosted | push only | Builds the API, starts it in the background, installs Playwright + Chromium, runs the full e2e suite, uploads the HTML report as an artifact |
+| **update-command-tree** | self-hosted | manual (`workflow_dispatch`) | Clones the continuwuity fork, generates `shared/command-tree.json` for the given version tag, and opens a PR |
 
 The **e2e** job only runs on pushes to `main` (not PRs) because it needs repository secrets and a self-hosted runner with access to a live Continuwuity instance. The Playwright HTML report is uploaded as a build artifact and retained for 14 days.
+
+The **update-command-tree** workflow is triggered manually from the Actions tab. It clones the public continuwuity fork over HTTPS — no additional secrets are required beyond the default `GITHUB_TOKEN`.
 
 ## Releasing
 

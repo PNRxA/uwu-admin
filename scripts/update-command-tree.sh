@@ -7,13 +7,28 @@ FORK_URL="https://github.com/PNRxA/continuwuity.git"
 UPSTREAM_URL="https://forgejo.ellis.link/continuwuation/continuwuity.git"
 
 PUSH=false
-while getopts "w" opt; do
+CREATE_PR=false
+while getopts "wp" opt; do
   case $opt in
     w) PUSH=true ;;
-    *) echo "Usage: $0 [-w] [tag]"; exit 1 ;;
+    p) CREATE_PR=true ;;
+    *) echo "Usage: $0 [-w] [-p] [tag]"; exit 1 ;;
   esac
 done
 shift $((OPTIND - 1))
+
+# -p requires a version tag
+if [ "$CREATE_PR" = true ]; then
+  if [ -z "${1:-}" ] || [ "$1" = "main" ]; then
+    echo "Error: -p requires a version tag argument (e.g. v0.5.6)" >&2; exit 1
+  fi
+  if ! command -v gh &>/dev/null; then
+    echo "Error: gh CLI is required for -p" >&2; exit 1
+  fi
+  if ! gh auth status &>/dev/null; then
+    echo "Error: gh CLI is not authenticated (run 'gh auth login')" >&2; exit 1
+  fi
+fi
 
 # Clone the fork if it doesn't exist
 if [ ! -d "$CONTINUWUITY_DIR" ]; then
@@ -67,6 +82,42 @@ if [ "$TARGET_REF" != "main" ]; then
   echo "Returning to main..."
   git checkout main
   git branch -D _generate-tmp
+fi
+
+# Create PR if requested
+if [ "$CREATE_PR" = true ]; then
+  cd "$REPO_ROOT"
+
+  if [ -z "$(git status --porcelain shared/command-tree.json)" ]; then
+    echo "No changes to shared/command-tree.json — skipping PR creation."
+    echo "Done."
+    exit 0
+  fi
+
+  PR_BRANCH="update/continuwuity-${TARGET_REF}"
+
+  # Close any existing PR for this branch before recreating
+  git checkout main
+  EXISTING_PR=$(gh pr list --head "$PR_BRANCH" --state open --json number --jq '.[0].number' 2>/dev/null || true)
+  if [ -n "$EXISTING_PR" ]; then
+    echo "Closing superseded PR #$EXISTING_PR..."
+    gh pr close "$EXISTING_PR" --comment "Superseded by a new run for $TARGET_REF."
+  fi
+  git branch -D "$PR_BRANCH" 2>/dev/null || true
+  git push origin --delete "$PR_BRANCH" 2>/dev/null || true
+
+  echo "Creating PR branch: $PR_BRANCH"
+  git checkout -b "$PR_BRANCH"
+  git add shared/command-tree.json
+  git commit -m "Update command tree for $TARGET_REF"
+  git push -u origin "$PR_BRANCH"
+
+  gh pr create \
+    --title "Update command tree for $TARGET_REF" \
+    --body "Updates \`shared/command-tree.json\` to match continuwuity [$TARGET_REF](https://forgejo.ellis.link/continuwuation/continuwuity/releases/tag/$TARGET_REF)." \
+    --base main
+
+  git checkout main
 fi
 
 echo "Done."
