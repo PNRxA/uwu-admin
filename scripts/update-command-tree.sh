@@ -118,6 +118,7 @@ if [ "$CREATE_PR" = true ]; then
     --base main
 
   git checkout main
+  git branch -D "$PR_BRANCH"
 fi
 
 echo "Done."
