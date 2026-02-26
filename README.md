@@ -20,6 +20,7 @@ Continuwuity only supports admin commands via messages in a special admin room. 
 - [Scripts](#scripts)
 - [Testing](#testing)
 - [CI](#ci)
+- [Releasing](#releasing)
 
 ## Architecture
 
@@ -296,3 +297,27 @@ A GitHub Actions workflow (`.github/workflows/test.yml`) runs on every push to `
 | **e2e** | self-hosted | push only | Builds the API, starts it in the background, installs Playwright + Chromium, runs the full e2e suite, uploads the HTML report as an artifact |
 
 The **e2e** job only runs on pushes to `main` (not PRs) because it needs repository secrets and a self-hosted runner with access to a live Continuwuity instance. The Playwright HTML report is uploaded as a build artifact and retained for 14 days.
+
+## Releasing
+
+uwu-admin versions track Continuwuity versions - `v0.5.5` of uwu-admin is compatible with Continuwuity `v0.5.5`. When uwu-admin needs additional releases for the same Continuwuity version (bug fixes, UI improvements, etc.), we append a dash suffix: `v0.5.5-1`, `v0.5.5-2`, and so on.
+
+| Tag | Meaning |
+|-----|---------|
+| `v0.5.5` | Initial release for Continuwuity v0.5.5 |
+| `v0.5.5-1` | First uwu-admin patch for the same Continuwuity version |
+| `v0.5.5-2` | Second uwu-admin patch |
+| `v0.6.0` | Tracks Continuwuity v0.6.0 |
+
+Pushing a `v*` tag triggers the release workflow (`.github/workflows/release.yml`), which builds the container image, pushes it to ghcr.io, and creates a GitHub Release with auto-generated notes.
+
+```sh
+git tag v0.5.5
+git push origin v0.5.5
+```
+
+This will:
+
+1. Build the container from `containers/docker/Dockerfile`
+2. Push to `ghcr.io/PNRxA/uwu-admin` with tags `0.5.5`, `v0.5.5`, and `latest`
+3. Create a GitHub Release for the tag with auto-generated release notes
