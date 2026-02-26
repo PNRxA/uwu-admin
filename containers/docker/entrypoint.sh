@@ -1,6 +1,12 @@
 #!/bin/bash
 set -e
 
+# If running as root, fix /data ownership and re-exec as uwu
+if [ "$(id -u)" = '0' ]; then
+    chown -R uwu:uwu /data
+    exec gosu uwu "$0" "$@"
+fi
+
 # Start the API in the background
 export DATABASE_URL="sqlite:/data/uwu-admin.db?mode=rwc"
 export API_LISTEN="${API_LISTEN:-127.0.0.1:3001}"

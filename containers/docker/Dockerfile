@@ -17,7 +17,7 @@ RUN cargo build --release
 # Stage 3: Runtime
 FROM debian:bookworm-20260223-slim
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends nginx ca-certificates && \
+    apt-get install -y --no-install-recommends nginx ca-certificates gosu && \
     rm -rf /var/lib/apt/lists/*
 
 # Create non-root user and data directory
@@ -37,8 +37,6 @@ COPY containers/docker/nginx.conf /etc/nginx/nginx.conf
 COPY containers/docker/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh && \
     chown -R uwu:uwu /usr/share/nginx/html
-
-USER uwu
 
 EXPOSE 8080
 VOLUME /data
