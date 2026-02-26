@@ -894,18 +894,6 @@
             "long": "height"
           }
         ]
-      },
-      {
-        "name": "delete-url-preview",
-        "description": "Deletes a cached URL preview, forcing it to be re-fetched. Use --all to purge all cached URL previews",
-        "args": [
-          {
-            "name": "url",
-            "description": "The URL to clear from the saved preview data",
-            "required": false,
-            "type": "string"
-          }
-        ]
       }
     ]
   },
@@ -2101,7 +2089,7 @@
           },
           {
             "name": "flush-cache",
-            "description": "Flush a given server from the resolver caches or flush them completely",
+            "description": "Flush a specific server from the resolver caches or everything",
             "args": [
               {
                 "name": "name",
