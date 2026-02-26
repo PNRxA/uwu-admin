@@ -48,23 +48,25 @@ if [ "$PUSH" = true ]; then
   git push --force-with-lease origin main
 fi
 
-# Validate and check out the target tag for generation if specified
+# If a tag is specified, rebase fork commits onto it in a temp branch
 if [ "$TARGET_REF" != "main" ]; then
   if ! git tag -l "$TARGET_REF" | grep -q .; then
     echo "Error: tag '$TARGET_REF' not found" >&2; exit 1
   fi
-  echo "Checking out tag: $TARGET_REF..."
-  git checkout "refs/tags/$TARGET_REF"
+  echo "Creating temp branch with fork commits on tag: $TARGET_REF..."
+  git checkout -b _generate-tmp
+  git rebase --onto "refs/tags/$TARGET_REF" upstream/main
 fi
 
 # Generate the command tree
 echo "Generating command-tree.json..."
 cargo xtask generate-command-tree --output "$REPO_ROOT/shared/command-tree.json"
 
-# Return to main if we checked out a tag
+# Clean up temp branch if we created one
 if [ "$TARGET_REF" != "main" ]; then
   echo "Returning to main..."
   git checkout main
+  git branch -D _generate-tmp
 fi
 
 echo "Done."
