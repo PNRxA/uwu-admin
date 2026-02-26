@@ -1,3 +1,6 @@
+> [!NOTE]
+> This project is developed with the assistance of AI code generation tools. AI-generated code is reviewed and tested before being merged, but if you encounter any issues, please feel free to open an issue or submit a pull request.
+
 # uwu-admin
 
 https://github.com/user-attachments/assets/36a10541-87f8-4490-a093-9c431be29436
@@ -6,7 +9,8 @@ Web admin dashboard for [Continuwuity](https://continuwuity.org) Matrix homeserv
 
 Continuwuity only supports admin commands via messages in a special admin room. uwu-admin provides a proper web UI by connecting to the homeserver as a bot account, sending admin commands to the admin room, and displaying the results.
 
-> **Warning:** uwu-admin has full admin control over your homeserver. It is intended for private or internal use and should not be exposed to the public internet. If you do need remote access, place it behind a TLS-terminating reverse proxy with additional access controls (e.g. VPN, IP allowlist, HTTP basic auth). See [Production Deployment](#production-deployment) for more details.
+> [!CAUTION]
+> uwu-admin has full admin control over your homeserver. It is intended for private or internal use and should not be exposed to the public internet. If you do need remote access, place it behind a TLS-terminating reverse proxy with additional access controls (e.g. VPN, IP allowlist, HTTP basic auth). See [Production Deployment](#production-deployment) for more details.
 
 ## Table of Contents
 
