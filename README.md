@@ -16,6 +16,7 @@ Continuwuity only supports admin commands via messages in a special admin room. 
 
 ## Table of Contents
 
+- [Quick Start (Docker)](#quick-start-docker)
 - [Architecture](#architecture)
 - [Setup](#setup)
 - [Development](#development)
@@ -37,6 +38,18 @@ Browser (Vue)  →  uwu-admin-api (Rust/axum :3001)  →  Matrix Homeserver
                                                    (bot sends !admin commands,
                                                     reads server responses)
 ```
+
+## Quick Start (Docker)
+
+```sh
+docker run -d -p 8080:8080 \
+  -e JWT_SECRET=$(openssl rand -hex 32) \
+  -e ENCRYPTION_KEY=$(openssl rand -hex 32) \
+  -v uwu-data:/data \
+  pnrxa/uwu-admin
+```
+
+Open `http://localhost:8080`, create an admin account, and add your homeserver.
 
 ## Setup
 
