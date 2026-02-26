@@ -41,12 +41,14 @@ Browser (Vue)  →  uwu-admin-api (Rust/axum :3001)  →  Matrix Homeserver
 
 ## Quick Start (Docker)
 
+uwu-admin versions follow Continuwuity versions to indicate compatibility. Set the tag to your Continuwuity server version, or `latest` if you're feeling brave.
+
 ```sh
 docker run -d -p 8080:8080 \
   -e JWT_SECRET=$(openssl rand -hex 32) \
   -e ENCRYPTION_KEY=$(openssl rand -hex 32) \
   -v uwu-data:/data \
-  pnrxa/uwu-admin
+  pnrxa/uwu-admin:v0.5.5
 ```
 
 Open `http://localhost:8080`, create an admin account, and add your homeserver.
