@@ -1,0 +1,41 @@
+name: Tag on Merge
+
+on:
+  pull_request:
+    types: [closed]
+
+permissions:
+  contents: write
+
+jobs:
+  tag:
+    if: >-
+      github.event.pull_request.merged == true &&
+      startsWith(github.head_ref, 'update/continuwuity-')
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-tags: true
+
+      - name: Create version tag
+        run: |
+          if ! command -v jq &>/dev/null; then
+            echo "Error: jq is not installed" >&2
+            exit 1
+          fi
+
+          VERSION="v$(jq -r '.version' web/package.json)"
+          if [ -z "$VERSION" ] || [ "$VERSION" = "vnull" ]; then
+            echo "Error: could not read version from web/package.json" >&2
+            exit 1
+          fi
+
+          if git rev-parse "$VERSION" &>/dev/null; then
+            echo "Tag $VERSION already exists — skipping."
+            exit 0
+          fi
+
+          echo "Creating tag $VERSION..."
+          git tag "$VERSION"
+          git push origin "$VERSION"
