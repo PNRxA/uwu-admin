@@ -88,8 +88,21 @@ fi
 if [ "$CREATE_PR" = true ]; then
   cd "$REPO_ROOT"
 
-  if [ -z "$(git status --porcelain shared/command-tree.json)" ]; then
-    echo "No changes to shared/command-tree.json — skipping PR creation."
+  # Update version references
+  BARE_VERSION="${TARGET_REF#v}"   # v0.5.6 → 0.5.6
+
+  # web/package.json — use jq to set .version
+  jq --arg v "$BARE_VERSION" '.version = $v' web/package.json > web/package.json.tmp \
+    && mv web/package.json.tmp web/package.json
+
+  # api/Cargo.toml — replace version under [package]
+  sed -i '/^\[package\]/,/^\[/{s/^version = ".*"/version = "'"$BARE_VERSION"'"/}' api/Cargo.toml
+
+  # README.md — update Docker image tag
+  sed -i "s|pnrxa/uwu-admin:v[0-9][0-9.]*|pnrxa/uwu-admin:${TARGET_REF}|g" README.md
+
+  if [ -z "$(git status --porcelain shared/command-tree.json web/package.json api/Cargo.toml README.md)" ]; then
+    echo "No changes detected — skipping PR creation."
     echo "Done."
     exit 0
   fi
@@ -108,13 +121,13 @@ if [ "$CREATE_PR" = true ]; then
 
   echo "Creating PR branch: $PR_BRANCH"
   git checkout -b "$PR_BRANCH"
-  git add shared/command-tree.json
-  git commit -m "Update command tree for $TARGET_REF"
+  git add shared/command-tree.json web/package.json api/Cargo.toml README.md
+  git commit -m "Update to $TARGET_REF"
   git push -u origin "$PR_BRANCH"
 
   gh pr create \
-    --title "Update command tree for $TARGET_REF" \
-    --body "Updates \`shared/command-tree.json\` to match continuwuity [$TARGET_REF](https://forgejo.ellis.link/continuwuation/continuwuity/releases/tag/$TARGET_REF)." \
+    --title "Update to $TARGET_REF" \
+    --body "Updates command tree, package versions, and Docker tag to match continuwuity [$TARGET_REF](https://forgejo.ellis.link/continuwuation/continuwuity/releases/tag/$TARGET_REF)." \
     --base main
 
   git checkout main
