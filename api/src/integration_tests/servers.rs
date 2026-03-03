@@ -121,7 +121,7 @@ async fn command_redaction() {
     let Some((homeserver, username, password, room_id)) = test_server_env() else { return };
     let state = test_state().await;
 
-    let mut client = MatrixClient::login(&homeserver, &username, &password, &room_id)
+    let mut client = MatrixClient::login(&homeserver, &username, &password, &room_id, "UWUADMIN-test")
         .await
         .unwrap();
 

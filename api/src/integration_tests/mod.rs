@@ -27,7 +27,7 @@ async fn test_state() -> SharedState {
         .expect("in-memory DB");
     let jwt_secret = Zeroizing::new(vec![0xAA; 32]);
     let encryption_key = Zeroizing::new(vec![0xBB; 32]);
-    AppState::new(db, jwt_secret, encryption_key, false)
+    AppState::new(db, jwt_secret, encryption_key, false, "UWUADMIN-test".to_string())
 }
 
 fn test_app_with_state(state: SharedState) -> Router {

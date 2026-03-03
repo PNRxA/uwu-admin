@@ -33,7 +33,7 @@ pub async fn add_server(
 ) -> Result<Json<Value>, ApiError> {
     validation::validate_homeserver_url_resolved(&req.homeserver).await?;
 
-    let client = MatrixClient::login(&req.homeserver, &req.username, &req.password, &req.room_id)
+    let client = MatrixClient::login(&req.homeserver, &req.username, &req.password, &req.room_id, &state.device_id)
         .await?;
 
     let user_id = client.user_id.clone();

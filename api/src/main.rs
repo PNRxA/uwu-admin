@@ -133,7 +133,7 @@ async fn main() {
         .map(|v| v != "0" && v.to_lowercase() != "false")
         .unwrap_or(true);
 
-    let state = AppState::new(db, jwt_secret, encryption_key, secure_cookies);
+    let state = AppState::new(db, jwt_secret, encryption_key, secure_cookies, "UWUADMIN".to_string());
 
     // Restore all saved servers
     match services::db::load_all_servers(&state.db, &state.encryption_key).await {

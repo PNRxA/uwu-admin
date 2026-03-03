@@ -44,6 +44,7 @@ impl MatrixClient {
         username: &str,
         password: &str,
         room_id: &str,
+        device_id: &str,
     ) -> Result<Self, ApiError> {
         let http = reqwest::ClientBuilder::new()
             .timeout(std::time::Duration::from_secs(30))
@@ -59,7 +60,7 @@ impl MatrixClient {
                 "user": username
             },
             "password": password,
-            "device_id": "UWUADMIN",
+            "device_id": device_id,
             "initial_device_display_name": "uwu-admin"
         });
 

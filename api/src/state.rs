@@ -15,6 +15,7 @@ pub struct AppState {
     pub encryption_key: Zeroizing<Vec<u8>>,
     pub secure_cookies: bool,
     pub settings_cache: std::sync::RwLock<HashMap<String, String>>,
+    pub device_id: String,
 }
 
 impl AppState {
@@ -23,6 +24,7 @@ impl AppState {
         jwt_secret: Zeroizing<Vec<u8>>,
         encryption_key: Zeroizing<Vec<u8>>,
         secure_cookies: bool,
+        device_id: String,
     ) -> SharedState {
         Arc::new(AppState {
             clients: Mutex::new(HashMap::new()),
@@ -31,6 +33,7 @@ impl AppState {
             encryption_key,
             secure_cookies,
             settings_cache: std::sync::RwLock::new(HashMap::new()),
+            device_id,
         })
     }
 }
