@@ -99,7 +99,7 @@ if [ "$CREATE_PR" = true ]; then
   sed -i '/^\[package\]/,/^\[/{s/^version = ".*"/version = "'"$BARE_VERSION"'"/}' api/Cargo.toml
 
   # README.md — update Docker image tag
-  sed -i "s|pnrxa/uwu-admin:v[0-9][0-9.]*|pnrxa/uwu-admin:${TARGET_REF}|g" README.md
+  sed -i "s|pnrxa/uwu-admin:v[0-9][0-9.a-zA-Z-]*|pnrxa/uwu-admin:${TARGET_REF}|g" README.md
 
   if [ -z "$(git status --porcelain shared/command-tree.json web/package.json api/Cargo.toml README.md)" ]; then
     echo "No changes detected — skipping PR creation."

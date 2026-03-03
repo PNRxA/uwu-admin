@@ -44,8 +44,8 @@ jobs:
             echo "Latest release: $VERSION"
           fi
 
-          if [[ ! "$VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "Error: version must match vX.Y.Z (got '$VERSION')" >&2
+          if [[ ! "$VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9a-zA-Z.]+)?$ ]]; then
+            echo "Error: version must match vX.Y.Z or vX.Y.Z-suffix (got '$VERSION')" >&2
             exit 1
           fi
 
