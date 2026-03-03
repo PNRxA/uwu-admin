@@ -16,7 +16,6 @@ import {
 } from '@/components/ui/dropdown-menu'
 import {
   AlertDialog,
-  AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
@@ -202,13 +201,13 @@ const readOnlyActions = {
       </AlertDialogHeader>
       <AlertDialogFooter>
         <AlertDialogCancel :disabled="executing">{{ $t('common.cancel') }}</AlertDialogCancel>
-        <AlertDialogAction
+        <Button
           :class="alertDestructive ? 'bg-destructive text-white hover:bg-destructive/90' : ''"
           :disabled="executing"
-          @click.prevent="executeConfirm"
+          @click="executeConfirm"
         >
           {{ executing ? $t('common.executing') : $t('common.confirm') }}
-        </AlertDialogAction>
+        </Button>
       </AlertDialogFooter>
     </AlertDialogContent>
   </AlertDialog>

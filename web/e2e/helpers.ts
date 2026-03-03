@@ -31,10 +31,11 @@ export async function executeConfirmAction(page: Page, menuItemText: string) {
   const dialog = page.locator('[data-slot="alert-dialog-content"]')
   await expect(dialog).toBeVisible()
   await dialog.getByRole('button', { name: 'Confirm' }).click()
-  // Check toast and dialog close concurrently to avoid race with toast auto-dismiss
+  // Dialog stays open until command completes; toast appears on success.
+  // Backend may need up to 30s for Matrix sync, so use a generous timeout.
   await Promise.all([
     expectSuccessToast(page),
-    expect(dialog).toBeHidden({ timeout: 15000 }),
+    expect(dialog).toBeHidden({ timeout: 30000 }),
   ])
 }
 
@@ -54,10 +55,10 @@ export async function executeInputAction(
     await dialog.locator(`#input-${name}`).fill(value)
   }
   await dialog.getByRole('button', { name: 'Execute' }).click()
-  // Check toast and dialog close concurrently to avoid race with toast auto-dismiss
+  // Dialog stays open until command completes; toast appears on success.
   await Promise.all([
     expectSuccessToast(page),
-    expect(dialog).toBeHidden({ timeout: 15000 }),
+    expect(dialog).toBeHidden({ timeout: 30000 }),
   ])
 }
 
@@ -84,7 +85,7 @@ export async function executeReadOnlyAction(page: Page, menuItemText: string) {
 export async function expectSuccessToast(page: Page) {
   const successToast = page.locator('[data-sonner-toast][data-type="success"]')
   const errorToast = page.locator('[data-sonner-toast][data-type="error"]')
-  await expect(successToast).toBeVisible({ timeout: 15000 })
+  await expect(successToast).toBeVisible({ timeout: 30000 })
   await expect(errorToast).not.toBeVisible()
 }
 

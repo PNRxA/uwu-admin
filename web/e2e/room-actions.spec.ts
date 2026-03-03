@@ -114,9 +114,11 @@ test.describe('Room actions', () => {
     await dialog.getByRole('button', { name: 'Confirm' }).click()
     // Expect the specific error toast about not being allowed to ban the admin room
     const errorToast = page.locator('[data-sonner-toast][data-type="error"]')
-    await expect(errorToast).toBeVisible({ timeout: 15000 })
+    await expect(errorToast).toBeVisible({ timeout: 30000 })
     await expect(errorToast).toContainText('Not allowed to ban the admin room')
-    await expect(dialog).toBeHidden({ timeout: 15000 })
+    // Dialog stays open on error — dismiss it via Cancel
+    await dialog.getByRole('button', { name: 'Cancel' }).click()
+    await expect(dialog).toBeHidden()
   })
 
   test('unban room', async ({ page }) => {
