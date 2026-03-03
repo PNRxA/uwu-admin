@@ -107,10 +107,10 @@ async fn server_execute_command() {
     let ctx = client.redaction_context();
     drop(client);
 
-    matrix::redact_command_pair(
+    matrix::redact_command_events(
         &ctx,
         &result.command_event_id,
-        &result.response_event_id,
+        &result.response_event_ids,
     )
     .await;
 }
@@ -143,20 +143,22 @@ async fn command_redaction() {
         .unwrap();
 
     assert!(!result.command_event_id.is_empty());
-    assert!(!result.response_event_id.is_empty());
+    assert!(!result.response_event_ids.is_empty());
     assert!(!result.response.is_empty());
 
     let ctx = client.redaction_context();
 
-    matrix::redact_command_pair(
+    matrix::redact_command_events(
         &ctx,
         &result.command_event_id,
-        &result.response_event_id,
+        &result.response_event_ids,
     )
     .await;
 
     // Verify events are actually redacted by fetching them from the server
-    for event_id in [&result.command_event_id, &result.response_event_id] {
+    let mut all_event_ids = vec![&result.command_event_id];
+    all_event_ids.extend(&result.response_event_ids);
+    for event_id in all_event_ids {
         assert!(
             is_event_redacted(&ctx.http, &ctx.homeserver, &ctx.access_token, &ctx.room_id, event_id).await,
             "Expected redacted (empty) content for {event_id}"

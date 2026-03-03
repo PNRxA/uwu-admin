@@ -11,7 +11,7 @@ const MATRIX_API_VERSION: &str = "v3";
 pub struct CommandResult {
     pub response: String,
     pub command_event_id: String,
-    pub response_event_id: String,
+    pub response_event_ids: Vec<String>,
 }
 
 pub struct RedactionContext {
@@ -224,7 +224,7 @@ impl MatrixClient {
         &mut self,
         server_id: i32,
         db: &DatabaseConnection,
-    ) -> Result<(String, String), ApiError> {
+    ) -> Result<(String, Vec<String>), ApiError> {
         for _ in 0..3 {
             let mut url = format!(
                 "{}/_matrix/client/{MATRIX_API_VERSION}/sync?timeout=10000",
@@ -261,7 +261,10 @@ impl MatrixClient {
                 }
             }
 
-            // Look for messages in the admin room not from our user
+            // Collect all response messages from the bot in this sync batch
+            let mut response_body = String::new();
+            let mut event_ids: Vec<String> = Vec::new();
+
             if let Some(events) = data["rooms"]["join"][&self.room_id]["timeline"]["events"]
                 .as_array()
             {
@@ -281,7 +284,12 @@ impl MatrixClient {
                         if msgtype == "m.file" {
                             if let Some(mxc_url) = content["url"].as_str() {
                                 let body = self.download_mxc(mxc_url).await?;
-                                return Ok((body, event_id));
+                                if !response_body.is_empty() {
+                                    response_body.push_str("<br>");
+                                }
+                                response_body.push_str(&body);
+                                event_ids.push(event_id);
+                                continue;
                             }
                             tracing::warn!("m.file event missing url field");
                         }
@@ -290,13 +298,21 @@ impl MatrixClient {
                             .as_str()
                             .unwrap_or_default()
                             .to_string();
-                        // Also check formatted_body for HTML responses
                         let formatted = content["formatted_body"]
                             .as_str()
                             .map(|s| s.to_string());
-                        return Ok((formatted.unwrap_or(body), event_id));
+
+                        if !response_body.is_empty() {
+                            response_body.push_str("<br>");
+                        }
+                        response_body.push_str(&formatted.unwrap_or(body));
+                        event_ids.push(event_id);
                     }
                 }
+            }
+
+            if !event_ids.is_empty() {
+                return Ok((response_body, event_ids));
             }
         }
 
@@ -408,10 +424,10 @@ impl MatrixClient {
         let message = format!("!admin {command}");
         let command_event_id = self.send_message(&message).await?;
         match self.wait_for_response(server_id, db).await {
-            Ok((response, response_event_id)) => Ok(CommandResult {
+            Ok((response, response_event_ids)) => Ok(CommandResult {
                 response,
                 command_event_id,
-                response_event_id,
+                response_event_ids,
             }),
             Err(e) => {
                 let ctx = self.redaction_context();
@@ -484,15 +500,38 @@ async fn redact_event(
     }
 }
 
-pub async fn redact_command_pair(
+pub async fn redact_command_events(
     ctx: &RedactionContext,
     command_event_id: &str,
-    response_event_id: &str,
+    response_event_ids: &[String],
 ) {
-    tokio::join!(
-        redact_event(&ctx.http, &ctx.homeserver, &ctx.access_token, &ctx.room_id, command_event_id),
-        redact_event(&ctx.http, &ctx.homeserver, &ctx.access_token, &ctx.room_id, response_event_id),
+    let mut set = tokio::task::JoinSet::new();
+
+    let (http, hs, token, room) = (
+        ctx.http.clone(),
+        ctx.homeserver.clone(),
+        ctx.access_token.clone(),
+        ctx.room_id.clone(),
     );
+    let cmd_eid = command_event_id.to_string();
+    set.spawn(async move {
+        redact_event(&http, &hs, &token, &room, &cmd_eid).await;
+    });
+
+    for eid in response_event_ids {
+        let (http, hs, token, room) = (
+            ctx.http.clone(),
+            ctx.homeserver.clone(),
+            ctx.access_token.clone(),
+            ctx.room_id.clone(),
+        );
+        let eid = eid.clone();
+        set.spawn(async move {
+            redact_event(&http, &hs, &token, &room, &eid).await;
+        });
+    }
+
+    while set.join_next().await.is_some() {}
 }
 
 async fn resolve_alias(

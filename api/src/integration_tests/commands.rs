@@ -106,7 +106,7 @@ async fn execute_all_command_tree_commands() {
     let mut client = client_arc.lock().await;
 
     // Collect all event IDs for redaction verification
-    let mut event_ids: Vec<(String, String)> = Vec::new();
+    let mut event_ids: Vec<(String, Vec<String>)> = Vec::new();
 
     // Extract server name from room_id (part after ':')
     let server_name = room_id
@@ -125,7 +125,7 @@ async fn execute_all_command_tree_commands() {
         .unwrap();
     event_ids.push((
         resolve_result.command_event_id,
-        resolve_result.response_event_id,
+        resolve_result.response_event_ids,
     ));
     let resolve_resp = &resolve_result.response;
     // Extract !room_id from the response (look for a string starting with '!')
@@ -167,7 +167,7 @@ async fn execute_all_command_tree_commands() {
         .expect("Failed to create test user");
     event_ids.push((
         create_result.command_event_id,
-        create_result.response_event_id,
+        create_result.response_event_ids,
     ));
 
     // Parse command tree
@@ -254,7 +254,7 @@ async fn execute_all_command_tree_commands() {
             .await
         {
             Ok(result) => {
-                event_ids.push((result.command_event_id, result.response_event_id));
+                event_ids.push((result.command_event_id, result.response_event_ids));
                 let plain = response::strip_html(&result.response);
                 let lower = plain.to_lowercase();
                 // Only flag CLI arg-parse errors (indicates wrong command tree definition).
@@ -285,7 +285,7 @@ async fn execute_all_command_tree_commands() {
         )
         .await
     {
-        event_ids.push((result.command_event_id, result.response_event_id));
+        event_ids.push((result.command_event_id, result.response_event_ids));
     }
 
     // Cleanup: unban any rooms that may have been banned during the test
@@ -297,7 +297,7 @@ async fn execute_all_command_tree_commands() {
         )
         .await
     {
-        event_ids.push((result.command_event_id, result.response_event_id));
+        event_ids.push((result.command_event_id, result.response_event_ids));
     }
 
     // Get redaction context and release the client mutex
@@ -324,18 +324,22 @@ async fn execute_all_command_tree_commands() {
         );
     }
 
-    // Redact all command/response pairs
+    // Redact all command/response events
     eprintln!("\n=== Redaction Verification ===");
-    eprintln!("  Event pairs to redact: {}", event_ids.len());
+    eprintln!("  Command groups to redact: {}", event_ids.len());
 
-    for (cmd_eid, resp_eid) in &event_ids {
-        matrix::redact_command_pair(&ctx, cmd_eid, resp_eid).await;
+    for (cmd_eid, resp_eids) in &event_ids {
+        matrix::redact_command_events(&ctx, cmd_eid, resp_eids).await;
     }
 
     // Verify all events are actually redacted
+    let mut total_events = 0u32;
     let mut redaction_failures = 0u32;
-    for (cmd_eid, resp_eid) in &event_ids {
-        for event_id in [cmd_eid, resp_eid] {
+    for (cmd_eid, resp_eids) in &event_ids {
+        let mut all = vec![cmd_eid.as_str()];
+        all.extend(resp_eids.iter().map(|s| s.as_str()));
+        for event_id in all {
+            total_events += 1;
             if !is_event_redacted(&ctx.http, &ctx.homeserver, &ctx.access_token, &ctx.room_id, event_id).await {
                 redaction_failures += 1;
                 eprintln!("  UNREDACTED: {event_id}");
@@ -343,7 +347,7 @@ async fn execute_all_command_tree_commands() {
         }
     }
 
-    eprintln!("  Verified: {} events", event_ids.len() * 2);
+    eprintln!("  Verified: {total_events} events");
     eprintln!("  Redaction failures: {redaction_failures}");
     assert_eq!(
         redaction_failures, 0,

@@ -120,12 +120,12 @@ pub async fn command(
 
     let response = result.response;
     let command_event_id = result.command_event_id;
-    let response_event_id = result.response_event_id;
+    let response_event_ids = result.response_event_ids;
     tokio::spawn(async move {
-        matrix::redact_command_pair(
+        matrix::redact_command_events(
             &redaction_ctx,
             &command_event_id,
-            &response_event_id,
+            &response_event_ids,
         )
         .await;
     });
