@@ -348,15 +348,19 @@ uwu-admin versions track Continuwuity versions - `v0.5.5` of uwu-admin is compat
 | `v0.5.5-2` | Second uwu-admin patch |
 | `v0.6.0` | Tracks Continuwuity v0.6.0 |
 
-Pushing a `v*` tag triggers the release workflow (`.github/workflows/release.yml`), which builds the container image, pushes it to ghcr.io, and creates a GitHub Release with auto-generated notes.
+### `release.sh`
+
+Updates version references in `package.json`, `Cargo.toml`, and `README.md`, commits the changes, creates a git tag, and pushes everything. Shows a diff and prompts for confirmation before making any changes.
 
 ```sh
-git tag v0.5.5
-git push origin v0.5.5
+./scripts/release.sh <version-tag>
 ```
 
-This will:
+Example:
 
-1. Build the container from `containers/docker/Dockerfile`
-2. Push to `ghcr.io/PNRxA/uwu-admin` with tags `0.5.5`, `v0.5.5`, and `latest`
-3. Create a GitHub Release for the tag with auto-generated release notes
+```sh
+./scripts/release.sh v0.5.6
+./scripts/release.sh v0.5.6-1
+```
+
+Pushing a `v*` tag triggers the release workflow (`.github/workflows/release.yml`), which builds the container image, pushes it to ghcr.io and Docker Hub, and creates a GitHub Release with auto-generated notes.
