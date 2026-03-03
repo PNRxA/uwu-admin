@@ -107,13 +107,28 @@ pub async fn command(
 
     tracing::info!("Command executed: server_id={}, command='{}'", server_id, req.command);
 
+    let redact_messages = {
+        let cached = state.settings_cache.read().unwrap().get("redact_messages").cloned();
+        match cached {
+            Some(v) => v != "false",
+            None => {
+                let v = db::get_setting(&state.db, "redact_messages").await?;
+                let val = v.unwrap_or_else(|| "true".to_owned());
+                let enabled = val != "false";
+                state.settings_cache.write().unwrap()
+                    .insert("redact_messages".to_owned(), val);
+                enabled
+            }
+        }
+    };
+
     let (result, redaction_ctx) = {
         let client = {
             let lock = state.clients.lock().await;
             Arc::clone(lock.get(&server_id).ok_or(ApiError::NotConnected)?)
         };
         let mut client = client.lock().await;
-        let result = client.execute_command(&req.command, server_id, &state.db).await?;
+        let result = client.execute_command(&req.command, server_id, &state.db, redact_messages).await?;
         let ctx = client.redaction_context();
         (result, ctx)
     };
@@ -121,14 +136,16 @@ pub async fn command(
     let response = result.response;
     let command_event_id = result.command_event_id;
     let response_event_ids = result.response_event_ids;
-    tokio::spawn(async move {
-        matrix::redact_command_events(
-            &redaction_ctx,
-            &command_event_id,
-            &response_event_ids,
-        )
-        .await;
-    });
+    if redact_messages {
+        tokio::spawn(async move {
+            matrix::redact_command_events(
+                &redaction_ctx,
+                &command_event_id,
+                &response_event_ids,
+            )
+            .await;
+        });
+    }
 
     let plain = response::strip_html(&response);
     if plain.to_lowercase().contains("error:") {

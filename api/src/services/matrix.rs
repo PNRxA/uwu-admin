@@ -419,6 +419,7 @@ impl MatrixClient {
         command: &str,
         server_id: i32,
         db: &DatabaseConnection,
+        redact_messages: bool,
     ) -> Result<CommandResult, ApiError> {
         self.drain_pending_messages(server_id, db).await?;
         let message = format!("!admin {command}");
@@ -430,15 +431,17 @@ impl MatrixClient {
                 response_event_ids,
             }),
             Err(e) => {
-                let ctx = self.redaction_context();
-                redact_event(
-                    &ctx.http,
-                    &ctx.homeserver,
-                    &ctx.access_token,
-                    &ctx.room_id,
-                    &command_event_id,
-                )
-                .await;
+                if redact_messages {
+                    let ctx = self.redaction_context();
+                    redact_event(
+                        &ctx.http,
+                        &ctx.homeserver,
+                        &ctx.access_token,
+                        &ctx.room_id,
+                        &command_event_id,
+                    )
+                    .await;
+                }
                 Err(e)
             }
         }

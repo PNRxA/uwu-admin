@@ -120,6 +120,7 @@ async fn execute_all_command_tree_commands() {
             &format!("query room-alias resolve-local-alias {room_id}"),
             server_id,
             &state.db,
+            true,
         )
         .await
         .unwrap();
@@ -162,6 +163,7 @@ async fn execute_all_command_tree_commands() {
             &format!("users create-user {test_user_id}"),
             server_id,
             &state.db,
+            true,
         )
         .await
         .expect("Failed to create test user");
@@ -250,7 +252,7 @@ async fn execute_all_command_tree_commands() {
         eprintln!("  RUN:  {cmd_string}");
 
         match client
-            .execute_command(&cmd_string, server_id, &state.db)
+            .execute_command(&cmd_string, server_id, &state.db, true)
             .await
         {
             Ok(result) => {
@@ -282,6 +284,7 @@ async fn execute_all_command_tree_commands() {
             &format!("users deactivate {test_user_id}"),
             server_id,
             &state.db,
+            true,
         )
         .await
     {
@@ -294,6 +297,7 @@ async fn execute_all_command_tree_commands() {
             &format!("rooms moderation unban-room {real_room_id}"),
             server_id,
             &state.db,
+            true,
         )
         .await
     {

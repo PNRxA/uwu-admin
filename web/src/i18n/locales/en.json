@@ -19,6 +19,7 @@
     "federation": "Federation",
     "server": "Server",
     "console": "Console",
+    "settings": "Global Settings",
     "logout": "Logout"
   },
   "login": {
@@ -219,6 +220,16 @@
   "command": {
     "noServerSelected": "No server selected",
     "commandFailed": "Command failed"
+  },
+  "settings": {
+    "title": "Global Settings",
+    "subtitle": "These settings apply to all servers.",
+    "adminRoom": "Admin Room",
+    "adminRoomDescription": "Configure how commands are handled in the Matrix admin room.",
+    "redactMessages": "Redact admin room messages",
+    "redactMessagesDescription": "Automatically delete command and response messages from the admin room after execution.",
+    "updateSuccess": "Settings updated",
+    "updateFailed": "Failed to update settings"
   },
   "actionDialog": {
     "completed": "{action} completed",

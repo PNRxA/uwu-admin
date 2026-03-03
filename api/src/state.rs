@@ -14,6 +14,7 @@ pub struct AppState {
     pub jwt_secret: Zeroizing<Vec<u8>>,
     pub encryption_key: Zeroizing<Vec<u8>>,
     pub secure_cookies: bool,
+    pub settings_cache: std::sync::RwLock<HashMap<String, String>>,
 }
 
 impl AppState {
@@ -29,6 +30,7 @@ impl AppState {
             jwt_secret,
             encryption_key,
             secure_cookies,
+            settings_cache: std::sync::RwLock::new(HashMap::new()),
         })
     }
 }

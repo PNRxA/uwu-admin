@@ -1,5 +1,6 @@
 mod auth;
 mod servers;
+mod settings;
 
 use axum::Router;
 use axum::extract::DefaultBodyLimit;
@@ -13,6 +14,7 @@ pub fn build_router(state: SharedState) -> Router {
         .merge(auth::auth_routes())
         .merge(
             servers::protected_routes()
+                .merge(settings::settings_routes())
                 .layer(axum::middleware::from_fn_with_state(
                     state.clone(),
                     crate::handlers::middleware::require_auth,
@@ -22,7 +24,7 @@ pub fn build_router(state: SharedState) -> Router {
         .layer(axum::middleware::from_fn(crate::handlers::middleware::validate_origin))
         .layer({
             let cors = CorsLayer::new()
-                .allow_methods([Method::GET, Method::POST, Method::DELETE])
+                .allow_methods([Method::GET, Method::POST, Method::PUT, Method::DELETE])
                 .allow_headers([
                     HeaderName::from_static("content-type"),
                     HeaderName::from_static("authorization"),

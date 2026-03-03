@@ -99,7 +99,7 @@ async fn server_execute_command() {
     };
     let mut client = client_arc.lock().await;
     let result = client
-        .execute_command("server uptime", server_id, &state.db)
+        .execute_command("server uptime", server_id, &state.db, true)
         .await
         .unwrap();
     assert!(!result.response.is_empty());
@@ -138,7 +138,7 @@ async fn command_redaction() {
     .unwrap();
 
     let result = client
-        .execute_command("server uptime", server_id, &state.db)
+        .execute_command("server uptime", server_id, &state.db, true)
         .await
         .unwrap();
 

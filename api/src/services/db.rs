@@ -5,7 +5,7 @@ use sea_orm::{
 
 use zeroize::Zeroizing;
 
-use crate::entity::{admin_user, refresh_token, server};
+use crate::entity::{admin_user, refresh_token, server, setting};
 use crate::error::ApiError;
 
 pub async fn init_db(database_url: &str) -> Result<DatabaseConnection, ApiError> {
@@ -35,6 +35,16 @@ pub async fn init_db(database_url: &str) -> Result<DatabaseConnection, ApiError>
             room_id      TEXT NOT NULL,
             user_id      TEXT NOT NULL,
             since        TEXT
+        )",
+    ))
+    .await
+    .map_err(|e| ApiError::DbError(e.to_string()))?;
+
+    db.execute(Statement::from_string(
+        db.get_database_backend(),
+        "CREATE TABLE IF NOT EXISTS settings (
+            key   TEXT PRIMARY KEY,
+            value TEXT NOT NULL
         )",
     ))
     .await
@@ -432,6 +442,53 @@ pub async fn update_server_since(
     Ok(())
 }
 
+// --- Settings CRUD ---
+
+pub async fn get_setting(
+    db: &DatabaseConnection,
+    key: &str,
+) -> Result<Option<String>, ApiError> {
+    let row = setting::Entity::find_by_id(key.to_owned())
+        .one(db)
+        .await
+        .map_err(|e| ApiError::DbError(e.to_string()))?;
+    Ok(row.map(|r| r.value))
+}
+
+pub async fn set_setting(
+    db: &DatabaseConnection,
+    key: &str,
+    value: &str,
+) -> Result<(), ApiError> {
+    use sea_orm::sea_query::OnConflict;
+
+    let model = setting::ActiveModel {
+        key: Set(key.to_owned()),
+        value: Set(value.to_owned()),
+    };
+
+    setting::Entity::insert(model)
+        .on_conflict(
+            OnConflict::column(setting::Column::Key)
+                .update_column(setting::Column::Value)
+                .to_owned(),
+        )
+        .exec(db)
+        .await
+        .map_err(|e| ApiError::DbError(e.to_string()))?;
+
+    Ok(())
+}
+
+pub async fn get_all_settings(
+    db: &DatabaseConnection,
+) -> Result<Vec<setting::Model>, ApiError> {
+    setting::Entity::find()
+        .all(db)
+        .await
+        .map_err(|e| ApiError::DbError(e.to_string()))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -547,5 +604,43 @@ mod tests {
 
         let servers = load_all_servers(&db, &key).await.unwrap();
         assert!(servers.is_empty());
+    }
+
+    #[tokio::test]
+    #[serial]
+    async fn get_setting_returns_none_when_missing() {
+        let db = test_db().await;
+        let result = get_setting(&db, "nonexistent").await.unwrap();
+        assert!(result.is_none());
+    }
+
+    #[tokio::test]
+    #[serial]
+    async fn set_and_get_setting() {
+        let db = test_db().await;
+        set_setting(&db, "redact_messages", "false").await.unwrap();
+        let value = get_setting(&db, "redact_messages").await.unwrap();
+        assert_eq!(value.as_deref(), Some("false"));
+    }
+
+    #[tokio::test]
+    #[serial]
+    async fn set_setting_upserts() {
+        let db = test_db().await;
+        set_setting(&db, "redact_messages", "true").await.unwrap();
+        set_setting(&db, "redact_messages", "false").await.unwrap();
+        let value = get_setting(&db, "redact_messages").await.unwrap();
+        assert_eq!(value.as_deref(), Some("false"));
+    }
+
+    #[tokio::test]
+    #[serial]
+    async fn get_all_settings_returns_all() {
+        let db = test_db().await;
+        set_setting(&db, "key_a", "val_a").await.unwrap();
+        set_setting(&db, "key_b", "val_b").await.unwrap();
+        let all = get_all_settings(&db).await.unwrap();
+        assert!(all.iter().any(|s| s.key == "key_a" && s.value == "val_a"));
+        assert!(all.iter().any(|s| s.key == "key_b" && s.value == "val_b"));
     }
 }

@@ -6,6 +6,7 @@ mod logout;
 mod refresh;
 mod servers;
 mod service_unavailable;
+mod settings;
 mod validation;
 
 use axum::body::Body;
@@ -85,6 +86,16 @@ fn delete_json_auth(uri: &str, token: &str) -> Request<Body> {
         .uri(uri)
         .header("authorization", format!("Bearer {token}"))
         .body(Body::empty())
+        .unwrap()
+}
+
+fn put_json_auth(uri: &str, body: &Value, token: &str) -> Request<Body> {
+    Request::builder()
+        .method("PUT")
+        .uri(uri)
+        .header("content-type", "application/json")
+        .header("authorization", format!("Bearer {token}"))
+        .body(Body::from(serde_json::to_vec(body).unwrap()))
         .unwrap()
 }
 

@@ -225,4 +225,16 @@ export const api = {
       body: JSON.stringify({ command }),
     })
   },
+
+  // Settings
+  getSettings() {
+    return request<Record<string, string>>('/api/settings')
+  },
+
+  updateSettings(settings: Record<string, string>) {
+    return request<Record<string, string>>('/api/settings', {
+      method: 'PUT',
+      body: JSON.stringify(settings),
+    })
+  },
 }
