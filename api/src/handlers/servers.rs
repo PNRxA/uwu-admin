@@ -89,7 +89,9 @@ pub async fn remove_server(
     State(state): State<SharedState>,
     Path(server_id): Path<i32>,
 ) -> Result<Json<Value>, ApiError> {
-    state.clients.lock().await.remove(&server_id);
+    if let Some(client) = state.clients.lock().await.remove(&server_id) {
+        client.lock().await.logout().await;
+    }
     db::delete_server(&state.db, server_id).await?;
     tracing::info!("Server removed: id={}", server_id);
     Ok(Json(json!({ "removed": true })))

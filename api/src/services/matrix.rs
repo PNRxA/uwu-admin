@@ -58,7 +58,9 @@ impl MatrixClient {
                 "type": "m.id.user",
                 "user": username
             },
-            "password": password
+            "password": password,
+            "device_id": "UWUADMIN",
+            "initial_device_display_name": "uwu-admin"
         });
 
         let resp = http
@@ -443,6 +445,27 @@ impl MatrixClient {
                     .await;
                 }
                 Err(e)
+            }
+        }
+    }
+
+    /// Log out from the homeserver, invalidating the access token and removing
+    /// the device.
+    pub async fn logout(&self) {
+        let url = format!(
+            "{}/_matrix/client/{MATRIX_API_VERSION}/logout",
+            self.homeserver
+        );
+        match self.http.post(&url).bearer_auth(&self.access_token).json(&json!({})).send().await {
+            Ok(resp) if resp.status().is_success() => {
+                tracing::info!("Logged out from {}", self.homeserver);
+            }
+            Ok(resp) => {
+                let text = resp.text().await.unwrap_or_default();
+                tracing::warn!("Logout failed for {}: {text}", self.homeserver);
+            }
+            Err(e) => {
+                tracing::warn!("Logout request failed for {}: {e}", self.homeserver);
             }
         }
     }
