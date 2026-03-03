@@ -1,5 +1,9 @@
 use super::*;
+use crate::error::ApiError;
+use crate::services::matrix;
+use crate::services::response;
 use serial_test::serial;
+use std::sync::Arc;
 
 #[derive(Debug)]
 struct TestArg {
@@ -75,10 +79,10 @@ async fn execute_all_command_tree_commands() {
     };
 
     let state = test_state().await;
-    let app = test_app_with_state(state);
+    let app = test_app_with_state(state.clone());
     let (token, _) = do_setup(&app).await;
 
-    // Add server
+    // Add server via HTTP handler
     let body = json!({
         "homeserver": homeserver,
         "username": username,
@@ -92,7 +96,17 @@ async fn execute_all_command_tree_commands() {
         .unwrap();
     assert_eq!(resp.status(), StatusCode::OK);
     let json = body_json(resp).await;
-    let server_id = json["id"].as_i64().unwrap();
+    let server_id = i32::try_from(json["id"].as_i64().unwrap()).unwrap();
+
+    // Get client for direct command execution
+    let client_arc = {
+        let clients = state.clients.lock().await;
+        Arc::clone(clients.get(&server_id).unwrap())
+    };
+    let mut client = client_arc.lock().await;
+
+    // Collect all event IDs for redaction verification
+    let mut event_ids: Vec<(String, String)> = Vec::new();
 
     // Extract server name from room_id (part after ':')
     let server_name = room_id
@@ -100,39 +114,37 @@ async fn execute_all_command_tree_commands() {
         .nth(1)
         .expect("TEST_ROOM_ID must contain ':'");
 
-    // Helper closure to run a command and return the response body
-    let run_cmd = |app: Router, sid: i64, tok: String, cmd: String| async move {
-        let cmd_body = json!({"command": cmd});
-        let resp = app
-            .oneshot(post_json_auth(
-                &format!("/api/servers/{sid}/command"),
-                &cmd_body,
-                &tok,
-            ))
-            .await
-            .unwrap();
-        let status = resp.status();
-        let body = body_json(resp).await;
-        (status, body)
-    };
-
     // Resolve the room alias to a real !room_id
-    let (_, resolve_body) = run_cmd(
-        app.clone(),
-        server_id,
-        token.clone(),
-        format!("query room-alias resolve-local-alias {room_id}"),
-    )
-    .await;
-    let resolve_resp = resolve_body["response"].as_str().unwrap_or("");
+    let resolve_result = client
+        .execute_command(
+            &format!("query room-alias resolve-local-alias {room_id}"),
+            server_id,
+            &state.db,
+        )
+        .await
+        .unwrap();
+    event_ids.push((
+        resolve_result.command_event_id,
+        resolve_result.response_event_id,
+    ));
+    let resolve_resp = &resolve_result.response;
     // Extract !room_id from the response (look for a string starting with '!')
     let real_room_id = resolve_resp
         .split_whitespace()
-        .chain(resolve_resp.split(|c: char| c == '"' || c == '`' || c == '\n' || c == '<' || c == '>'))
+        .chain(resolve_resp.split(|c: char| {
+            c == '"' || c == '`' || c == '\n' || c == '<' || c == '>'
+        }))
         .find(|s| s.starts_with('!') && s.contains(':'))
-        .map(|s| s.trim_end_matches(|c: char| !c.is_alphanumeric() && c != ':' && c != '!' && c != '.' && c != '_' && c != '-').to_string())
+        .map(|s| {
+            s.trim_end_matches(|c: char| {
+                !c.is_alphanumeric() && c != ':' && c != '!' && c != '.' && c != '_' && c != '-'
+            })
+            .to_string()
+        })
         .unwrap_or_else(|| {
-            eprintln!("WARNING: Could not resolve room alias, falling back to alias. Response: {resolve_resp}");
+            eprintln!(
+                "WARNING: Could not resolve room alias, falling back to alias. Response: {resolve_resp}"
+            );
             room_id.clone()
         });
     eprintln!("  Resolved room: {room_id} -> {real_room_id}");
@@ -145,14 +157,18 @@ async fn execute_all_command_tree_commands() {
     let test_username = format!("uwu_test_{ts}");
     let test_user_id = format!("@{test_username}:{server_name}");
 
-    let (status, _) = run_cmd(
-        app.clone(),
-        server_id,
-        token.clone(),
-        format!("users create-user {test_user_id}"),
-    )
-    .await;
-    assert_eq!(status, StatusCode::OK, "Failed to create test user");
+    let create_result = client
+        .execute_command(
+            &format!("users create-user {test_user_id}"),
+            server_id,
+            &state.db,
+        )
+        .await
+        .expect("Failed to create test user");
+    event_ids.push((
+        create_result.command_event_id,
+        create_result.response_event_id,
+    ));
 
     // Parse command tree
     let tree_json: Vec<Value> =
@@ -233,27 +249,27 @@ async fn execute_all_command_tree_commands() {
 
         eprintln!("  RUN:  {cmd_string}");
 
-        let (status, body) = run_cmd(
-            app.clone(),
-            server_id,
-            token.clone(),
-            cmd_string,
-        )
-        .await;
-
-        // 422 = server understood the command but it failed with dummy data (expected).
-        // Only flag statuses that indicate a broken command tree or API issue.
-        if status != StatusCode::OK && status != StatusCode::UNPROCESSABLE_ENTITY {
-            failures.push((path.clone(), format!("status={status}")));
-        } else if status == StatusCode::OK {
-            if !body["response"].is_string() {
-                failures.push((path.clone(), "response is not a string".to_string()));
-            } else if let Some(resp_text) = body["response"].as_str() {
+        match client
+            .execute_command(&cmd_string, server_id, &state.db)
+            .await
+        {
+            Ok(result) => {
+                event_ids.push((result.command_event_id, result.response_event_id));
+                let plain = response::strip_html(&result.response);
+                let lower = plain.to_lowercase();
                 // Only flag CLI arg-parse errors (indicates wrong command tree definition).
-                // "Command failed with error:" is now caught by the API and returned as 422.
-                if resp_text.contains("error:") && !resp_text.contains("Command failed with error:") {
-                    failures.push((path.clone(), resp_text.to_string()));
+                // Responses containing "Command failed with error:" are expected with dummy data.
+                if lower.contains("error:")
+                    && !lower.contains("command failed with error:")
+                {
+                    failures.push((path.clone(), plain));
                 }
+            }
+            Err(ApiError::Timeout) => {
+                failures.push((path.clone(), "status=504 Gateway Timeout".to_string()));
+            }
+            Err(e) => {
+                failures.push((path.clone(), format!("error: {e}")));
             }
         }
 
@@ -261,22 +277,32 @@ async fn execute_all_command_tree_commands() {
     }
 
     // Cleanup: deactivate the test user
-    let _ = run_cmd(
-        app.clone(),
-        server_id,
-        token.clone(),
-        format!("users deactivate {test_user_id}"),
-    )
-    .await;
+    if let Ok(result) = client
+        .execute_command(
+            &format!("users deactivate {test_user_id}"),
+            server_id,
+            &state.db,
+        )
+        .await
+    {
+        event_ids.push((result.command_event_id, result.response_event_id));
+    }
 
     // Cleanup: unban any rooms that may have been banned during the test
-    let _ = run_cmd(
-        app.clone(),
-        server_id,
-        token.clone(),
-        format!("rooms moderation unban-room {real_room_id}"),
-    )
-    .await;
+    if let Ok(result) = client
+        .execute_command(
+            &format!("rooms moderation unban-room {real_room_id}"),
+            server_id,
+            &state.db,
+        )
+        .await
+    {
+        event_ids.push((result.command_event_id, result.response_event_id));
+    }
+
+    // Get redaction context and release the client mutex
+    let ctx = client.redaction_context();
+    drop(client);
 
     eprintln!("\n=== Command Tree Test Summary ===");
     eprintln!("  Tested:  {tested}");
@@ -297,4 +323,30 @@ async fn execute_all_command_tree_commands() {
                 .join(", ")
         );
     }
+
+    // Redact all command/response pairs
+    eprintln!("\n=== Redaction Verification ===");
+    eprintln!("  Event pairs to redact: {}", event_ids.len());
+
+    for (cmd_eid, resp_eid) in &event_ids {
+        matrix::redact_command_pair(&ctx, cmd_eid, resp_eid).await;
+    }
+
+    // Verify all events are actually redacted
+    let mut redaction_failures = 0u32;
+    for (cmd_eid, resp_eid) in &event_ids {
+        for event_id in [cmd_eid, resp_eid] {
+            if !is_event_redacted(&ctx.http, &ctx.homeserver, &ctx.access_token, &ctx.room_id, event_id).await {
+                redaction_failures += 1;
+                eprintln!("  UNREDACTED: {event_id}");
+            }
+        }
+    }
+
+    eprintln!("  Verified: {} events", event_ids.len() * 2);
+    eprintln!("  Redaction failures: {redaction_failures}");
+    assert_eq!(
+        redaction_failures, 0,
+        "{redaction_failures} event(s) were not redacted"
+    );
 }

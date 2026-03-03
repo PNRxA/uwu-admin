@@ -8,6 +8,19 @@ use crate::error::ApiError;
 
 const MATRIX_API_VERSION: &str = "v3";
 
+pub struct CommandResult {
+    pub response: String,
+    pub command_event_id: String,
+    pub response_event_id: String,
+}
+
+pub struct RedactionContext {
+    pub http: reqwest::Client,
+    pub homeserver: String,
+    pub access_token: String,
+    pub room_id: String,
+}
+
 pub struct MatrixClient {
     http: reqwest::Client,
     pub homeserver: String,
@@ -169,7 +182,7 @@ impl MatrixClient {
         Ok(())
     }
 
-    async fn send_message(&self, body: &str) -> Result<(), ApiError> {
+    async fn send_message(&self, body: &str) -> Result<String, ApiError> {
         let txn_id = Uuid::new_v4().to_string();
         let url = format!(
             "{}/_matrix/client/{MATRIX_API_VERSION}/rooms/{}/send/m.room.message/{txn_id}",
@@ -196,14 +209,22 @@ impl MatrixClient {
             return Err(ApiError::MatrixError(format!("Send failed: {text}")));
         }
 
-        Ok(())
+        let data: Value = resp
+            .json()
+            .await
+            .map_err(|e| ApiError::MatrixError(e.to_string()))?;
+
+        data["event_id"]
+            .as_str()
+            .map(|s| s.to_string())
+            .ok_or_else(|| ApiError::MatrixError("No event_id in send response".into()))
     }
 
     async fn wait_for_response(
         &mut self,
         server_id: i32,
         db: &DatabaseConnection,
-    ) -> Result<String, ApiError> {
+    ) -> Result<(String, String), ApiError> {
         for _ in 0..3 {
             let mut url = format!(
                 "{}/_matrix/client/{MATRIX_API_VERSION}/sync?timeout=10000",
@@ -248,6 +269,10 @@ impl MatrixClient {
                     let sender = event["sender"].as_str().unwrap_or_default();
                     let msg_type = event["type"].as_str().unwrap_or_default();
                     if sender != self.user_id && msg_type == "m.room.message" {
+                        let event_id = event["event_id"]
+                            .as_str()
+                            .unwrap_or_default()
+                            .to_string();
                         let content = &event["content"];
                         let msgtype = content["msgtype"].as_str().unwrap_or_default();
 
@@ -255,7 +280,8 @@ impl MatrixClient {
                         // download the file content via the media API.
                         if msgtype == "m.file" {
                             if let Some(mxc_url) = content["url"].as_str() {
-                                return self.download_mxc(mxc_url).await;
+                                let body = self.download_mxc(mxc_url).await?;
+                                return Ok((body, event_id));
                             }
                             tracing::warn!("m.file event missing url field");
                         }
@@ -268,7 +294,7 @@ impl MatrixClient {
                         let formatted = content["formatted_body"]
                             .as_str()
                             .map(|s| s.to_string());
-                        return Ok(formatted.unwrap_or(body));
+                        return Ok((formatted.unwrap_or(body), event_id));
                     }
                 }
             }
@@ -377,12 +403,96 @@ impl MatrixClient {
         command: &str,
         server_id: i32,
         db: &DatabaseConnection,
-    ) -> Result<String, ApiError> {
+    ) -> Result<CommandResult, ApiError> {
         self.drain_pending_messages(server_id, db).await?;
         let message = format!("!admin {command}");
-        self.send_message(&message).await?;
-        self.wait_for_response(server_id, db).await
+        let command_event_id = self.send_message(&message).await?;
+        match self.wait_for_response(server_id, db).await {
+            Ok((response, response_event_id)) => Ok(CommandResult {
+                response,
+                command_event_id,
+                response_event_id,
+            }),
+            Err(e) => {
+                let ctx = self.redaction_context();
+                redact_event(
+                    &ctx.http,
+                    &ctx.homeserver,
+                    &ctx.access_token,
+                    &ctx.room_id,
+                    &command_event_id,
+                )
+                .await;
+                Err(e)
+            }
+        }
     }
+
+    /// Returns cloned values needed for redaction without holding the mutex.
+    pub fn redaction_context(&self) -> RedactionContext {
+        RedactionContext {
+            http: self.http.clone(),
+            homeserver: self.homeserver.clone(),
+            access_token: self.access_token.clone(),
+            room_id: self.room_id.clone(),
+        }
+    }
+}
+
+async fn redact_event(
+    http: &reqwest::Client,
+    homeserver: &str,
+    access_token: &str,
+    room_id: &str,
+    event_id: &str,
+) {
+    for attempt in 0..2 {
+        let txn_id = Uuid::new_v4().to_string();
+        let url = format!(
+            "{homeserver}/_matrix/client/{MATRIX_API_VERSION}/rooms/{}/redact/{}/{txn_id}",
+            urlencoded(room_id),
+            urlencoded(event_id),
+        );
+
+        let result = http
+            .put(&url)
+            .bearer_auth(access_token)
+            .json(&json!({}))
+            .send()
+            .await;
+
+        match result {
+            Ok(resp) if resp.status().is_success() => return,
+            Ok(resp) => {
+                let text = resp.text().await.unwrap_or_default();
+                if attempt == 0 {
+                    tracing::warn!("Failed to redact event {event_id}, retrying: {text}");
+                    tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+                } else {
+                    tracing::warn!("Failed to redact event {event_id} after retry: {text}");
+                }
+            }
+            Err(e) => {
+                if attempt == 0 {
+                    tracing::warn!("Failed to redact event {event_id}, retrying: {e}");
+                    tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+                } else {
+                    tracing::warn!("Failed to redact event {event_id} after retry: {e}");
+                }
+            }
+        }
+    }
+}
+
+pub async fn redact_command_pair(
+    ctx: &RedactionContext,
+    command_event_id: &str,
+    response_event_id: &str,
+) {
+    tokio::join!(
+        redact_event(&ctx.http, &ctx.homeserver, &ctx.access_token, &ctx.room_id, command_event_id),
+        redact_event(&ctx.http, &ctx.homeserver, &ctx.access_token, &ctx.room_id, response_event_id),
+    );
 }
 
 async fn resolve_alias(

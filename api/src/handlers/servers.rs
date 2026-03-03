@@ -9,7 +9,7 @@ use tokio::sync::Mutex;
 use crate::services::commands::validate_command;
 use crate::services::db;
 use crate::error::ApiError;
-use crate::services::matrix::MatrixClient;
+use crate::services::matrix::{self, MatrixClient};
 use crate::services::response;
 use crate::state::SharedState;
 use crate::services::validation;
@@ -107,16 +107,33 @@ pub async fn command(
 
     tracing::info!("Command executed: server_id={}, command='{}'", server_id, req.command);
 
-    let client = {
-        let lock = state.clients.lock().await;
-        Arc::clone(lock.get(&server_id).ok_or(ApiError::NotConnected)?)
+    let (result, redaction_ctx) = {
+        let client = {
+            let lock = state.clients.lock().await;
+            Arc::clone(lock.get(&server_id).ok_or(ApiError::NotConnected)?)
+        };
+        let mut client = client.lock().await;
+        let result = client.execute_command(&req.command, server_id, &state.db).await?;
+        let ctx = client.redaction_context();
+        (result, ctx)
     };
-    let mut client = client.lock().await;
-    let raw = client.execute_command(&req.command, server_id, &state.db).await?;
-    let plain = response::strip_html(&raw);
+
+    let response = result.response;
+    let command_event_id = result.command_event_id;
+    let response_event_id = result.response_event_id;
+    tokio::spawn(async move {
+        matrix::redact_command_pair(
+            &redaction_ctx,
+            &command_event_id,
+            &response_event_id,
+        )
+        .await;
+    });
+
+    let plain = response::strip_html(&response);
     if plain.to_lowercase().contains("error:") {
         return Err(ApiError::CommandFailed(plain.trim().to_string()));
     }
-    Ok(Json(json!({ "response": raw })))
+    Ok(Json(json!({ "response": response })))
 }
 

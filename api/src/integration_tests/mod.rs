@@ -138,3 +138,76 @@ fn test_server_env() -> Option<(String, String, String, String)> {
     let room_id = std::env::var("TEST_ROOM_ID").ok()?;
     Some((homeserver, username, password, room_id))
 }
+
+/// Check whether a Matrix event has been redacted (content stripped empty).
+async fn is_event_redacted(
+    http: &reqwest::Client,
+    homeserver: &str,
+    access_token: &str,
+    room_id: &str,
+    event_id: &str,
+) -> bool {
+    let encoded_rid =
+        percent_encoding::utf8_percent_encode(room_id, percent_encoding::NON_ALPHANUMERIC)
+            .to_string();
+    let encoded_eid =
+        percent_encoding::utf8_percent_encode(event_id, percent_encoding::NON_ALPHANUMERIC)
+            .to_string();
+    let url = format!(
+        "{homeserver}/_matrix/client/v3/rooms/{encoded_rid}/event/{encoded_eid}"
+    );
+    let resp: Value = http
+        .get(&url)
+        .bearer_auth(access_token)
+        .send()
+        .await
+        .unwrap()
+        .json()
+        .await
+        .unwrap();
+
+    resp.get("content")
+        .and_then(|c| c.as_object())
+        .is_some_and(|o| o.is_empty())
+}
+
+/// Count how many `m.room.message` events from `user_id` still have
+/// non-empty content (i.e. were NOT redacted) among the last N events.
+async fn count_unredacted_messages(
+    http: &reqwest::Client,
+    homeserver: &str,
+    access_token: &str,
+    room_id: &str,
+    user_id: &str,
+) -> u32 {
+    let encoded_rid =
+        percent_encoding::utf8_percent_encode(room_id, percent_encoding::NON_ALPHANUMERIC)
+            .to_string();
+    let url = format!(
+        "{homeserver}/_matrix/client/v3/rooms/{encoded_rid}/messages?dir=b&limit=10"
+    );
+    let resp: Value = http
+        .get(&url)
+        .bearer_auth(access_token)
+        .send()
+        .await
+        .unwrap()
+        .json()
+        .await
+        .unwrap();
+
+    let Some(events) = resp["chunk"].as_array() else {
+        return 0;
+    };
+
+    events
+        .iter()
+        .filter(|e| {
+            e["sender"].as_str() == Some(user_id)
+                && e["type"].as_str() == Some("m.room.message")
+                && e.get("content")
+                    .and_then(|c| c.as_object())
+                    .is_some_and(|o| !o.is_empty())
+        })
+        .count() as u32
+}
