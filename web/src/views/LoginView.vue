@@ -2,6 +2,7 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { useIsUwu } from '@/composables/useIsUwu'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -14,6 +15,7 @@ const auth = useAuthStore()
 
 const username = ref('')
 const password = ref('')
+const { isUwu } = useIsUwu()
 
 async function onSubmit() {
   try {
@@ -28,11 +30,11 @@ async function onSubmit() {
 <template>
   <div class="relative flex min-h-screen items-center justify-center p-4">
     <div class="pointer-events-none absolute inset-0 flex items-center justify-center">
-      <div class="h-[500px] w-[500px] rounded-full bg-[radial-gradient(circle,oklch(0.72_0.14_350/0.15),transparent_70%)] dark:bg-[radial-gradient(circle,oklch(0.55_0.12_350/0.12),transparent_70%)]" />
+      <div class="h-[500px] w-[500px] rounded-full login-glow" />
     </div>
     <Card class="relative w-full max-w-md rounded-2xl">
       <CardHeader class="text-center">
-        <div class="text-muted-foreground text-sm mb-1">(=^-ω-^=) welcome back!</div>
+        <div v-if="isUwu" class="text-muted-foreground text-sm mb-1">(=^-ω-^=) welcome back!</div>
         <CardTitle class="flex justify-center">
           <AppLogo size="lg" />
         </CardTitle>
@@ -78,3 +80,12 @@ async function onSubmit() {
     </Card>
   </div>
 </template>
+
+<style scoped>
+.login-glow {
+  background: radial-gradient(circle, color-mix(in oklch, var(--primary) 15%, transparent), transparent 70%);
+}
+:global(.dark) .login-glow {
+  background: radial-gradient(circle, color-mix(in oklch, var(--primary) 12%, transparent), transparent 70%);
+}
+</style>

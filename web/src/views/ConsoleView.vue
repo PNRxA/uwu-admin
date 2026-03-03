@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useIsUwu } from '@/composables/useIsUwu'
 import { useConsole, sanitizeHtml } from '@/composables/useConsole'
 import CommandAutocomplete from '@/components/CommandAutocomplete.vue'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -17,6 +18,8 @@ const {
   sendCommand,
   formatTime,
 } = useConsole('console-bottom')
+
+const { isUwu } = useIsUwu()
 </script>
 
 <template>
@@ -57,7 +60,7 @@ const {
               <Separator />
             </div>
             <div v-if="commandStore.history.length === 0" class="text-center text-muted-foreground py-8">
-              <div class="text-2xl mb-2">(=^-ω-^=)</div>
+              <div v-if="isUwu" class="text-2xl mb-2">(=^-ω-^=)</div>
               {{ $t('console.noCommandsYet') }}
             </div>
             <div id="console-bottom" />

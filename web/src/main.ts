@@ -6,6 +6,12 @@ import App from './App.vue'
 import router from './router'
 import i18n from './i18n'
 import './style.css'
+import { applyCachedTheme } from './composables/useColorTheme'
+
+// Re-inject cached theme CSS so the override <style> stays last in <head>,
+// surviving Vite's own style-tag injection which can reorder elements.
+// The inline <script> in index.html handles the initial zero-flash case.
+applyCachedTheme()
 
 const app = createApp(App)
 

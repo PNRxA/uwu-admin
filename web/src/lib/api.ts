@@ -227,6 +227,10 @@ export const api = {
   },
 
   // Settings
+  getPublicSettings() {
+    return request<Record<string, string>>('/api/settings/public')
+  },
+
   getSettings() {
     return request<Record<string, string>>('/api/settings')
   },

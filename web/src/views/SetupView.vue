@@ -3,6 +3,7 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/stores/auth'
+import { useIsUwu } from '@/composables/useIsUwu'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -16,6 +17,7 @@ const auth = useAuthStore()
 const username = ref('')
 const password = ref('')
 const confirmPassword = ref('')
+const { isUwu } = useIsUwu()
 
 async function onSubmit() {
   if (password.value !== confirmPassword.value) {
@@ -35,7 +37,7 @@ async function onSubmit() {
   <div class="flex min-h-screen items-center justify-center p-4">
     <Card class="w-full max-w-md">
       <CardHeader class="text-center">
-        <CardTitle class="text-2xl">{{ $t('common.appName') }}</CardTitle>
+        <CardTitle class="text-2xl">{{ isUwu ? $t('common.appName') : $t('common.appNameProfessional') }}</CardTitle>
         <CardDescription>{{ $t('setup.description') }}</CardDescription>
       </CardHeader>
       <CardContent>

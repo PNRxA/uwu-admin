@@ -1,23 +1,38 @@
 <script setup lang="ts">
 import { RouterLink } from 'vue-router'
+import { useIsUwu } from '@/composables/useIsUwu'
 
 withDefaults(defineProps<{
   size?: 'sm' | 'lg'
 }>(), {
   size: 'sm',
 })
+
+const { isUwu } = useIsUwu()
 </script>
 
 <template>
   <RouterLink to="/" class="uwu-logo flex items-center gap-1.5 overflow-visible whitespace-nowrap no-underline">
-    <span
-      class="uwu-text relative font-extrabold tracking-tight bg-gradient-to-r from-primary to-pink-400 dark:from-primary dark:to-pink-300 bg-clip-text text-transparent group-data-[collapsible=icon]:text-sm"
-      :class="size === 'lg' ? 'text-3xl' : 'text-xl'"
-    >uwu</span>
-    <span
-      class="font-light tracking-wide text-muted-foreground group-data-[collapsible=icon]:hidden"
-      :class="size === 'lg' ? 'text-3xl' : 'text-xl'"
-    >admin</span>
+    <template v-if="isUwu">
+      <span
+        class="uwu-text relative font-extrabold tracking-tight bg-gradient-to-r from-primary to-primary/70 dark:from-primary dark:to-primary/80 bg-clip-text text-transparent group-data-[collapsible=icon]:text-sm"
+        :class="size === 'lg' ? 'text-3xl' : 'text-xl'"
+      >uwu</span>
+      <span
+        class="font-light tracking-wide text-muted-foreground group-data-[collapsible=icon]:hidden"
+        :class="size === 'lg' ? 'text-3xl' : 'text-xl'"
+      >admin</span>
+    </template>
+    <template v-else>
+      <span
+        class="font-bold tracking-tight text-foreground group-data-[collapsible=icon]:text-sm"
+        :class="size === 'lg' ? 'text-3xl' : 'text-xl'"
+      >Admin</span>
+      <span
+        class="font-light tracking-wide text-muted-foreground group-data-[collapsible=icon]:hidden"
+        :class="size === 'lg' ? 'text-3xl' : 'text-xl'"
+      >Panel</span>
+    </template>
   </RouterLink>
 </template>
 
@@ -35,7 +50,7 @@ withDefaults(defineProps<{
     79% 91%, 50% 70%, 21% 91%, 32% 57%,
     2% 35%, 39% 35%
   );
-  background: linear-gradient(135deg, oklch(0.72 0.18 350), oklch(0.68 0.16 330));
+  background: linear-gradient(135deg, var(--primary), var(--ring));
   opacity: 0.8;
   transition: transform 0.3s ease, opacity 0.3s ease;
 }

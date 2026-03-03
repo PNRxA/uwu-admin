@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { watch } from 'vue'
+import { useIsUwu } from '@/composables/useIsUwu'
 import { useConsole, sanitizeHtml } from '@/composables/useConsole'
 import CommandAutocomplete from '@/components/CommandAutocomplete.vue'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
@@ -12,6 +13,7 @@ import { Send, Trash2, Terminal, ChevronUp, CircleAlert, Maximize2 } from 'lucid
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
+const { isUwu } = useIsUwu()
 
 const {
   commandStore,
@@ -80,8 +82,8 @@ watch(() => commandStore.panelOpen, (open) => {
               <Separator />
             </div>
             <div v-if="commandStore.history.length === 0" class="text-center text-muted-foreground py-4 text-sm">
-              <div class="text-lg mb-1">(=^-ω-^=)</div>
-              No commands sent yet~ type something!
+              <div v-if="isUwu" class="text-lg mb-1">(=^-ω-^=)</div>
+              {{ isUwu ? $t('console.noCommandsYetUwu') : $t('console.noCommandsYet') }}
             </div>
             <div id="console-panel-bottom" />
           </div>

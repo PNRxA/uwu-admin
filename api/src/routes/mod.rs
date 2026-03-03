@@ -12,9 +12,10 @@ use crate::state::SharedState;
 pub fn build_router(state: SharedState) -> Router {
     Router::new()
         .merge(auth::auth_routes())
+        .merge(settings::public_settings_routes())
         .merge(
             servers::protected_routes()
-                .merge(settings::settings_routes())
+                .merge(settings::protected_settings_routes())
                 .layer(axum::middleware::from_fn_with_state(
                     state.clone(),
                     crate::handlers::middleware::require_auth,

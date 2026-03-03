@@ -12,6 +12,27 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <title>uwu admin</title>
+    <script>
+      // Flash prevention: apply cached theme + title before Vue loads.
+      // This duplicates applyCachedTheme() in main.ts on purpose: the inline
+      // script runs synchronously before ANY JS bundle is fetched, so the
+      // user never sees a flash of the default theme. The runtime call in
+      // main.ts re-injects the same CSS because Vite's style-tag injection
+      // can reorder <style> elements and push the override above style.css,
+      // losing specificity. Re-appending ensures the override stays last.
+      try {
+        var css = localStorage.getItem('uwu-theme-css');
+        if (css) {
+          var s = document.createElement('style');
+          s.id = 'uwu-theme-overrides';
+          s.textContent = css;
+          document.head.appendChild(s);
+        }
+        if (localStorage.getItem('uwu-flavour-text') === 'false') {
+          document.title = 'Admin Panel';
+        }
+      } catch(e) {}
+    </script>
   </head>
   <body>
     <div id="app"></div>
