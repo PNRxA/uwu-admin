@@ -128,7 +128,9 @@ if [ "$CREATE_PR" = true ]; then
   gh pr create \
     --title "Update to $TARGET_REF" \
     --body "Updates command tree, package versions, and Docker tag to match continuwuity [$TARGET_REF](https://forgejo.ellis.link/continuwuation/continuwuity/releases/tag/$TARGET_REF)." \
-    --base main
+    --base main \
+    --assignee PNRxA \
+    --reviewer PNRxA
 
   git checkout main
   git branch -D "$PR_BRANCH"
