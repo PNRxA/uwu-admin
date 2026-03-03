@@ -33,7 +33,10 @@ pub async fn add_server(
 ) -> Result<Json<Value>, ApiError> {
     validation::validate_homeserver_url_resolved(&req.homeserver).await?;
 
-    let client = MatrixClient::login(&req.homeserver, &req.username, &req.password, &req.room_id, &state.device_id)
+    // Generate a unique device_id per connection so that adding the same
+    // server/user twice doesn't invalidate the first session's access token.
+    let device_id = format!("{}-{}", state.device_id, uuid::Uuid::new_v4().simple());
+    let client = MatrixClient::login(&req.homeserver, &req.username, &req.password, &req.room_id, &device_id)
         .await?;
 
     let user_id = client.user_id.clone();
