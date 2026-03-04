@@ -94,6 +94,7 @@ jobs:
           $SUDO apt-get update
           $SUDO apt-get install -y libclang-dev pkg-config make gcc
           # liburing-dev not available on focal, build from source
+          rm -rf /tmp/liburing
           git clone --depth 1 --branch liburing-2.6 https://github.com/axboe/liburing.git /tmp/liburing
           cd /tmp/liburing
           ./configure --prefix=/usr
