@@ -1,7 +1,10 @@
 <script setup lang="ts">
+import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useActionDialogs } from '@/composables/useActionDialogs'
-import { Settings2 } from 'lucide-vue-next'
+import { useCommandStore } from '@/stores/command'
+import { useConnectionStore } from '@/stores/connection'
+import { Settings2, Loader2 } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -25,6 +28,7 @@ import {
 } from '@/components/ui/alert-dialog'
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -37,6 +41,8 @@ const props = defineProps<{ roomId: string }>()
 const emit = defineEmits<{ 'action-complete': [] }>()
 
 const { t } = useI18n()
+const commandStore = useCommandStore()
+const connection = useConnectionStore()
 
 const {
   alertOpen,
@@ -59,6 +65,29 @@ const {
 } = useActionDialogs(() => emit('action-complete'))
 
 const rid = () => props.roomId
+
+// Controlled dropdown state with room existence pre-check
+const menuOpen = ref(false)
+const checking = ref(false)
+const warningOpen = ref(false)
+
+async function onMenuOpenChange(open: boolean) {
+  if (!open) {
+    menuOpen.value = false
+    return
+  }
+  if (connection.activeServerId === null) return
+
+  checking.value = true
+  try {
+    await commandStore.query(`rooms exists ${rid()}`)
+    menuOpen.value = true
+  } catch {
+    warningOpen.value = true
+  } finally {
+    checking.value = false
+  }
+}
 
 // Read-only actions
 const readOnlyActions = {
@@ -98,10 +127,11 @@ const inputActions = {
 </script>
 
 <template>
-  <DropdownMenu>
+  <DropdownMenu :open="menuOpen" @update:open="onMenuOpenChange">
     <DropdownMenuTrigger as-child>
-      <Button variant="ghost" size="icon-sm">
-        <Settings2 class="size-4" />
+      <Button variant="ghost" size="icon-sm" :disabled="checking">
+        <Loader2 v-if="checking" class="size-4 animate-spin" />
+        <Settings2 v-else class="size-4" />
         <span class="sr-only">{{ $t('common.actions') }}</span>
       </Button>
     </DropdownMenuTrigger>
@@ -199,6 +229,21 @@ const inputActions = {
         <DialogDescription>{{ $t('rooms.actions.resultsFor', { roomId }) }}</DialogDescription>
       </DialogHeader>
       <ResponseDisplay :response="resultResponse" />
+    </DialogContent>
+  </Dialog>
+
+  <!-- Warning Dialog for unavailable rooms -->
+  <Dialog v-model:open="warningOpen">
+    <DialogContent>
+      <DialogHeader>
+        <DialogTitle>{{ $t('rooms.actions.roomUnavailable') }}</DialogTitle>
+        <DialogDescription class="whitespace-pre-line">{{ $t('rooms.actions.roomUnavailableDescription') }}</DialogDescription>
+      </DialogHeader>
+      <DialogFooter>
+        <DialogClose as-child>
+          <Button variant="outline">{{ $t('common.close') }}</Button>
+        </DialogClose>
+      </DialogFooter>
     </DialogContent>
   </Dialog>
 </template>

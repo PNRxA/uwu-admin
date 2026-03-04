@@ -10,7 +10,8 @@
     "executing": "Executing...",
     "actions": "Actions",
     "noData": "No data",
-    "remove": "Remove"
+    "remove": "Remove",
+    "close": "Close"
   },
   "sidebar": {
     "navigation": "Navigation",
@@ -155,7 +156,9 @@
       "banDescription": "Ban room {roomId}? This will prevent users from joining.",
       "unbanRoom": "Unban Room",
       "unbanDescription": "Unban room {roomId}?",
-      "resultsFor": "Results for {roomId}"
+      "resultsFor": "Results for {roomId}",
+      "roomUnavailable": "Room Unavailable",
+      "roomUnavailableDescription": "This room may be on a remote server. To access remote room information, enable allow_outgoing_presence in your continuwuity config.\n\nNote that outgoing presence is disabled by default as of continuwuity v0.5.6 as it can significantly increase resource usage."
     }
   },
   "federation": {
