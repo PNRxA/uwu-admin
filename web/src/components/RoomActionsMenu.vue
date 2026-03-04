@@ -4,7 +4,7 @@ import { useI18n } from 'vue-i18n'
 import { useActionDialogs } from '@/composables/useActionDialogs'
 import { useCommandStore } from '@/stores/command'
 import { useConnectionStore } from '@/stores/connection'
-import { Settings2, Loader2 } from 'lucide-vue-next'
+import { Settings2 } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -28,7 +28,6 @@ import {
 } from '@/components/ui/alert-dialog'
 import {
   Dialog,
-  DialogClose,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -66,27 +65,16 @@ const {
 
 const rid = () => props.roomId
 
-// Controlled dropdown state with room existence pre-check
+// Controlled dropdown state
 const menuOpen = ref(false)
-const checking = ref(false)
-const warningOpen = ref(false)
 
-async function onMenuOpenChange(open: boolean) {
+function onMenuOpenChange(open: boolean) {
   if (!open) {
     menuOpen.value = false
     return
   }
   if (connection.activeServerId === null) return
-
-  checking.value = true
-  try {
-    await commandStore.query(`rooms exists ${rid()}`)
-    menuOpen.value = true
-  } catch {
-    warningOpen.value = true
-  } finally {
-    checking.value = false
-  }
+  menuOpen.value = true
 }
 
 // Read-only actions
@@ -129,9 +117,8 @@ const inputActions = {
 <template>
   <DropdownMenu :open="menuOpen" @update:open="onMenuOpenChange">
     <DropdownMenuTrigger as-child>
-      <Button variant="ghost" size="icon-sm" :disabled="checking">
-        <Loader2 v-if="checking" class="size-4 animate-spin" />
-        <Settings2 v-else class="size-4" />
+      <Button variant="ghost" size="icon-sm">
+        <Settings2 class="size-4" />
         <span class="sr-only">{{ $t('common.actions') }}</span>
       </Button>
     </DropdownMenuTrigger>
@@ -232,18 +219,4 @@ const inputActions = {
     </DialogContent>
   </Dialog>
 
-  <!-- Warning Dialog for unavailable rooms -->
-  <Dialog v-model:open="warningOpen">
-    <DialogContent>
-      <DialogHeader>
-        <DialogTitle>{{ $t('rooms.actions.roomUnavailable') }}</DialogTitle>
-        <DialogDescription class="whitespace-pre-line">{{ $t('rooms.actions.roomUnavailableDescription') }}</DialogDescription>
-      </DialogHeader>
-      <DialogFooter>
-        <DialogClose as-child>
-          <Button variant="outline">{{ $t('common.close') }}</Button>
-        </DialogClose>
-      </DialogFooter>
-    </DialogContent>
-  </Dialog>
 </template>

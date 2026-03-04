@@ -42,8 +42,8 @@ fn validate_arg_format(value: &str, arg_type: &str) -> Result<(), String> {
             }
         }
         "room_id" => {
-            if !(value.starts_with('!') || value.starts_with('#')) || !value.contains(':') {
-                return Err(format!("invalid room_id format: {value} (expected !room:server or #alias:server)"));
+            if !(value.starts_with('!') || value.starts_with('#')) {
+                return Err(format!("invalid room_id format: {value} (expected !room_id or #alias:server)"));
             }
         }
         "event_id" => {
