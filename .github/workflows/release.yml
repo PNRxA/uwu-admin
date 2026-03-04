@@ -4,6 +4,10 @@ on:
   push:
     tags: ['v*']
   workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version tag (e.g. v0.5.6-0)'
+        required: true
 
 permissions:
   contents: write
@@ -14,6 +18,8 @@ jobs:
     runs-on: self-hosted
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.version || github.ref_name }}
 
       - uses: docker/setup-buildx-action@v3
 
@@ -31,7 +37,7 @@ jobs:
       - name: Extract version variants
         id: versions
         run: |
-          TAG="${{ github.ref_name }}"
+          TAG="${{ inputs.version || github.ref_name }}"
           BASE=$(echo "$TAG" | sed 's/-[0-9]*$//')
           echo "base=$BASE" >> "$GITHUB_OUTPUT"
           echo "exact_bare=${TAG#v}" >> "$GITHUB_OUTPUT"
@@ -45,7 +51,7 @@ jobs:
             ghcr.io/${{ github.repository }}
             docker.io/${{ secrets.DOCKERHUB_USERNAME }}/uwu-admin
           tags: |
-            type=raw,value=${{ github.ref_name }}
+            type=raw,value=${{ inputs.version || github.ref_name }}
             type=raw,value=${{ steps.versions.outputs.base }}
             type=raw,value=${{ steps.versions.outputs.exact_bare }}
             type=raw,value=${{ steps.versions.outputs.base_bare }}
@@ -63,4 +69,5 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ inputs.version || github.ref_name }}
           generate_release_notes: true
