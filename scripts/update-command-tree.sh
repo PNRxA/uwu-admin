@@ -98,10 +98,13 @@ if [ "$CREATE_PR" = true ]; then
   # api/Cargo.toml — replace version under [package]
   sed -i '/^\[package\]/,/^\[/{s/^version = ".*"/version = "'"$BARE_VERSION"'"/}' api/Cargo.toml
 
+  # Regenerate Cargo.lock to match updated Cargo.toml
+  (cd api && cargo generate-lockfile)
+
   # README.md — update Docker image tag (use base version as the floating tag)
   sed -i "s|pnrxa/uwu-admin:v[0-9][0-9.a-zA-Z-]*|pnrxa/uwu-admin:${TARGET_REF}|g" README.md
 
-  if [ -z "$(git status --porcelain shared/command-tree.json web/package.json api/Cargo.toml README.md)" ]; then
+  if [ -z "$(git status --porcelain shared/command-tree.json web/package.json api/Cargo.toml api/Cargo.lock README.md)" ]; then
     echo "No changes detected — skipping PR creation."
     echo "Done."
     exit 0
@@ -121,7 +124,7 @@ if [ "$CREATE_PR" = true ]; then
 
   echo "Creating PR branch: $PR_BRANCH"
   git checkout -b "$PR_BRANCH"
-  git add shared/command-tree.json web/package.json api/Cargo.toml README.md
+  git add shared/command-tree.json web/package.json api/Cargo.toml api/Cargo.lock README.md
   git commit -m "Update to $TARGET_REF"
   git push -u origin "$PR_BRANCH"
 

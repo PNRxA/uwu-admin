@@ -48,7 +48,7 @@ docker run -d -p 8080:8080 \
   -e JWT_SECRET=$(openssl rand -hex 32) \
   -e ENCRYPTION_KEY=$(openssl rand -hex 32) \
   -v uwu-data:/data \
-  pnrxa/uwu-admin:v0.5.5
+  pnrxa/uwu-admin:v0.5.6
 ```
 
 Open `http://localhost:8080`, create an admin account, and add your homeserver.
