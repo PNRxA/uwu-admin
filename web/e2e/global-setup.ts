@@ -2,7 +2,7 @@ import { test as setup, expect } from '@playwright/test'
 import * as fs from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import * as path from 'node:path'
-import { requireEnv } from './helpers'
+import { requireEnv, openServerSelector } from './helpers'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -42,8 +42,9 @@ setup('authenticate and add server', async ({ page }) => {
     await page.getByRole('button', { name: 'Sign In' }).click()
   }
 
-  // Wait for redirect to overview (dashboard)
+  // Wait for redirect to dashboard and layout to render
   await expect(page).not.toHaveURL(/\/(setup|login)/, { timeout: 15000 })
+  await expect(page.locator('header')).toBeVisible({ timeout: 15000 })
 
   // Add a test server via ServerSelector
   const homeserver = requireEnv('TEST_HOMESERVER')
@@ -52,7 +53,7 @@ setup('authenticate and add server', async ({ page }) => {
   const roomId = requireEnv('TEST_ROOM_ID')
 
   // Open the server dropdown and click "Add Server"
-  await page.getByRole('button', { name: 'No server selected' }).click()
+  await openServerSelector(page)
   await page.getByRole('menuitem', { name: 'Add Server' }).click()
 
   // Fill in server details
