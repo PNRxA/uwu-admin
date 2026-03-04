@@ -89,7 +89,7 @@ if [ "$CREATE_PR" = true ]; then
   cd "$REPO_ROOT"
 
   # Update version references
-  BARE_VERSION="${TARGET_REF#v}"   # v0.5.6 → 0.5.6
+  BARE_VERSION="${TARGET_REF#v}-0"   # v0.5.6 → 0.5.6-0
 
   # web/package.json — use jq to set .version
   jq --arg v "$BARE_VERSION" '.version = $v' web/package.json > web/package.json.tmp \
@@ -98,7 +98,7 @@ if [ "$CREATE_PR" = true ]; then
   # api/Cargo.toml — replace version under [package]
   sed -i '/^\[package\]/,/^\[/{s/^version = ".*"/version = "'"$BARE_VERSION"'"/}' api/Cargo.toml
 
-  # README.md — update Docker image tag
+  # README.md — update Docker image tag (use base version as the floating tag)
   sed -i "s|pnrxa/uwu-admin:v[0-9][0-9.a-zA-Z-]*|pnrxa/uwu-admin:${TARGET_REF}|g" README.md
 
   if [ -z "$(git status --porcelain shared/command-tree.json web/package.json api/Cargo.toml README.md)" ]; then

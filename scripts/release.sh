@@ -40,8 +40,9 @@ jq --arg v "$BARE_VERSION" '.version = $v' web/package.json > web/package.json.t
 # api/Cargo.toml
 sed -i '/^\[package\]/,/^\[/{s/^version = ".*"/version = "'"$BARE_VERSION"'"/}' api/Cargo.toml
 
-# README.md — update Docker image tag
-sed -i "s|pnrxa/uwu-admin:v[0-9][0-9.a-zA-Z-]*|pnrxa/uwu-admin:${VERSION}|g" README.md
+# README.md — update Docker image tag (use base version as the floating tag)
+BASE_VERSION=$(echo "$VERSION" | sed 's/-[0-9]*$//')
+sed -i "s|pnrxa/uwu-admin:v[0-9][0-9.a-zA-Z-]*|pnrxa/uwu-admin:${BASE_VERSION}|g" README.md
 
 # Show what changed
 echo ""

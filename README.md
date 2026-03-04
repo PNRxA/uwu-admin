@@ -48,7 +48,7 @@ docker run -d -p 8080:8080 \
   -e JWT_SECRET=$(openssl rand -hex 32) \
   -e ENCRYPTION_KEY=$(openssl rand -hex 32) \
   -v uwu-data:/data \
-  pnrxa/uwu-admin:v0.5.5-1
+  pnrxa/uwu-admin:v0.5.5
 ```
 
 Open `http://localhost:8080`, create an admin account, and add your homeserver.
@@ -339,14 +339,22 @@ The **update-command-tree** workflow is triggered manually from the Actions tab.
 
 ## Releasing
 
-uwu-admin versions track Continuwuity versions - `v0.5.5` of uwu-admin is compatible with Continuwuity `v0.5.5`. When uwu-admin needs additional releases for the same Continuwuity version (bug fixes, UI improvements, etc.), we append a dash suffix: `v0.5.5-1`, `v0.5.5-2`, and so on.
+uwu-admin versions track Continuwuity versions — `v0.5.5-0` of uwu-admin is the initial release compatible with Continuwuity `v0.5.5`. When uwu-admin needs additional releases for the same Continuwuity version (bug fixes, UI improvements, etc.), we increment the suffix: `v0.5.5-1`, `v0.5.5-2`, and so on.
 
-| Tag | Meaning |
-|-----|---------|
-| `v0.5.5` | Initial release for Continuwuity v0.5.5 |
+| Git tag | Meaning |
+|---------|---------|
+| `v0.5.5-0` | Initial release for Continuwuity v0.5.5 |
 | `v0.5.5-1` | First uwu-admin patch for the same Continuwuity version |
 | `v0.5.5-2` | Second uwu-admin patch |
-| `v0.6.0` | Tracks Continuwuity v0.6.0 |
+| `v0.6.0-0` | Tracks Continuwuity v0.6.0 |
+
+Docker images get three tags: the exact version (`v0.5.5-2`), a floating base version (`v0.5.5`) that always points to the latest `-N` release, and `latest`.
+
+| Docker tag | Behaviour |
+|------------|-----------|
+| `v0.5.5-2` | Pinned to one specific build |
+| `v0.5.5` | Floating — always the latest `-N` for that Continuwuity version |
+| `latest` | Floating — always the most recent release overall |
 
 ### `release.sh`
 
@@ -359,7 +367,7 @@ Updates version references in `package.json`, `Cargo.toml`, and `README.md`, com
 Example:
 
 ```sh
-./scripts/release.sh v0.5.6
+./scripts/release.sh v0.5.6-0
 ./scripts/release.sh v0.5.6-1
 ```
 
