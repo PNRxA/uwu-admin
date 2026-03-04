@@ -78,6 +78,8 @@ jobs:
 
       - uses: dtolnay/rust-toolchain@stable
         if: steps.check.outputs.skip != 'true'
+        with:
+          components: rustfmt
 
       - uses: Swatinem/rust-cache@v2
         if: steps.check.outputs.skip != 'true'
@@ -87,8 +89,8 @@ jobs:
       - name: Install libclang
         if: steps.check.outputs.skip != 'true'
         run: |
-          apt-get update && apt-get install -y libclang-dev || \
-          sudo apt-get update && sudo apt-get install -y libclang-dev
+          apt-get update && apt-get install -y libclang-dev liburing-dev || \
+          sudo apt-get update && sudo apt-get install -y libclang-dev liburing-dev
 
       - name: Clone continuwuity fork
         if: steps.check.outputs.skip != 'true'
