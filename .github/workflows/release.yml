@@ -28,12 +28,14 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Extract base version
-        id: base
+      - name: Extract version variants
+        id: versions
         run: |
           TAG="${{ github.ref_name }}"
           BASE=$(echo "$TAG" | sed 's/-[0-9]*$//')
-          echo "version=$BASE" >> "$GITHUB_OUTPUT"
+          echo "base=$BASE" >> "$GITHUB_OUTPUT"
+          echo "exact_bare=${TAG#v}" >> "$GITHUB_OUTPUT"
+          echo "base_bare=${BASE#v}" >> "$GITHUB_OUTPUT"
 
       - name: Extract metadata
         id: meta
@@ -44,7 +46,9 @@ jobs:
             docker.io/${{ secrets.DOCKERHUB_USERNAME }}/uwu-admin
           tags: |
             type=raw,value=${{ github.ref_name }}
-            type=raw,value=${{ steps.base.outputs.version }}
+            type=raw,value=${{ steps.versions.outputs.base }}
+            type=raw,value=${{ steps.versions.outputs.exact_bare }}
+            type=raw,value=${{ steps.versions.outputs.base_bare }}
             type=raw,value=latest
 
       - name: Build and push
