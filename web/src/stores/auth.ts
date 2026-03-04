@@ -39,6 +39,7 @@ export const useAuthStore = defineStore('auth', () => {
       token.value = res.token
       setAuthToken(res.token)
       authenticated.value = true
+      initialized.value = true
     } catch (e) {
       error.value = e instanceof Error ? e.message : t('auth.loginFailed')
       throw e
@@ -56,6 +57,7 @@ export const useAuthStore = defineStore('auth', () => {
       setAuthToken(res.token)
       authenticated.value = true
       setupRequired.value = false
+      initialized.value = true
     } catch (e) {
       error.value = e instanceof Error ? e.message : t('auth.registrationFailed')
       throw e
