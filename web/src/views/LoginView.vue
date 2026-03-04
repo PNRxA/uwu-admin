@@ -20,7 +20,7 @@ const { isUwu } = useIsUwu()
 async function onSubmit() {
   try {
     await auth.login(username.value, password.value)
-    router.push({ name: 'overview' })
+    router.push('/')
   } catch {
     // error is set in store
   }

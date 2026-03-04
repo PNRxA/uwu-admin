@@ -116,6 +116,46 @@ export async function navigateToRooms(page: Page) {
 }
 
 /**
+ * Navigate to the Settings page via sidebar.
+ */
+export async function navigateToSettings(page: Page) {
+  await page.getByRole('link', { name: 'Global Settings' }).click()
+  await page.waitForURL('**/settings')
+}
+
+/**
+ * Navigate to the Console page via sidebar.
+ */
+export async function navigateToConsole(page: Page) {
+  await page.getByRole('link', { name: 'Console' }).click()
+  await page.waitForURL('**/console')
+}
+
+/**
+ * Go to the app root and navigate to a specific page via sidebar.
+ * Handles the /servers/:id redirect automatically.
+ */
+export async function gotoUsers(page: Page) {
+  await page.goto('/')
+  await navigateToUsers(page)
+}
+
+export async function gotoRooms(page: Page) {
+  await page.goto('/')
+  await navigateToRooms(page)
+}
+
+export async function gotoSettings(page: Page) {
+  await page.goto('/settings')
+  await page.waitForURL('**/settings')
+}
+
+export async function gotoConsole(page: Page) {
+  await page.goto('/')
+  await navigateToConsole(page)
+}
+
+/**
  * Opens the server selector dropdown in the header.
  */
 export async function openServerSelector(page: Page) {
@@ -137,7 +177,8 @@ export async function resolveRoomId(
   page: Page,
   rowText: string,
 ): Promise<string> {
-  await page.goto('/rooms')
+  await page.goto('/')
+  await navigateToRooms(page)
   const row = page.locator('tr', { hasText: rowText })
   await expect(row).toBeVisible({ timeout: 15000 })
   // The room ID is in the second cell (index 1), as a font-mono element

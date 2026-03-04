@@ -26,7 +26,7 @@ async function onSubmit() {
   }
   try {
     await auth.register(username.value, password.value)
-    router.push({ name: 'overview' })
+    router.push('/')
   } catch {
     // error is set in store
   }

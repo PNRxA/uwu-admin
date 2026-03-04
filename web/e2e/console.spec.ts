@@ -1,4 +1,5 @@
 import { test, expect } from './fixtures'
+import { gotoConsole } from './helpers'
 
 /**
  * Clicks through the autocomplete suggestions to build a command.
@@ -87,7 +88,7 @@ test.describe('Console - fullscreen', () => {
   test.describe.configure({ mode: 'serial' })
 
   test('execute command via autocomplete click', async ({ page }) => {
-    await page.goto('/console')
+    await gotoConsole(page)
 
     const consoleForm = page.locator('form', { hasText: '!admin' })
     await expect(consoleForm).toBeVisible()
@@ -101,7 +102,7 @@ test.describe('Console - fullscreen', () => {
   })
 
   test('execute command by typing', async ({ page }) => {
-    await page.goto('/console')
+    await gotoConsole(page)
 
     const consoleForm = page.locator('form', { hasText: '!admin' })
     await expect(consoleForm).toBeVisible()

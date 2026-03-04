@@ -5,6 +5,7 @@ import {
   executeInputAction,
   executeReadOnlyAction,
   navigateToUsers,
+  gotoUsers,
   resolveRoomId,
   dismissToasts,
 } from './helpers'
@@ -50,68 +51,68 @@ test.describe('User actions', () => {
   })
 
   test('list joined rooms', async ({ page }) => {
-    await page.goto('/users')
+    await gotoUsers(page)
     await openActionsMenu(page, testUserId)
     await executeReadOnlyAction(page, 'List Joined Rooms')
   })
 
   test('suspend', async ({ page }) => {
-    await page.goto('/users')
+    await gotoUsers(page)
     await openActionsMenu(page, testUserId)
     await executeConfirmAction(page, 'Suspend')
   })
 
   test('unsuspend', async ({ page }) => {
-    await page.goto('/users')
+    await gotoUsers(page)
     await openActionsMenu(page, testUserId)
     await executeConfirmAction(page, 'Unsuspend')
   })
 
   test('lock', async ({ page }) => {
-    await page.goto('/users')
+    await gotoUsers(page)
     await openActionsMenu(page, testUserId)
     await executeConfirmAction(page, 'Lock')
   })
 
   test('unlock', async ({ page }) => {
-    await page.goto('/users')
+    await gotoUsers(page)
     await openActionsMenu(page, testUserId)
     await executeConfirmAction(page, 'Unlock')
   })
 
   test('force logout', async ({ page }) => {
-    await page.goto('/users')
+    await gotoUsers(page)
     await openActionsMenu(page, testUserId)
     await executeConfirmAction(page, 'Force Logout')
   })
 
   test('disable login', async ({ page }) => {
-    await page.goto('/users')
+    await gotoUsers(page)
     await openActionsMenu(page, testUserId)
     await executeConfirmAction(page, 'Disable Login')
   })
 
   test('enable login', async ({ page }) => {
-    await page.goto('/users')
+    await gotoUsers(page)
     await openActionsMenu(page, testUserId)
     await executeConfirmAction(page, 'Enable Login')
   })
 
   test('reset password', async ({ page }) => {
-    await page.goto('/users')
+    await gotoUsers(page)
     await openActionsMenu(page, testUserId)
     // No input fields — the server generates a random password automatically
     await executeInputAction(page, 'Reset Password', {})
   })
 
   test('make admin', async ({ page }) => {
-    await page.goto('/users')
+    await gotoUsers(page)
     await openActionsMenu(page, testUserId)
     await executeConfirmAction(page, 'Make Admin')
   })
 
   test('force join room', async ({ page }) => {
-    await page.goto('/users')
+    await gotoUsers(page)
     await openActionsMenu(page, testUserId)
     await executeInputAction(page, 'Force Join Room', {
       room_id: resolvedRoomId,
@@ -119,7 +120,7 @@ test.describe('User actions', () => {
   })
 
   test('get room tags', async ({ page }) => {
-    await page.goto('/users')
+    await gotoUsers(page)
     await openActionsMenu(page, testUserId)
     await executeInputAction(page, 'Get Room Tags', {
       room_id: resolvedRoomId,
@@ -127,7 +128,7 @@ test.describe('User actions', () => {
   })
 
   test('set room tag', async ({ page }) => {
-    await page.goto('/users')
+    await gotoUsers(page)
     await openActionsMenu(page, testUserId)
     await executeInputAction(page, 'Set Room Tag', {
       room_id: resolvedRoomId,
@@ -136,7 +137,7 @@ test.describe('User actions', () => {
   })
 
   test('delete room tag', async ({ page }) => {
-    await page.goto('/users')
+    await gotoUsers(page)
     await openActionsMenu(page, testUserId)
     await executeInputAction(page, 'Delete Room Tag', {
       room_id: resolvedRoomId,
@@ -145,7 +146,7 @@ test.describe('User actions', () => {
   })
 
   test('force demote', async ({ page }) => {
-    await page.goto('/users')
+    await gotoUsers(page)
     await openActionsMenu(page, testUserId)
     await executeInputAction(page, 'Force Demote', {
       room_id: resolvedRoomId,
@@ -153,7 +154,7 @@ test.describe('User actions', () => {
   })
 
   test('force leave room', async ({ page }) => {
-    await page.goto('/users')
+    await gotoUsers(page)
     await openActionsMenu(page, testUserId)
     await executeInputAction(page, 'Force Leave Room', {
       room_id: resolvedRoomId,
@@ -161,7 +162,7 @@ test.describe('User actions', () => {
   })
 
   test('deactivate account', async ({ page }) => {
-    await page.goto('/users')
+    await gotoUsers(page)
     await dismissToasts(page)
     await openActionsMenu(page, testUserId)
     await executeConfirmAction(page, 'Deactivate Account')

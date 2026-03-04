@@ -10,9 +10,10 @@ import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Separator } from '@/components/ui/separator'
 import { Send, Trash2, Terminal, ChevronUp, CircleAlert, Maximize2 } from 'lucide-vue-next'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 
 const router = useRouter()
+const route = useRoute()
 const { isUwu } = useIsUwu()
 
 const {
@@ -46,7 +47,7 @@ watch(() => commandStore.panelOpen, (open) => {
         <Badge v-if="commandStore.unreadCount > 0" variant="secondary" class="text-xs">
           {{ commandStore.unreadCount }}
         </Badge>
-        <Button variant="ghost" size="sm" class="ml-auto h-7 px-2" @click.stop="router.push({ name: 'console' })">
+        <Button variant="ghost" size="sm" class="ml-auto h-7 px-2" @click.stop="router.push({ name: 'console', params: { serverId: route.params.serverId } })">
           <Maximize2 class="size-3.5" />
         </Button>
         <Button variant="ghost" size="sm" class="h-7 px-2" @click.stop="commandStore.clear">

@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { useRouter, useRoute } from 'vue-router'
-import { watch } from 'vue'
+import { computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/stores/auth'
+import { useConnectionStore } from '@/stores/connection'
 import { useSidebar } from '@/components/ui/sidebar/utils'
 
 import {
@@ -34,20 +35,24 @@ const { t } = useI18n()
 const router = useRouter()
 const route = useRoute()
 const auth = useAuthStore()
+const connection = useConnectionStore()
 const { setOpenMobile } = useSidebar()
 
 watch(() => route.path, () => {
   setOpenMobile(false)
 })
 
-const navItems = [
-  { titleKey: 'sidebar.overview', icon: LayoutDashboard, to: '/' },
-  { titleKey: 'sidebar.users', icon: Users, to: '/users' },
-  { titleKey: 'sidebar.rooms', icon: DoorOpen, to: '/rooms' },
-  { titleKey: 'sidebar.federation', icon: Globe, to: '/federation' },
-  { titleKey: 'sidebar.server', icon: Server, to: '/server' },
-  { titleKey: 'sidebar.console', icon: Terminal, to: '/console' },
-]
+const navItems = computed(() => {
+  const serverId = route.params.serverId ?? connection.activeServerId
+  return [
+    { titleKey: 'sidebar.overview', icon: LayoutDashboard, name: 'overview' as const, to: { name: 'overview' as const, params: { serverId } } },
+    { titleKey: 'sidebar.users', icon: Users, name: 'users' as const, to: { name: 'users' as const, params: { serverId } } },
+    { titleKey: 'sidebar.rooms', icon: DoorOpen, name: 'rooms' as const, to: { name: 'rooms' as const, params: { serverId } } },
+    { titleKey: 'sidebar.federation', icon: Globe, name: 'federation' as const, to: { name: 'federation' as const, params: { serverId } } },
+    { titleKey: 'sidebar.server', icon: Server, name: 'server' as const, to: { name: 'server' as const, params: { serverId } } },
+    { titleKey: 'sidebar.console', icon: Terminal, name: 'console' as const, to: { name: 'console' as const, params: { serverId } } },
+  ]
+})
 
 async function handleLogout() {
   await auth.logout()
@@ -66,7 +71,7 @@ async function handleLogout() {
         <SidebarGroupContent>
           <SidebarMenu>
             <SidebarMenuItem v-for="item in navItems" :key="item.titleKey">
-              <SidebarMenuButton as-child :tooltip="t(item.titleKey)" :is-active="item.to === '/' ? route.path === '/' : route.path.startsWith(item.to)">
+              <SidebarMenuButton as-child :tooltip="t(item.titleKey)" :is-active="route.name === item.name">
                 <RouterLink :to="item.to">
                   <component :is="item.icon" />
                   <span>{{ t(item.titleKey) }}</span>
@@ -81,8 +86,8 @@ async function handleLogout() {
     <SidebarFooter class="p-4 flex flex-col gap-1">
       <SidebarMenu>
         <SidebarMenuItem>
-          <SidebarMenuButton as-child :tooltip="t('sidebar.settings')" :is-active="route.path.startsWith('/settings')">
-            <RouterLink to="/settings">
+          <SidebarMenuButton as-child :tooltip="t('sidebar.settings')" :is-active="route.name === 'settings'">
+            <RouterLink :to="{ name: 'settings' }">
               <Settings />
               <span>{{ t('sidebar.settings') }}</span>
             </RouterLink>

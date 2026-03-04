@@ -16,7 +16,7 @@ const router = createRouter({
       component: () => import('@/views/LoginView.vue'),
     },
     {
-      path: '/',
+      path: '/servers/:serverId(\\d+)',
       component: () => import('@/layouts/DashboardLayout.vue'),
       children: [
         {
@@ -49,12 +49,35 @@ const router = createRouter({
           name: 'console',
           component: () => import('@/views/ConsoleView.vue'),
         },
+      ],
+    },
+    {
+      path: '/settings',
+      component: () => import('@/layouts/DashboardLayout.vue'),
+      children: [
         {
-          path: 'settings',
+          path: '',
           name: 'settings',
           component: () => import('@/views/SettingsView.vue'),
         },
       ],
+    },
+    {
+      path: '/',
+      component: () => import('@/layouts/DashboardLayout.vue'),
+      children: [
+        {
+          path: '',
+          name: 'root',
+          // Guard redirects to /servers/:id when servers exist.
+          // When no servers exist, renders overview shell so the user can add one.
+          component: () => import('@/views/OverviewView.vue'),
+        },
+      ],
+    },
+    {
+      path: '/:pathMatch(.*)*',
+      redirect: { name: 'root' },
     },
   ],
 })
@@ -77,9 +100,9 @@ router.beforeEach(async (to) => {
     return { name: 'login' }
   }
 
-  // If authenticated and trying to visit login/setup, redirect to overview
+  // If authenticated and trying to visit login/setup, redirect to root (guard will handle server redirect)
   if (auth.authenticated && (to.name === 'login' || to.name === 'setup')) {
-    return { name: 'overview' }
+    return { name: 'root' }
   }
 
   // If authenticated and going to dashboard, ensure servers are loaded
@@ -87,6 +110,29 @@ router.beforeEach(async (to) => {
     const connection = useConnectionStore()
     if (!connection.loaded) {
       await connection.fetchServers()
+    }
+
+    // Root path: redirect to first server
+    if (to.name === 'root') {
+      const firstId = connection.servers[0]?.id
+      if (firstId != null) {
+        return { name: 'overview', params: { serverId: firstId } }
+      }
+    }
+
+    // Validate serverId param
+    if (to.params.serverId) {
+      const serverId = Number(to.params.serverId)
+      const serverExists = connection.servers.some((s) => s.id === serverId)
+      if (serverExists) {
+        connection.setActiveServer(serverId)
+      } else {
+        // Invalid server ID: redirect to first server, preserving sub-route
+        const firstId = connection.servers[0]?.id
+        if (firstId != null) {
+          return { name: to.name ?? 'overview', params: { serverId: firstId } }
+        }
+      }
     }
   }
 })

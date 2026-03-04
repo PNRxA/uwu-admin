@@ -1,4 +1,5 @@
 import { test, expect } from './fixtures'
+import { gotoSettings } from './helpers'
 
 test.describe('Settings', () => {
   test('navigate to settings page', async ({ page }) => {
@@ -13,7 +14,7 @@ test.describe('Settings', () => {
   })
 
   test('toggle redact messages off and on', async ({ page }) => {
-    await page.goto('/settings')
+    await gotoSettings(page)
     await expect(page.getByText('Redact admin room messages')).toBeVisible({ timeout: 10000 })
 
     const toggle = page.getByRole('switch', { name: 'Redact admin room messages' })
@@ -37,7 +38,7 @@ test.describe('Settings', () => {
   })
 
   test('switch between built-in themes', async ({ page }) => {
-    await page.goto('/settings')
+    await gotoSettings(page)
     await expect(page.getByRole('heading', { name: 'Appearance' })).toBeVisible({ timeout: 10000 })
 
     // uwu pink should be active by default
@@ -58,7 +59,7 @@ test.describe('Settings', () => {
   })
 
   test('create and delete custom theme', async ({ page }) => {
-    await page.goto('/settings')
+    await gotoSettings(page)
     await expect(page.getByRole('heading', { name: 'Appearance' })).toBeVisible({ timeout: 10000 })
 
     // Click create theme button
@@ -94,7 +95,7 @@ test.describe('Settings', () => {
   })
 
   test('flavour text toggle changes logo', async ({ page }) => {
-    await page.goto('/settings')
+    await gotoSettings(page)
     await expect(page.getByRole('heading', { name: 'Branding' })).toBeVisible({ timeout: 10000 })
 
     // uwu mode should be on by default

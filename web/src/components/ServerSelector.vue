@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useConnectionStore } from '@/stores/connection'
 import { Button } from '@/components/ui/button'
@@ -36,7 +37,15 @@ import { ChevronDown, Plus, Trash2, Server } from 'lucide-vue-next'
 import { toast } from 'vue-sonner'
 
 const { t } = useI18n()
+const router = useRouter()
+const route = useRoute()
 const connection = useConnectionStore()
+
+function navigateToServer(serverId: number) {
+  const nonServerRoutes = ['root', 'settings']
+  const name = !route.name || nonServerRoutes.includes(route.name as string) ? 'overview' : route.name
+  router.push({ name, params: { serverId } })
+}
 
 // Add server dialog
 const addDialogOpen = ref(false)
@@ -59,6 +68,10 @@ async function onAddServer() {
     username.value = ''
     password.value = ''
     roomId.value = ''
+    // Navigate to the newly added server
+    if (connection.activeServerId != null) {
+      navigateToServer(connection.activeServerId)
+    }
   } catch {
     // error is set in store
   }
@@ -79,6 +92,12 @@ async function onRemoveServer() {
     await connection.removeServer(serverToRemove.value.id)
     toast.success(t('serverSelector.serverRemoved'))
     removeDialogOpen.value = false
+    // Navigate to the fallback server or root
+    if (connection.activeServerId != null) {
+      navigateToServer(connection.activeServerId)
+    } else {
+      router.push({ name: 'root' })
+    }
   } catch (e) {
     toast.error(e instanceof Error ? e.message : t('serverSelector.removeFailed'))
   }
@@ -108,7 +127,7 @@ async function onRemoveServer() {
         v-for="server in connection.servers"
         :key="server.id"
         class="flex items-center justify-between gap-2"
-        @click="connection.setActiveServer(server.id)"
+        @click="navigateToServer(server.id)"
       >
         <div class="flex flex-col min-w-0">
           <span class="text-sm truncate">{{ server.homeserver }}</span>

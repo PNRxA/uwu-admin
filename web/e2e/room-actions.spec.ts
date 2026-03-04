@@ -5,6 +5,7 @@ import {
   executeInputAction,
   executeReadOnlyAction,
   navigateToRooms,
+  gotoRooms,
   dismissToasts,
 } from './helpers'
 
@@ -32,7 +33,7 @@ test.describe('Room actions', () => {
   })
 
   test('view topic', async ({ page }) => {
-    await page.goto('/rooms')
+    await gotoRooms(page)
     await expect(page.locator('tr', { hasText: ROOM_ROW_TEXT })).toBeVisible({
       timeout: 15000,
     })
@@ -41,7 +42,7 @@ test.describe('Room actions', () => {
   })
 
   test('check exists', async ({ page }) => {
-    await page.goto('/rooms')
+    await gotoRooms(page)
     await expect(page.locator('tr', { hasText: ROOM_ROW_TEXT })).toBeVisible({
       timeout: 15000,
     })
@@ -50,7 +51,7 @@ test.describe('Room actions', () => {
   })
 
   test('list aliases', async ({ page }) => {
-    await page.goto('/rooms')
+    await gotoRooms(page)
     await expect(page.locator('tr', { hasText: ROOM_ROW_TEXT })).toBeVisible({
       timeout: 15000,
     })
@@ -59,7 +60,7 @@ test.describe('Room actions', () => {
   })
 
   test('set alias', async ({ page }) => {
-    await page.goto('/rooms')
+    await gotoRooms(page)
     await expect(page.locator('tr', { hasText: ROOM_ROW_TEXT })).toBeVisible({
       timeout: 15000,
     })
@@ -70,7 +71,7 @@ test.describe('Room actions', () => {
   })
 
   test('remove alias', async ({ page }) => {
-    await page.goto('/rooms')
+    await gotoRooms(page)
     await expect(page.locator('tr', { hasText: ROOM_ROW_TEXT })).toBeVisible({
       timeout: 15000,
     })
@@ -81,7 +82,7 @@ test.describe('Room actions', () => {
   })
 
   test('publish', async ({ page }) => {
-    await page.goto('/rooms')
+    await gotoRooms(page)
     await expect(page.locator('tr', { hasText: ROOM_ROW_TEXT })).toBeVisible({
       timeout: 15000,
     })
@@ -90,7 +91,7 @@ test.describe('Room actions', () => {
   })
 
   test('unpublish', async ({ page }) => {
-    await page.goto('/rooms')
+    await gotoRooms(page)
     await expect(page.locator('tr', { hasText: ROOM_ROW_TEXT })).toBeVisible({
       timeout: 15000,
     })
@@ -99,7 +100,7 @@ test.describe('Room actions', () => {
   })
 
   test('ban room', async ({ page }) => {
-    await page.goto('/rooms')
+    await gotoRooms(page)
     await expect(page.locator('tr', { hasText: ROOM_ROW_TEXT })).toBeVisible({
       timeout: 15000,
     })
@@ -122,7 +123,7 @@ test.describe('Room actions', () => {
   })
 
   test('unban room', async ({ page }) => {
-    await page.goto('/rooms')
+    await gotoRooms(page)
     await expect(page.locator('tr', { hasText: ROOM_ROW_TEXT })).toBeVisible({
       timeout: 15000,
     })

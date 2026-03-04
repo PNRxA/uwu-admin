@@ -1,5 +1,5 @@
 import { test, expect } from './fixtures'
-import { openServerSelector, expectAnyToast, requireEnv } from './helpers'
+import { openServerSelector, expectAnyToast, requireEnv, navigateToUsers } from './helpers'
 
 test.describe('Server management', () => {
   test('add a second server', async ({ page }) => {
@@ -58,6 +58,47 @@ test.describe('Server management', () => {
     const request = await requestPromise
     // The second server added gets id=2
     expect(request.url()).toContain('/api/servers/2/')
+  })
+
+  test('server ID in URL persists on refresh', async ({ page }) => {
+    await page.goto('/')
+    await page.waitForURL(/\/servers\/\d+/)
+
+    // Navigate to users page
+    await navigateToUsers(page)
+    const url = page.url()
+    expect(url).toMatch(/\/servers\/\d+\/users/)
+
+    // Refresh the page — server selection and sub-route should survive
+    await page.reload()
+    await expect(page.getByRole('heading', { name: 'Users' })).toBeVisible({ timeout: 10000 })
+    expect(page.url()).toBe(url)
+  })
+
+  test('switching servers updates the URL', async ({ page }) => {
+    await page.goto('/')
+    await page.waitForURL(/\/servers\/\d+/)
+
+    // Navigate to users so we can verify the sub-route is preserved
+    await navigateToUsers(page)
+    expect(page.url()).toMatch(/\/servers\/1\/users/)
+
+    // Switch to the second server
+    await openServerSelector(page)
+    const allItems = page.getByRole('menuitem')
+    await allItems.nth(1).click()
+
+    // URL should update to the second server's users page
+    await page.waitForURL(/\/servers\/2\/users/)
+  })
+
+  test('invalid server ID redirects to first server', async ({ page }) => {
+    await page.goto('/servers/99999/users')
+
+    // Should redirect to first server, preserving the sub-route
+    await expect(page).not.toHaveURL(/\/servers\/99999\//, { timeout: 10000 })
+    expect(page.url()).toMatch(/\/servers\/\d+\/users/)
+    await expect(page.getByRole('heading', { name: 'Users' })).toBeVisible({ timeout: 10000 })
   })
 
   test('remove the second server', async ({ page }) => {
