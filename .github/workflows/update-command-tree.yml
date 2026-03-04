@@ -84,6 +84,12 @@ jobs:
         with:
           workspaces: ../continuwuity -> target
 
+      - name: Install libclang
+        if: steps.check.outputs.skip != 'true'
+        run: |
+          apt-get update && apt-get install -y libclang-dev || \
+          sudo apt-get update && sudo apt-get install -y libclang-dev
+
       - name: Clone continuwuity fork
         if: steps.check.outputs.skip != 'true'
         run: |
