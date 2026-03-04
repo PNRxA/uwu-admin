@@ -41,7 +41,7 @@ Browser (Vue)  →  uwu-admin-api (Rust/axum :3001)  →  Matrix Homeserver
 
 ## Quick Start (Docker)
 
-uwu-admin versions follow Continuwuity versions to indicate compatibility. Set the tag to your Continuwuity server version, or `latest` if you're feeling brave.
+uwu-admin versions follow Continuwuity versions to indicate compatibility. Set the tag to your Continuwuity server version (e.g. `v0.5.5` or `0.5.5`), which floats to the latest uwu-admin patch for that version. Use an exact tag like `v0.5.5-2` to pin a specific build. `latest` always points to the most recent release regardless of Continuwuity version — it may move to a newer version that is incompatible with your homeserver. Use `latest` with caution.
 
 ```sh
 docker run -d -p 8080:8080 \
