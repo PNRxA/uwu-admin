@@ -37,8 +37,9 @@ echo "Updating version to $BARE_VERSION..."
 jq --arg v "$BARE_VERSION" '.version = $v' web/package.json > web/package.json.tmp \
   && mv web/package.json.tmp web/package.json
 
-# api/Cargo.toml
+# api/Cargo.toml + Cargo.lock
 sed -i '/^\[package\]/,/^\[/{s/^version = ".*"/version = "'"$BARE_VERSION"'"/}' api/Cargo.toml
+cargo generate-lockfile --manifest-path api/Cargo.toml
 
 # README.md — update Docker image tag (use base version as the floating tag)
 BASE_VERSION=$(echo "$VERSION" | sed 's/-[0-9]*$//')
@@ -54,11 +55,11 @@ echo ""
 read -rp "Commit, tag $VERSION, and push? [y/N] " confirm
 if [[ ! "$confirm" =~ ^[Yy]$ ]]; then
   echo "Aborted. Reverting changes..."
-  git checkout -- web/package.json api/Cargo.toml README.md
+  git checkout -- web/package.json api/Cargo.toml api/Cargo.lock README.md
   exit 1
 fi
 
-git add web/package.json api/Cargo.toml README.md
+git add web/package.json api/Cargo.toml api/Cargo.lock README.md
 git commit -m "Release $VERSION"
 git tag "$VERSION"
 git push origin HEAD "$VERSION"
