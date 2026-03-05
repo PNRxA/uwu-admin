@@ -24,4 +24,9 @@ export default defineConfig(({ mode }) => ({
       '/api': 'http://localhost:3001',
     },
   },
+  preview: {
+    proxy: {
+      '/api': 'http://localhost:3001',
+    },
+  },
 }))
