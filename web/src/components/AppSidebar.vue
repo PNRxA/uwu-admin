@@ -18,7 +18,6 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from '@/components/ui/sidebar'
-import { Button } from '@/components/ui/button'
 import {
   LayoutDashboard,
   Users,
@@ -83,7 +82,7 @@ async function handleLogout() {
         </SidebarGroupContent>
       </SidebarGroup>
     </SidebarContent>
-    <SidebarFooter class="p-4 flex flex-col gap-1">
+    <SidebarFooter class="p-4 group-data-[collapsible=icon]:p-2 flex flex-col gap-1">
       <SidebarMenu>
         <SidebarMenuItem>
           <SidebarMenuButton as-child :tooltip="t('sidebar.settings')" :is-active="route.name === 'settings'">
@@ -94,10 +93,14 @@ async function handleLogout() {
           </SidebarMenuButton>
         </SidebarMenuItem>
       </SidebarMenu>
-      <Button variant="ghost" class="w-full justify-start gap-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0 hover:bg-primary/10 hover:text-primary dark:hover:bg-primary/15 dark:hover:text-primary" @click="handleLogout">
-        <LogOut class="size-4" />
-        <span class="group-data-[collapsible=icon]:hidden">{{ $t('sidebar.logout') }}</span>
-      </Button>
+      <SidebarMenu>
+        <SidebarMenuItem>
+          <SidebarMenuButton :tooltip="t('sidebar.logout')" class="cursor-pointer hover:bg-primary/10 hover:text-primary dark:hover:bg-primary/15 dark:hover:text-primary" @click="handleLogout">
+            <LogOut />
+            <span>{{ $t('sidebar.logout') }}</span>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+      </SidebarMenu>
     </SidebarFooter>
   </Sidebar>
 </template>
