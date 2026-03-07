@@ -12,7 +12,7 @@ const { isUwu } = useIsUwu()
 </script>
 
 <template>
-  <RouterLink to="/" class="uwu-logo flex items-center gap-1.5 overflow-visible whitespace-nowrap no-underline">
+  <RouterLink to="/" class="uwu-logo flex items-center gap-1.5 overflow-visible whitespace-nowrap no-underline group-data-[collapsible=icon]:justify-center">
     <template v-if="isUwu">
       <span
         class="uwu-text relative font-extrabold tracking-tight bg-gradient-to-r from-primary to-primary/70 dark:from-primary dark:to-primary/80 bg-clip-text text-transparent group-data-[collapsible=icon]:text-sm"
@@ -25,9 +25,9 @@ const { isUwu } = useIsUwu()
     </template>
     <template v-else>
       <span
-        class="font-bold tracking-tight text-foreground group-data-[collapsible=icon]:text-sm"
+        class="font-bold tracking-tight text-foreground group-data-[collapsible=icon]:text-xs"
         :class="size === 'lg' ? 'text-3xl' : 'text-xl'"
-      >Admin</span>
+      ><span class="group-data-[collapsible=icon]:hidden">Admin</span><span class="hidden group-data-[collapsible=icon]:inline">A<span class="font-light text-muted-foreground">P</span></span></span>
       <span
         class="font-light tracking-wide text-muted-foreground group-data-[collapsible=icon]:hidden"
         :class="size === 'lg' ? 'text-3xl' : 'text-xl'"
